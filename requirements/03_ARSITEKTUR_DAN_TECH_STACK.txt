@@ -1,0 +1,143 @@
+KASBARENG - ARSITEKTUR DAN TECH STACK
+Versi 1.0
+
+1. STACK DEFAULT UNTUK MVP
+Frontend:
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- TanStack Query atau solusi data-fetching sejenis
+- PWA melalui manifest dan Service Worker
+Backend:
+- Node.js + TypeScript
+- NestJS atau Fastify, pilih satu dan konsisten. Rekomendasi default: NestJS untuk struktur modular yang eksplisit.
+Database:
+- PostgreSQL
+ORM/migration:
+- Prisma dengan migration versioned, atau alat setara yang mendukung transaksi dan constraint.
+Validasi:
+- Zod atau DTO validation yang konsisten.
+Testing:
+- Vitest/Jest untuk unit test.
+- Integration test API.
+- Playwright untuk alur UI utama bila memungkinkan.
+Jangan memasang beberapa library yang melakukan fungsi sama tanpa alasan.
+
+2. ARSITEKTUR
+PWA Frontend -> API -> Authentication/Authorization -> Application Services -> Database.
+Application modules:
+- Auth
+- Users
+- Wallets
+- Memberships
+- Transactions
+- Approvals
+- Ledger
+- Audit
+- Reconciliation
+- Attachments
+- Clarifications
+- AI Parser (opsional)
+
+3. PRINSIP
+- Modular monolith untuk MVP, bukan microservices.
+- Backend adalah sumber kebenaran untuk saldo, role, status, kuorum, dan audit.
+- UI tidak menyimpan business logic kritis.
+- AI hanya menghasilkan draf terstruktur.
+- Gunakan transaksi database untuk operasi yang harus konsisten.
+- Gunakan optimistic locking/version atau locking yang tepat untuk mencegah race condition.
+- Gunakan idempotency key untuk endpoint aksi sensitif yang dapat diulang akibat jaringan.
+- PWA cache hanya data yang memang aman dicache.
+- Simpan file lampiran di penyimpanan privat; jangan membuat URL publik permanen.
+
+4. STRUKTUR REPOSITORY YANG DIHARAPKAN
+kasbareng/
+  requirements/
+    *.txt
+  apps/
+    web/
+      src/
+        app/
+        components/
+        features/
+          dashboard/
+          wallets/
+          transactions/
+          approvals/
+          reconciliation/
+          audit/
+          profile/
+        lib/
+        styles/
+    api/
+      src/
+        modules/
+          auth/
+          users/
+          wallets/
+          memberships/
+          transactions/
+          approvals/
+          ledger/
+          audit/
+          reconciliation/
+          attachments/
+          clarifications/
+          ai-parser/
+        algorithms/
+          README.txt
+          fsm/
+          quorum/
+          ledger/
+          hash-chain/
+          reconciliation/
+          canonicalization/
+        common/
+        main.ts
+  docs/
+    api/
+    threat-model/
+    test-cases/
+  tests/
+    unit/
+    integration/
+    e2e/
+  infra/
+    migrations/
+    backup/
+  README.md
+
+5. PEMISAHAN ALGORITMA AKADEMIK
+Semua algoritma inti harus berada di folder khusus:
+apps/api/src/algorithms/
+Folder ini bukan tempat untuk controller HTTP, UI, atau query ORM langsung. Algoritma menerima input terdefinisi dan mengembalikan output terdefinisi.
+Service bisnis memanggil algoritma dan melakukan integrasi database.
+Setiap algoritma memiliki:
+- README atau dokumentasi ringkas.
+- Deskripsi masalah.
+- Input/output.
+- Pseudocode.
+- Kompleksitas waktu/ruang jika relevan.
+- Invariant.
+- Unit test.
+- Contoh kasus normal dan edge case.
+Ini membuat algoritma mudah dijelaskan saat evaluasi dosen.
+
+6. DATABASE
+PostgreSQL menjadi default utama.
+Nominal gunakan NUMERIC/DECIMAL atau integer satuan terkecil yang konsisten, bukan float.
+Semua entitas keuangan harus memiliki referensi dompet.
+Gunakan migration versioned.
+Jangan menghapus transaksi keuangan yang sudah dibukukan; gunakan pembatalan atau entri koreksi.
+
+7. KONFIGURASI
+- Simpan secret dalam environment variables/secret manager.
+- Sertakan .env.example tanpa nilai secret sungguhan.
+- Jangan commit file .env.
+- Sediakan seed data demo yang tidak memuat data pribadi nyata.
+- Sediakan README dengan langkah install, migrate, seed, test, dan run.
+
+8. CATATAN PEMILIHAN STACK
+Jika repository yang sudah dibuat memakai stack lain, jangan mengganti stack secara otomatis. Periksa repository dahulu dan usulkan perubahan hanya jika ada alasan yang kuat. Jangan membuat dua backend atau dua frontend framework.

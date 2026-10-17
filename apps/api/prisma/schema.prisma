@@ -1,0 +1,334 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum WalletRole {
+  ADMIN
+  PENGELOLA
+  WARGA
+}
+
+enum WalletStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionState {
+  DRAFT
+  SUBMITTED
+  PENDING_APPROVAL
+  NEEDS_CLARIFICATION
+  REJECTED
+  APPROVED
+  PAYMENT_PENDING
+  PAYMENT_VERIFICATION
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
+enum ApprovalDecision {
+  APPROVE
+  REJECT
+}
+
+enum PolicyStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum LedgerEntryType {
+  CREDIT
+  DEBIT
+  RESERVATION
+  RELEASE_RESERVATION
+  REVERSAL
+}
+
+enum MovementDirection {
+  CREDIT
+  DEBIT
+}
+
+enum ReconciliationStatus {
+  MATCHED
+  AMBIGUOUS
+  UNMATCHED
+  DUPLICATE_POTENTIAL
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  VERIFIED
+  REJECTED
+}
+
+enum TicketStatus {
+  OPEN
+  RESOLVED
+}
+
+model User {
+  id           String       @id @default(uuid())
+  fullName     String       @map("full_name")
+  email        String       @unique
+  passwordHash String       @map("password_hash")
+  status       UserStatus   @default(ACTIVE)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  memberships       WalletMember[]
+  createdTx         Transaction[]       @relation("CreatedTransactions")
+  approvals         TransactionApproval[]
+  events            TransactionEvent[]
+  clarifications    ClarificationTicket[] @relation("OpenedTickets")
+  resolvedTickets   ClarificationTicket[] @relation("ResolvedTickets")
+
+  @@map("users")
+}
+
+model Wallet {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  currency    String       @default("IDR")
+  status      WalletStatus @default(ACTIVE)
+  version     Int          @default(1)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  members            WalletMember[]
+  transactions       Transaction[]
+  approvalPolicies   ApprovalPolicy[]
+  ledgerEntries      LedgerEntry[]
+  auditLogs          AuditLog[]
+  bankStatements     BankStatement[]
+  attachments        Attachment[]
+  clarifications     ClarificationTicket[]
+
+  @@map("wallets")
+}
+
+model WalletMember {
+  id        String     @id @default(uuid())
+  walletId  String     @map("wallet_id")
+  userId    String     @map("user_id")
+  role      WalletRole @default(WARGA)
+  status    UserStatus @default(ACTIVE)
+  joinedAt  DateTime   @default(now()) @map("joined_at")
+
+  wallet    Wallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, userId])
+  @@map("wallet_members")
+}
+
+model Transaction {
+  id                  String           @id @default(uuid())
+  walletId            String           @map("wallet_id")
+  creatorId           String           @map("creator_id")
+  type                TransactionType
+  amount              Decimal          @db.Decimal(15, 2)
+  currency            String           @default("IDR")
+  category            String
+  notes               String?
+  receiptAttachmentId String?          @map("receipt_attachment_id")
+  state               TransactionState @default(DRAFT)
+  version             Int              @default(1)
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  wallet              Wallet           @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  creator             User             @relation("CreatedTransactions", fields: [creatorId], references: [id])
+  approvals           TransactionApproval[]
+  ledgerEntries       LedgerEntry[]
+  events              TransactionEvent[]
+  paymentRecords      PaymentRecord[]
+  clarifications      ClarificationTicket[]
+  reconciliationMatches ReconciliationMatch[]
+
+  @@map("transactions")
+}
+
+model ApprovalPolicy {
+  id               String       @id @default(uuid())
+  walletId         String       @map("wallet_id")
+  requiredApprovals Int         @map("required_approvals")
+  thresholdAmount  Decimal?     @map("threshold_amount") @db.Decimal(15, 2)
+  policyVersion    Int          @default(1) @map("policy_version")
+  status           PolicyStatus @default(ACTIVE)
+  createdBy        String       @map("created_by")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  wallet           Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("approval_policies")
+}
+
+model TransactionApproval {
+  id                 String           @id @default(uuid())
+  transactionId      String           @map("transaction_id")
+  approverId         String           @map("approver_id")
+  decision           ApprovalDecision
+  transactionVersion Int              @map("transaction_version")
+  policyVersion      Int              @map("policy_version")
+  signedPayloadHash  String?          @map("signed_payload_hash")
+  signedAt           DateTime         @default(now()) @map("signed_at")
+
+  transaction        Transaction      @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  approver           User             @relation(fields: [approverId], references: [id])
+
+  @@unique([transactionId, approverId, transactionVersion])
+  @@map("transaction_approvals")
+}
+
+model LedgerEntry {
+  id            String          @id @default(uuid())
+  walletId      String          @map("wallet_id")
+  transactionId String?         @map("transaction_id")
+  entryType     LedgerEntryType @map("entry_type")
+  amount        Decimal         @db.Decimal(15, 2)
+  currency      String          @default("IDR")
+  effectiveAt   DateTime        @default(now()) @map("effective_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  wallet        Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  transaction   Transaction?    @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@map("ledger_entries")
+}
+
+model TransactionEvent {
+  id                 String           @id @default(uuid())
+  transactionId      String           @map("transaction_id")
+  actorId            String?          @map("actor_id")
+  eventType          String           @map("event_type")
+  fromState          TransactionState? @map("from_state")
+  toState            TransactionState @map("to_state")
+  transactionVersion Int              @map("transaction_version")
+  metadata           Json?
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  transaction        Transaction      @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  actor              User?            @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@map("transaction_events")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  walletId     String   @map("wallet_id")
+  sequenceNo   Int      @map("sequence_no")
+  eventId      String?  @map("event_id")
+  payloadHash  String   @map("payload_hash")
+  previousHash String   @map("previous_hash")
+  currentHash  String   @map("current_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  wallet       Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, sequenceNo])
+  @@map("audit_logs")
+}
+
+model BankStatement {
+  id                String            @id @default(uuid())
+  walletId          String            @map("wallet_id")
+  importBatchId     String            @map("import_batch_id")
+  externalReference String?           @map("external_reference")
+  transactionDate   DateTime          @map("transaction_date")
+  amount            Decimal           @db.Decimal(15, 2)
+  direction         MovementDirection
+  description       String
+  sourceRowNumber   Int               @map("source_row_number")
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  wallet            Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  matches           ReconciliationMatch[]
+
+  @@map("bank_statements")
+}
+
+model ReconciliationMatch {
+  id              String               @id @default(uuid())
+  bankStatementId String               @map("bank_statement_id")
+  transactionId   String?              @map("transaction_id")
+  matchStatus     ReconciliationStatus @map("match_status")
+  ruleCode        String               @map("rule_code")
+  reviewedBy      String?              @map("reviewed_by")
+  reviewReason    String?              @map("review_reason")
+  reviewedAt      DateTime?            @map("reviewed_at")
+
+  bankStatement   BankStatement        @relation(fields: [bankStatementId], references: [id], onDelete: Cascade)
+  transaction     Transaction?         @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@map("reconciliation_matches")
+}
+
+model PaymentRecord {
+  id                   String        @id @default(uuid())
+  transactionId        String        @map("transaction_id")
+  paymentStatus        PaymentStatus @default(PENDING) @map("payment_status")
+  paymentReference     String?       @map("payment_reference")
+  evidenceAttachmentId String?       @map("evidence_attachment_id")
+  verifiedBy           String?       @map("verified_by")
+  verifiedAt           DateTime?     @map("verified_at")
+  createdAt            DateTime      @default(now()) @map("created_at")
+
+  transaction          Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@map("payment_records")
+}
+
+model Attachment {
+  id               String   @id @default(uuid())
+  walletId         String   @map("wallet_id")
+  uploadedBy       String   @map("uploaded_by")
+  storageKey       String   @map("storage_key")
+  originalFilename String   @map("original_filename")
+  mimeType         String   @map("mime_type")
+  sizeBytes        BigInt   @map("size_bytes")
+  checksum         String
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  wallet           Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+model ClarificationTicket {
+  id             String       @id @default(uuid())
+  walletId       String       @map("wallet_id")
+  transactionId  String       @map("transaction_id")
+  openedBy       String       @map("opened_by")
+  status         TicketStatus @default(OPEN)
+  reason         String
+  resolvedBy     String?      @map("resolved_by")
+  resolutionNote String?      @map("resolution_note")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  resolvedAt     DateTime?    @map("resolved_at")
+
+  wallet         Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  transaction    Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  opener         User         @relation("OpenedTickets", fields: [openedBy], references: [id])
+  resolver       User?        @relation("ResolvedTickets", fields: [resolvedBy], references: [id])
+
+  @@map("clarification_tickets")
+}

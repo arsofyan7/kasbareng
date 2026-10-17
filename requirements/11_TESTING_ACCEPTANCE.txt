@@ -1,0 +1,63 @@
+KASBARENG - TESTING DAN ACCEPTANCE CRITERIA
+Versi 1.0
+
+1. DEFINITION OF DONE
+Fitur dianggap selesai hanya jika:
+- Implementasi frontend dan backend sesuai requirement.
+- Validasi server ada.
+- Permission diuji.
+- Error handling tersedia.
+- Audit event tersedia untuk perubahan kritis.
+- Unit/integration test relevan lulus.
+- UI responsif pada layar mobile dan desktop.
+- Tidak ada secret nyata di repository.
+- Dokumentasi diperbarui.
+- Tidak ada klaim fitur yang belum diimplementasikan.
+
+2. FUNCTIONAL TEST MINIMUM
+F01 Warga dapat melihat saldo dan riwayat yang diizinkan.
+F02 Warga tidak dapat mengubah role atau policy melalui API.
+F03 Pengelola membuat draf transaksi valid.
+F04 Nominal nol/negatif ditolak.
+F05 Transisi status ilegal ditolak.
+F06 Self-approval ditolak jika policy melarang.
+F07 Kuorum hanya menghitung approver unik dan valid.
+F08 Approval versi lama tidak dihitung setelah perubahan material.
+F09 Approval selesai tidak otomatis menandai pembayaran selesai.
+F10 Ledger dan ringkasan saldo konsisten.
+F11 CSV invalid ditolak dengan pesan jelas.
+F12 Rekonsiliasi ambigu tidak auto-match.
+F13 Perubahan audit payload terdeteksi.
+F14 Retry request tidak menggandakan transaksi/approval.
+F15 Pengguna dari wallet lain tidak bisa mengakses data tanpa membership.
+F16 Saat koneksi putus, UI tidak mengklaim aksi sensitif berhasil sebelum server mengonfirmasi.
+
+3. SECURITY TEST MINIMUM
+- IDOR/cross-wallet.
+- Privilege escalation.
+- Self approval.
+- Duplicate/replay request.
+- Race condition.
+- Input validation.
+- Upload validation.
+- Sensitive data exposure.
+- Session and authorization checks.
+
+4. UI/UX TEST
+- Warga menemukan saldo dan transaksi tertentu.
+- Pengelola membuat pengeluaran.
+- Admin meninjau dan menyetujui pengajuan.
+- Pengelola mengimpor CSV dan menangani ambiguous.
+- Pengguna memahami pesan error.
+Ukur task completion, waktu, dan error. SUS dapat digunakan sebagai instrumen tambahan jika ada partisipan.
+
+5. TESTING ALGORITHMS
+FSM: semua transisi valid dan invalid.
+Quorum: N unik, duplicate approver, self-approval, policy version, transaction version.
+Ledger: debit/kredit, reservasi, pembatalan, koreksi, saldo negatif.
+Hash chain: valid chain, payload altered, previous hash altered, sequence gap, timestamp altered.
+Reconciliation: exact ref, date tolerance, amount mismatch, direction mismatch, duplicates, ambiguity, unmatched.
+
+6. OUTPUT TEST
+Buat laporan singkat berisi test ID, input, expected, actual, pass/fail, tanggal, dan commit/versi kode.
+Jangan mengarang hasil test. Jalankan test dan laporkan hasil aktual.

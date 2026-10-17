@@ -1,0 +1,80 @@
+KASBARENG - BUSINESS RULES DAN FINITE STATE MACHINE
+Versi 1.0
+
+1. STATUS INTERNAL YANG DIREKOMENDASIKAN
+DRAFT
+SUBMITTED
+PENDING_APPROVAL
+NEEDS_CLARIFICATION
+REJECTED
+APPROVED
+PAYMENT_PENDING
+PAYMENT_VERIFICATION
+COMPLETED
+DISPUTED
+CANCELLED
+
+Label yang terlihat kepada pengguna harus bahasa Indonesia sederhana:
+DRAFT = Draf
+SUBMITTED = Diajukan
+PENDING_APPROVAL = Menunggu Persetujuan
+NEEDS_CLARIFICATION = Perlu Klarifikasi
+REJECTED = Ditolak
+APPROVED = Disetujui
+PAYMENT_PENDING = Menunggu Pembayaran
+PAYMENT_VERIFICATION = Verifikasi Pembayaran
+COMPLETED = Selesai
+DISPUTED = Dalam Klarifikasi
+CANCELLED = Dibatalkan
+
+2. TRANSISI UTAMA
+DRAFT -> SUBMITTED
+SUBMITTED -> PENDING_APPROVAL
+PENDING_APPROVAL -> APPROVED jika kuorum valid terpenuhi
+PENDING_APPROVAL -> REJECTED oleh approver berwenang
+PENDING_APPROVAL -> NEEDS_CLARIFICATION jika informasi perlu dilengkapi
+NEEDS_CLARIFICATION -> DRAFT atau SUBMITTED sesuai aturan revisi dan audit
+APPROVED -> PAYMENT_PENDING
+PAYMENT_PENDING -> PAYMENT_VERIFICATION ketika bukti/rekam pembayaran masuk
+PAYMENT_VERIFICATION -> COMPLETED hanya setelah verifikasi dan pembukuan terpenuhi
+Status lain seperti DISPUTED/CANCELLED hanya melalui event dan aturan eksplisit.
+
+3. GUARD WAJIB
+- Aktor terautentikasi.
+- Aktor punya permission pada wallet.
+- Status saat ini mengizinkan transisi.
+- Data transaksi valid.
+- Version sesuai.
+- Kuorum dan policy valid bila diperlukan.
+- Saldo tersedia cukup untuk pengeluaran jika policy mensyaratkan.
+- Semua perubahan yang penting memiliki audit event.
+- Aksi sensitif idempotent terhadap retry.
+
+4. BEDAKAN PERSETUJUAN DAN PEMBAYARAN
+APPROVED bukan COMPLETED.
+Persetujuan menyatakan pengeluaran diizinkan.
+Pelaksanaan pembayaran adalah peristiwa berbeda.
+Verifikasi pembayaran adalah proses berbeda.
+Sistem tidak boleh menyatakan transaksi selesai hanya karena approver menekan Setujui.
+
+5. PEMBUKUAN DAN SALDO
+- Gunakan ledger sebagai sumber kebenaran atau dasar rekonsiliasi saldo.
+- Pengeluaran yang dicadangkan harus dibedakan dari pengeluaran yang telah dibukukan.
+- Hindari saldo negatif jika kebijakan dompet melarangnya.
+- Koreksi transaksi dibukukan melalui entri koreksi, bukan menghapus histori.
+- Perubahan transaksi dan ledger harus atomik atau memakai pola konsistensi yang didefinisikan eksplisit.
+
+6. CONCURRENCY
+- Gunakan version/optimistic locking atau mekanisme locking database yang sesuai.
+- Approval dan update saldo harus dilakukan dalam transaksi database.
+- Gunakan idempotency key untuk mencegah duplikasi akibat retry.
+- Bila version konflik, minta klien memuat ulang detail.
+
+7. STATE MACHINE ADALAH ALGORITMA
+Jangan menaruh semua aturan transisi di komponen UI atau controller.
+Buat modul algoritma FSM murni yang memvalidasi:
+- state saat ini
+- event yang diminta
+- role/permission hasil validasi service
+- kondisi bisnis yang diperlukan
+Kembalikan state berikutnya atau error code yang eksplisit.

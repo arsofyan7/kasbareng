@@ -1,0 +1,26 @@
+{
+  "name": "kasbareng",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KASBARENG - Progressive Web App Tata Kelola Kas Komunitas",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace=apps/api run dev",
+    "dev:web": "npm --workspace=apps/web run dev",
+    "build:api": "npm --workspace=apps/api run build",
+    "build:web": "npm --workspace=apps/web run build",
+    "test:api": "npm --workspace=apps/api run test",
+    "test:algorithms": "npm --workspace=apps/api run test:algorithms"
+  },
+  "keywords": [
+    "kasbareng",
+    "community-finance",
+    "pwa",
+    "fsm",
+    "tamper-evident"
+  ],
+  "author": "arsofyan7",
+  "license": "UNLICENSED"
+}

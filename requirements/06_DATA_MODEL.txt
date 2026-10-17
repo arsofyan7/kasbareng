@@ -1,0 +1,169 @@
+KASBARENG - DATA MODEL
+Versi 1.0
+
+1. ENTITAS MINIMUM
+users:
+- id
+- full_name
+- email
+- status
+- created_at
+- updated_at
+
+wallets:
+- id
+- name
+- description
+- currency
+- status
+- version
+- created_at
+- updated_at
+
+wallet_members:
+- id
+- wallet_id
+- user_id
+- role
+- status
+- joined_at
+Constraint: unique(wallet_id, user_id).
+
+transactions:
+- id
+- wallet_id
+- creator_id
+- type: INCOME atau EXPENSE
+- amount
+- currency
+- category
+- notes
+- receipt_attachment_id nullable
+- state
+- version
+- created_at
+- updated_at
+
+approval_policies:
+- id
+- wallet_id
+- required_approvals
+- threshold_amount nullable
+- policy_version
+- status
+- created_by
+- created_at
+
+transaction_approvals:
+- id
+- transaction_id
+- approver_id
+- decision
+- transaction_version
+- policy_version
+- signed_payload_hash nullable
+- signed_at
+Constraint unik yang sesuai untuk mencegah approval ganda oleh approver yang sama pada versi transaksi yang sama.
+
+ledger_entries:
+- id
+- wallet_id
+- transaction_id
+- entry_type: CREDIT/DEBIT/RESERVATION/RELEASE_RESERVATION/REVERSAL sesuai model
+- amount
+- currency
+- effective_at
+- created_at
+
+transaction_events:
+- id
+- transaction_id
+- actor_id nullable untuk event sistem
+- event_type
+- from_state
+- to_state
+- transaction_version
+- metadata JSON
+- created_at
+
+audit_logs:
+- id
+- wallet_id
+- sequence_no
+- event_id
+- payload_hash
+- previous_hash
+- current_hash
+- created_at
+Constraint unik: wallet_id + sequence_no.
+
+bank_statements:
+- id
+- wallet_id
+- import_batch_id
+- external_reference nullable
+- transaction_date
+- amount
+- direction: CREDIT/DEBIT
+- description
+- source_row_number
+- created_at
+
+reconciliation_matches:
+- id
+- bank_statement_id
+- transaction_id nullable
+- match_status
+- rule_code
+- reviewed_by nullable
+- review_reason nullable
+- reviewed_at nullable
+
+payment_records:
+- id
+- transaction_id
+- payment_status
+- payment_reference nullable
+- evidence_attachment_id nullable
+- verified_by nullable
+- verified_at nullable
+- created_at
+
+attachments:
+- id
+- wallet_id
+- uploaded_by
+- storage_key
+- original_filename
+- mime_type
+- size_bytes
+- checksum
+- created_at
+
+clarification_tickets:
+- id
+- wallet_id
+- transaction_id
+- opened_by
+- status
+- reason
+- resolved_by nullable
+- resolution_note nullable
+- created_at
+- resolved_at nullable
+
+2. ATURAN DATA
+- Nominal gunakan NUMERIC/DECIMAL atau integer unit terkecil. Jangan gunakan floating point.
+- Semua tabel yang relevan memiliki foreign key.
+- Hindari hard delete untuk transaksi dan audit.
+- Gunakan timestamp server dengan timezone.
+- Simpan tanggal mutasi dan timestamp event dengan definisi yang jelas.
+- Jangan menyimpan file bukti sebagai blob besar di tabel transaksi.
+- Jangan gunakan approvals_count sebagai satu-satunya sumber kebenaran kuorum; hitung dari approval valid.
+- Balance ringkasan, jika disimpan, harus dapat direkonsiliasi dengan ledger.
+
+3. MIGRATIONS
+Buat migration versioned.
+Sertakan seed data demo yang sintetis.
+Sertakan constraint database untuk nilai yang bisa divalidasi oleh database.
+Dokumentasikan keputusan ON DELETE agar penghapusan anggota tidak merusak histori keuangan.

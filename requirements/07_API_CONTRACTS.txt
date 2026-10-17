@@ -1,0 +1,71 @@
+KASBARENG - API CONTRACTS
+Versi 1.0
+
+Semua endpoint menggunakan prefix /api/v1.
+Format JSON konsisten.
+Semua endpoint yang menyentuh wallet wajib memeriksa membership dan permission di backend.
+Gunakan pagination untuk daftar transaksi/aktivitas.
+
+ENDPOINT RANCANGAN
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+GET  /api/v1/me
+GET  /api/v1/wallets
+POST /api/v1/wallets
+GET  /api/v1/wallets/:walletId/summary
+GET  /api/v1/wallets/:walletId/members
+POST /api/v1/wallets/:walletId/members
+PATCH /api/v1/wallets/:walletId/members/:memberId
+GET  /api/v1/wallets/:walletId/transactions
+POST /api/v1/wallets/:walletId/transactions
+GET  /api/v1/transactions/:transactionId
+PATCH /api/v1/transactions/:transactionId
+POST /api/v1/transactions/:transactionId/submit
+POST /api/v1/transactions/:transactionId/approvals
+POST /api/v1/transactions/:transactionId/payment-records
+POST /api/v1/transactions/:transactionId/clarifications
+POST /api/v1/wallets/:walletId/imports
+GET  /api/v1/imports/:importId
+POST /api/v1/imports/:importId/reconcile
+GET  /api/v1/wallets/:walletId/audit/verify
+
+RESPONS API
+Sukses:
+{
+  "data": {},
+  "meta": {"request_id": "req_..."},
+  "error": null
+}
+
+Error:
+{
+  "data": null,
+  "meta": {"request_id": "req_..."},
+  "error": {
+    "code": "TRANSACTION_VERSION_CONFLICT",
+    "message": "Data transaksi telah berubah. Muat ulang detail.",
+    "details": {}
+  }
+}
+
+ERROR CODE MINIMUM
+UNAUTHENTICATED
+FORBIDDEN
+NOT_FOUND
+VALIDATION_ERROR
+INVALID_STATE_TRANSITION
+INSUFFICIENT_AVAILABLE_BALANCE
+APPROVAL_QUORUM_NOT_MET
+SELF_APPROVAL_NOT_ALLOWED
+TRANSACTION_VERSION_CONFLICT
+IDEMPOTENCY_CONFLICT
+IMPORT_FORMAT_INVALID
+RECONCILIATION_AMBIGUOUS
+AUDIT_CHAIN_INVALID
+
+ATURAN
+- Jangan bocorkan apakah email tertentu terdaftar dalam pesan login gagal.
+- Jangan mengembalikan stack trace atau query database.
+- Endpoint approval harus memvalidasi actor, permission, transaction version, policy version, dan status terkini.
+- Gunakan idempotency key pada operasi mutasi yang dapat terulang karena retry.
+- Untuk setiap endpoint, tulis schema request/response dan test.
