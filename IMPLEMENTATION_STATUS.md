@@ -8,8 +8,8 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
 | Fase | Deskripsi | Status | Tanggal Selesai | Catatan / Gate Status |
 | :--- | :--- | :---: | :---: | :--- |
 | **Fase 0** | Bootstrap, Monorepo, Database Schema, & 6 Core Algorithms | **COMPLETED** | 2026-10-17 | 36/36 tests lulus, DB PostgreSQL tersinkronisasi, Healthcheck OK |
-| **Fase 1** | Auth, Wallets, & Membership (RBAC per-wallet) | **READY TO START** | - | Registrasi, Login JWT, Multi-Wallet, WalletMember roles |
-| **Fase 2** | UI Foundation & PWA (*Friendly Community Finance*) | NOT STARTED | - | Menunggu Fase 1 |
+| **Fase 1** | Auth, Wallets, & Membership (RBAC per-wallet) | **COMPLETED** | 2026-10-17 | 13/13 tests lulus, JWT auth, RBAC per-wallet, proteksi last ADMIN |
+| **Fase 2** | UI Foundation & PWA (*Friendly Community Finance*) | **READY TO START** | - | Layout responsif, Tailwind CSS, Auth & Wallet Switcher di Web |
 | **Fase 3** | Transaction Core & FSM Integration | NOT STARTED | - | Menunggu Fase 2 |
 | **Fase 4** | Multi-Approval M-of-N & Ledger Balance | NOT STARTED | - | Menunggu Fase 3 |
 | **Fase 5** | Tamper-Evident SHA-256 Audit Hash Chain | NOT STARTED | - | Menunggu Fase 4 |
@@ -37,15 +37,27 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
     6. `reconciliation/matcher.ts` + `.test.ts` (Deterministic Bank CSV Matcher)
   - `.env` & `apps/api/.env`: Konfigurasi PostgreSQL lokal host (tanpa Docker).
 - **Database**: PostgreSQL 18.3 (`kasbareng_db` pada `127.0.0.1:5432`). Sinkronisasi via `npx prisma db push` berhasil (semua 14 tabel terbentuk).
+- **Hasil Test**: 36 passed (100%).
+
+---
+
+### Fase 1 - Auth, Wallets, & Membership (RBAC per-wallet)
+- **Status**: **COMPLETED (LULUS GATE 1)**
+- **File Dibuat / Diubah**:
+  - `apps/api/src/modules/auth/auth.middleware.ts`: `requireAuth` (JWT) & `requireWalletRole([roles])` (RBAC per-wallet).
+  - `apps/api/src/modules/auth/auth.service.ts`: Registrasi bcrypt, login timing-safe tanpa kebocoran email, profil pengguna `getMe`.
+  - `apps/api/src/modules/auth/auth.routes.ts`: `/api/v1/auth/register`, `/login`, `/logout`, `/me`.
+  - `apps/api/src/modules/wallets/wallet.service.ts`: Pembuatan wallet dengan creator sebagai `ADMIN`, auto-create default `ApprovalPolicy` (M-of-N), member management, proteksi penghapusan/demosi admin terakhir (`LAST_ADMIN_PROTECTED`).
+  - `apps/api/src/modules/wallets/wallet.routes.ts`: `/api/v1/wallets`, `/members`.
+  - `apps/api/src/modules/auth-wallets.test.ts`: 13 test case integrasi mencakup registrasi, login, pencegahan kebocoran email, CRUD wallet, membership, promosi role, dan invariant proteksi admin.
 - **Hasil Test**:
-  - `npm --prefix apps/api run test:algorithms`: **36 passed (100%)**
-  - Healthcheck API (`GET /api/v1/health`): Status `UP`, Database `CONNECTED`
+  - Total test suite: **49 passed (100%)**
 - **Blocker**: Tidak ada.
 
 ---
 
-### Rencana Fase 1: Auth, Wallets, & Membership
-- Endpoint Registrasi (`/api/v1/auth/register`) & Login (`/api/v1/auth/login`) dengan password hashing bcrypt dan JWT token.
-- Middleware otentikasi JWT (`requireAuth`) dan otorisasi RBAC per-wallet (`requireWalletRole`).
-- Wallet CRUD (`/api/v1/wallets`) dan Wallet Membership invitation (`/api/v1/wallets/:id/members`).
-- Konfigurasi Approval Policy default per-wallet (M-of-N threshold).
+### Rencana Fase 2: UI Foundation & PWA (*Friendly Community Finance*)
+- Desain antarmuka modern yang hangat dan ramah warga (*friendly community finance*, hijau emerald / slate, tipografi Inter).
+- Form registrasi & login di web (`apps/web`).
+- Wallet switcher (dropdown/list dompet yang diikuti user beserta indikator role: Warga / Pengelola / Admin).
+- Integrasi state auth (Zustand atau React Context) yang menyimpan JWT token di localStorage.

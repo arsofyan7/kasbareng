@@ -1,7 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { prisma } from './common/prisma';
-import { sendSuccess, sendError } from './common/response';
+import { sendSuccess, sendError, generateRequestId } from './common/response';
+import { authRouter } from './modules/auth/auth.routes';
+import { walletRouter } from './modules/wallets/wallet.routes';
 
 export const app = express();
 
@@ -13,13 +15,17 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logger middleware
-app.use((req: Request, _res: Response, next: NextFunction) => {
+// Request ID and logger middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const reqId = (req.headers['x-request-id'] as string) || generateRequestId();
+  res.locals.requestId = reqId;
+  res.setHeader('X-Request-Id', reqId);
+
   const start = Date.now();
-  _res.on('finish', () => {
+  res.on('finish', () => {
     const duration = Date.now() - start;
     if (process.env.NODE_ENV !== 'test') {
-      console.log(`[HTTP] ${req.method} ${req.originalUrl} ${_res.statusCode} - ${duration}ms`);
+      console.log(`[HTTP] ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms (${reqId})`);
     }
   });
   next();
@@ -28,7 +34,6 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 // Health check endpoint
 app.get('/api/v1/health', async (_req: Request, res: Response) => {
   try {
-    // Ping PostgreSQL database via Prisma
     await prisma.$queryRaw`SELECT 1`;
     return sendSuccess(res, {
       status: 'UP',
@@ -47,10 +52,14 @@ app.get('/api/v1/health', async (_req: Request, res: Response) => {
       'DB_UNAVAILABLE',
       'Database connection failed',
       503,
-      err instanceof Error ? err.message : String(err)
+      { error: err instanceof Error ? err.message : String(err) }
     );
   }
 });
+
+// Mount modules
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/wallets', walletRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
