@@ -1,52 +1,100 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { WalletProvider } from './context/WalletContext';
+import { AuthPage } from './pages/AuthPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { WalletsPage } from './pages/WalletsPage';
+import { MembersPage } from './pages/MembersPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { Navbar } from './components/common/Navbar';
+import { Sidebar, NavTab } from './components/common/Sidebar';
+import { BottomNav } from './components/common/BottomNav';
+import { WalletSwitcherModal } from './components/common/WalletSwitcherModal';
+import { CreateWalletModal } from './components/common/CreateWalletModal';
 
-export function App() {
-  const [healthStatus, setHealthStatus] = useState<string>('Checking...');
-  const [dbStatus, setDbStatus] = useState<string>('Unknown');
+function AppContent() {
+  const { user, isLoading } = useAuth();
+  const [currentTab, setCurrentTab] = useState<NavTab>('beranda');
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [createWalletOpen, setCreateWalletOpen] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/v1/health')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setHealthStatus(data.data.status);
-          setDbStatus(data.data.database?.status || 'CONNECTED');
-        } else {
-          setHealthStatus('DEGRADED');
-        }
-      })
-      .catch(() => {
-        setHealthStatus('API_OFFLINE');
-      });
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-6">
-      <div className="max-w-xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="h-4 w-4 rounded-full bg-emerald-500 animate-pulse" />
-          <h1 className="text-2xl font-bold tracking-tight text-white">KASBARENG</h1>
-        </div>
-        <p className="text-slate-400 mb-6 leading-relaxed">
-          Platform Transparansi Finansial Multi-Pihak dengan M-of-N Approval Quorum,
-          Tamper-Evident Hash Chain, dan Rekonsiliasi Otomatis.
-        </p>
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="p-4 bg-slate-800/60 rounded-xl border border-slate-700/50">
-            <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1">API Health</span>
-            <span className="text-sm font-semibold text-emerald-400">{healthStatus}</span>
-          </div>
-          <div className="p-4 bg-slate-800/60 rounded-xl border border-slate-700/50">
-            <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Database</span>
-            <span className="text-sm font-semibold text-sky-400">{dbStatus}</span>
-          </div>
-        </div>
-        <div className="text-xs text-slate-500 border-t border-slate-800 pt-4 flex justify-between">
-          <span>Fase 0: Core Architecture & Algorithms</span>
-          <span>Status: Verified (36/36 Tests)</span>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-slate-500">Memuat KASBARENG...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      <Navbar
+        onOpenCreateWallet={() => setCreateWalletOpen(true)}
+        onOpenWalletModal={() => setWalletModalOpen(true)}
+      />
+
+      <div className="flex-1 flex max-w-7xl mx-auto w-full">
+        {/* Desktop & Tablet Sidebar */}
+        <Sidebar
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          onOpenCreateWallet={() => setCreateWalletOpen(true)}
+        />
+
+        {/* Main Workspace Area */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 max-w-5xl mx-auto w-full">
+          {currentTab === 'beranda' && (
+            <DashboardPage
+              onOpenCreateWallet={() => setCreateWalletOpen(true)}
+              onNavigateToTab={setCurrentTab}
+            />
+          )}
+          {currentTab === 'kantong' && (
+            <WalletsPage
+              onOpenCreateWallet={() => setCreateWalletOpen(true)}
+              onNavigateHome={() => setCurrentTab('beranda')}
+            />
+          )}
+          {currentTab === 'anggota' && <MembersPage />}
+          {currentTab === 'profil' && <ProfilePage />}
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <BottomNav currentTab={currentTab} onSelectTab={setCurrentTab} />
+
+      {/* Modals */}
+      <WalletSwitcherModal
+        isOpen={walletModalOpen}
+        onClose={() => setWalletModalOpen(false)}
+        onOpenCreateWallet={() => setCreateWalletOpen(true)}
+      />
+
+      <CreateWalletModal
+        isOpen={createWalletOpen}
+        onClose={() => setCreateWalletOpen(false)}
+      />
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <WalletProvider>
+          <AppContent />
+        </WalletProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

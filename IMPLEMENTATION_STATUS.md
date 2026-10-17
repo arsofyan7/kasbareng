@@ -9,8 +9,8 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
 | :--- | :--- | :---: | :---: | :--- |
 | **Fase 0** | Bootstrap, Monorepo, Database Schema, & 6 Core Algorithms | **COMPLETED** | 2026-10-17 | 36/36 tests lulus, DB PostgreSQL tersinkronisasi, Healthcheck OK |
 | **Fase 1** | Auth, Wallets, & Membership (RBAC per-wallet) | **COMPLETED** | 2026-10-17 | 13/13 tests lulus, JWT auth, RBAC per-wallet, proteksi last ADMIN |
-| **Fase 2** | UI Foundation & PWA (*Friendly Community Finance*) | **READY TO START** | - | Layout responsif, Tailwind CSS, Auth & Wallet Switcher di Web |
-| **Fase 3** | Transaction Core & FSM Integration | NOT STARTED | - | Menunggu Fase 2 |
+| **Fase 2** | UI Foundation & PWA (*Friendly Community Finance*) | **COMPLETED** | 2026-10-17 | Responsive Laptop/Tablet/Mobile (BottomNav & Sidebar), Light/Dark/System Theme switcher, Auth & Wallet Switcher terintegrasi |
+| **Fase 3** | Transaction Core & FSM Integration | **READY TO START** | - | Pencatatan transaksi (INCOME / EXPENSE), FSM guard state machine |
 | **Fase 4** | Multi-Approval M-of-N & Ledger Balance | NOT STARTED | - | Menunggu Fase 3 |
 | **Fase 5** | Tamper-Evident SHA-256 Audit Hash Chain | NOT STARTED | - | Menunggu Fase 4 |
 | **Fase 6** | Rekonsiliasi Bank CSV (Deterministik) | NOT STARTED | - | Menunggu Fase 5 |
@@ -49,15 +49,38 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
   - `apps/api/src/modules/auth/auth.routes.ts`: `/api/v1/auth/register`, `/login`, `/logout`, `/me`.
   - `apps/api/src/modules/wallets/wallet.service.ts`: Pembuatan wallet dengan creator sebagai `ADMIN`, auto-create default `ApprovalPolicy` (M-of-N), member management, proteksi penghapusan/demosi admin terakhir (`LAST_ADMIN_PROTECTED`).
   - `apps/api/src/modules/wallets/wallet.routes.ts`: `/api/v1/wallets`, `/members`.
-  - `apps/api/src/modules/auth-wallets.test.ts`: 13 test case integrasi mencakup registrasi, login, pencegahan kebocoran email, CRUD wallet, membership, promosi role, dan invariant proteksi admin.
-- **Hasil Test**:
-  - Total test suite: **49 passed (100%)**
-- **Blocker**: Tidak ada.
+  - `apps/api/src/modules/auth-wallets.test.ts`: 13 test case integrasi.
+- **Hasil Test**: Total test suite: **49 passed (100%)**.
 
 ---
 
-### Rencana Fase 2: UI Foundation & PWA (*Friendly Community Finance*)
-- Desain antarmuka modern yang hangat dan ramah warga (*friendly community finance*, hijau emerald / slate, tipografi Inter).
-- Form registrasi & login di web (`apps/web`).
-- Wallet switcher (dropdown/list dompet yang diikuti user beserta indikator role: Warga / Pengelola / Admin).
-- Integrasi state auth (Zustand atau React Context) yang menyimpan JWT token di localStorage.
+### Fase 2 - UI Foundation & PWA (*Friendly Community Finance*)
+- **Status**: **COMPLETED (LULUS GATE 2)**
+- **Fitur Utama**:
+  - **Aesthetic**: Friendly Community Finance dengan palet Emerald, Slate modern, typography Inter, dan micro-animations.
+  - **Dark & Light Mode Switcher**: Mendukung 3 mode (Mode Terang, Mode Gelap, dan Ikuti Sistem Perangkat), tersimpan persisten di `localStorage`.
+  - **Multi-Device Responsive**:
+    - Mobile (HP): Bottom Navigation Bar tetap di bawah, target sentuh >= 44px.
+    - Tablet & Laptop: Left Sidebar navigation yang elegan dengan ringkasan status kuorum dompet aktif.
+  - **Manajemen Sesi & Context**:
+    - `ThemeContext`: Pengaturan tema realtime.
+    - `AuthContext`: Registrasi, Login, Logout, dan restorasi token JWT.
+    - `WalletContext`: Pengambilan daftar dompet, pemilihan dompet aktif, dan pembuatan dompet baru.
+  - **Komponen & Halaman**:
+    - `AuthPage`: Form login/register tabbed dengan tombol isi akun demo 1-klik (`budi.admin` & `siti.warga`).
+    - `Navbar`: Header responsif dengan switcher dompet aktif, badge role, tombol ganti tema, dan dropdown profil.
+    - `DashboardPage`: Kartu Saldo Tercatat (Posted), Saldo Tersedia (Available), Reservasi Pengeluaran Aktif, dan Quorum Indicator M-of-N.
+    - `WalletsPage`: Kartu seluruh dompet kas komunitas yang diikuti dengan aksi ganti dompet aktif.
+    - `MembersPage`: Daftar warga & pengelola dengan role badge, modal tambah anggota, dan dropdown perubahan role.
+    - `ProfilePage`: Pengaturan akun, rincian 6 algoritma terverifikasi, dan selektor tema 3-opsi.
+    - `WalletSwitcherModal` & `CreateWalletModal`: Dialog interaktif pemilihan dan pembuatan dompet baru.
+- **Hasil Build**: `vite build` sukses tanpa error (`index-BoHgt2S4.css` 32.40 kB, `index-D1563tud.js` 206.90 kB).
+
+---
+
+### Rencana Fase 3: Transaction Core & FSM Integration
+- Model transaksi INCOME & EXPENSE dengan field: nominal (minor units/decimal), kategori, deskripsi/keperluan, lampiran bukti (attachment ID).
+- Integrasi algoritma FSM Transition Validator ke dalam flow transaksi di backend.
+- Endpoint pembuatan draf (`POST /api/v1/wallets/:id/transactions`).
+- Endpoint pengajuan draf (`POST /api/v1/transactions/:id/submit`).
+- Tampilan form pencatatan transaksi di frontend web.
