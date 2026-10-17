@@ -6,6 +6,7 @@ import {
   Users2,
   UserCircle,
   PlusCircle,
+  KeyRound,
   CheckCircle2,
 } from 'lucide-react';
 
@@ -15,12 +16,14 @@ interface SidebarProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   onOpenCreateWallet: () => void;
+  onOpenJoinWallet?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   onSelectTab,
   onOpenCreateWallet,
+  onOpenJoinWallet,
 }) => {
   const { activeWallet } = useWallet();
 
@@ -56,8 +59,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </nav>
 
-        {/* Action: Buat Dompet Kas */}
-        <div className="pt-2">
+        {/* Action Buttons */}
+        <div className="pt-2 space-y-2">
+          {onOpenJoinWallet && (
+            <button
+              onClick={onOpenJoinWallet}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
+            >
+              <KeyRound className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              + Gabung Kode
+            </button>
+          )}
+
           <button
             onClick={onOpenCreateWallet}
             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-sm font-medium transition-colors"

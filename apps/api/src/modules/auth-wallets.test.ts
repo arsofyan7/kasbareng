@@ -8,12 +8,15 @@ describe('Fase 1: Auth, Wallets, & Membership RBAC', () => {
   const timestamp = Date.now();
   const emailAdmin = `admin_${timestamp}@kasbareng.test`;
   const emailWarga = `warga_${timestamp}@kasbareng.test`;
+  const emailWarga2 = `warga2_${timestamp}@kasbareng.test`;
   const password = 'PasswordSuper123!';
 
   let adminUser: any;
   let wargaUser: any;
+  let wargaUser2: any;
   let adminToken: string;
   let createdWallet: any;
+  let customWallet: any;
 
   beforeAll(async () => {
     // Cleanup any leftovers if needed
@@ -21,6 +24,9 @@ describe('Fase 1: Auth, Wallets, & Membership RBAC', () => {
 
   afterAll(async () => {
     // Clean test data
+    if (customWallet) {
+      await prisma.wallet.delete({ where: { id: customWallet.id } }).catch(() => {});
+    }
     if (createdWallet) {
       await prisma.wallet.delete({ where: { id: createdWallet.id } }).catch(() => {});
     }
@@ -29,6 +35,9 @@ describe('Fase 1: Auth, Wallets, & Membership RBAC', () => {
     }
     if (wargaUser) {
       await prisma.user.delete({ where: { id: wargaUser.id } }).catch(() => {});
+    }
+    if (wargaUser2) {
+      await prisma.user.delete({ where: { id: wargaUser2.id } }).catch(() => {});
     }
     await prisma.$disconnect();
   });
@@ -71,6 +80,16 @@ describe('Fase 1: Auth, Wallets, & Membership RBAC', () => {
       });
       wargaUser = res.user;
       expect(wargaUser.id).toBeDefined();
+    });
+
+    it('registers a third user (Warga 2 for Instant Join)', async () => {
+      const res = await AuthService.register({
+        fullName: 'Joko Warga',
+        email: emailWarga2,
+        password,
+      });
+      wargaUser2 = res.user;
+      expect(wargaUser2.id).toBeDefined();
     });
 
     it('logs in successfully with valid credentials', async () => {
@@ -126,6 +145,8 @@ describe('Fase 1: Auth, Wallets, & Membership RBAC', () => {
       expect(createdWallet.name).toBe('Kas RT 05 RW 02 Sejahtera');
       expect(createdWallet.myRole).toBe(WalletRole.ADMIN);
       expect(createdWallet.requiredApprovals).toBe(2);
+      expect(createdWallet.inviteCode).toBeDefined();
+      expect(createdWallet.inviteCode).toMatch(/^KAS-[0-9A-Z]+$/);
 
       // Verify DB policy creation
       const policy = await prisma.approvalPolicy.findFirst({
@@ -144,6 +165,7 @@ describe('Fase 1: Auth, Wallets, & Membership RBAC', () => {
       expect(found).toBeDefined();
       expect(found?.myRole).toBe(WalletRole.ADMIN);
       expect(found?.memberCount).toBe(1);
+      expect(found?.inviteCode).toBe(createdWallet.inviteCode);
     });
 
     it('adds a new member (Siti Warga) with role WARGA', async () => {
@@ -187,7 +209,7 @@ describe('Fase 1: Auth, Wallets, & Membership RBAC', () => {
 
       await expect(
         WalletService.updateWalletMember(createdWallet.id, adminMember!.id, {
-          role: WalletRole.WARGA, // trying to demote sole admin!
+          role: WalletRole.WARGA,
         })
       ).rejects.toMatchObject({
         code: 'LAST_ADMIN_PROTECTED',
@@ -196,12 +218,100 @@ describe('Fase 1: Auth, Wallets, & Membership RBAC', () => {
 
       await expect(
         WalletService.updateWalletMember(createdWallet.id, adminMember!.id, {
-          status: UserStatus.INACTIVE, // trying to deactivate sole admin!
+          status: UserStatus.INACTIVE,
         })
       ).rejects.toMatchObject({
         code: 'LAST_ADMIN_PROTECTED',
         status: 400,
       });
+    });
+  });
+
+  describe('3. Unique Invite Codes & Community Gated Access', () => {
+    it('creates a second wallet with a custom invite code', async () => {
+      const customCode = `RT05-SEJAHTERA-${timestamp.toString().slice(-4)}`;
+      customWallet = await WalletService.createWallet(adminUser.id, {
+        name: 'Kas Pemuda Mandiri',
+        customInviteCode: customCode,
+      });
+
+      expect(customWallet.id).toBeDefined();
+      expect(customWallet.inviteCode).toBe(customCode);
+    });
+
+    it('rejects duplicate custom invite code with INVITE_CODE_TAKEN', async () => {
+      await expect(
+        WalletService.createWallet(adminUser.id, {
+          name: 'Kas Tiruan',
+          customInviteCode: customWallet.inviteCode,
+        })
+      ).rejects.toMatchObject({
+        code: 'INVITE_CODE_TAKEN',
+        status: 409,
+      });
+    });
+
+    it('checks code availability correctly', async () => {
+      const checkTaken = await WalletService.checkCodeAvailability(customWallet.inviteCode);
+      expect(checkTaken.available).toBe(false);
+
+      const checkFree = await WalletService.checkCodeAvailability('UNIQUE-NEW-CODE');
+      expect(checkFree.available).toBe(true);
+    });
+
+    it('previews wallet details by invite code for prospective members', async () => {
+      const preview = await WalletService.previewWalletByCode(createdWallet.inviteCode);
+      expect(preview.id).toBe(createdWallet.id);
+      expect(preview.name).toBe('Kas RT 05 RW 02 Sejahtera');
+      expect(preview.memberCount).toBe(2);
+      expect(preview.inviteCode).toBe(createdWallet.inviteCode);
+    });
+
+    it('allows prospective member (Joko) to Instant Join as WARGA using invite code', async () => {
+      const result = await WalletService.joinWalletByCode(wargaUser2.id, createdWallet.inviteCode);
+      expect(result.walletId).toBe(createdWallet.id);
+      expect(result.myRole).toBe(WalletRole.WARGA);
+      expect(result.memberCount).toBe(3);
+
+      // Verify DB membership
+      const memberRecord = await prisma.walletMember.findUnique({
+        where: {
+          walletId_userId: {
+            walletId: createdWallet.id,
+            userId: wargaUser2.id,
+          },
+        },
+      });
+      expect(memberRecord).toBeDefined();
+      expect(memberRecord?.role).toBe(WalletRole.WARGA);
+      expect(memberRecord?.status).toBe(UserStatus.ACTIVE);
+    });
+
+    it('rejects duplicate join if user is already an active member', async () => {
+      await expect(
+        WalletService.joinWalletByCode(wargaUser2.id, createdWallet.inviteCode)
+      ).rejects.toMatchObject({
+        code: 'ALREADY_MEMBER',
+        status: 409,
+      });
+    });
+
+    it('allows Admin to update the wallet invite code with a new custom code', async () => {
+      const newCustom = `RT05-BARU-${timestamp.toString().slice(-4)}`;
+      const updated = await WalletService.updateInviteCode(createdWallet.id, newCustom);
+      expect(updated.inviteCode).toBe(newCustom);
+
+      // Verify that old code no longer works
+      await expect(
+        WalletService.previewWalletByCode(createdWallet.inviteCode)
+      ).rejects.toMatchObject({
+        code: 'WALLET_NOT_FOUND',
+        status: 404,
+      });
+
+      // Verify new code works
+      const preview = await WalletService.previewWalletByCode(newCustom);
+      expect(preview.id).toBe(createdWallet.id);
     });
   });
 });

@@ -10,18 +10,26 @@ import {
   CheckCircle,
   Users,
   PlusCircle,
+  KeyRound,
+  Copy,
+  Check,
+  Share2,
+  Sparkles,
 } from 'lucide-react';
 import { Transaction, TransactionType, TransactionState, WalletSummary, ApiResponse } from '../types';
 import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
 import { TransactionDetailModal } from '../components/common/TransactionDetailModal';
+import { ManageInviteCodeModal } from '../components/common/ManageInviteCodeModal';
 
 interface DashboardPageProps {
   onOpenCreateWallet: () => void;
+  onOpenJoinWallet?: () => void;
   onNavigateToTab: (tab: 'kantong' | 'anggota') => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenCreateWallet,
+  onOpenJoinWallet,
   onNavigateToTab,
 }) => {
   const { token, user } = useAuth();
@@ -36,6 +44,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [recordModalOpen, setRecordModalOpen] = useState<boolean>(false);
   const [recordType, setRecordType] = useState<TransactionType>('INCOME');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [manageCodeModalOpen, setManageCodeModalOpen] = useState<boolean>(false);
+  const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
   const fetchDashboardData = useCallback(async () => {
     if (!token || !activeWallet) return;
@@ -70,6 +80,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  const handleCopyCode = () => {
+    if (!activeWallet?.inviteCode) return;
+    navigator.clipboard.writeText(activeWallet.inviteCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!activeWallet?.inviteCode) return;
+    const shareLink = `${window.location.origin}/?join=${activeWallet.inviteCode}`;
+    const text = encodeURIComponent(
+      `Halo warga! Mari bergabung ke pencatatan kas transparan "${activeWallet.name}" di KasBareng.\n\n` +
+      `Gunakan Kode Undangan: *${activeWallet.inviteCode}*\n` +
+      `Atau klik langsung tautan ini untuk bergabung:\n${shareLink}`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
   if (wallets.length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-12 px-4 text-center space-y-6">
@@ -81,15 +109,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             Belum Ada Dompet Kas Komunitas
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-            Mulai kelola keuangan RT/RW, kepanitiaan, atau komunitas bersama warga dengan persetujuan transparan.
+            Gabung ke kas warga yang sudah ada dengan kode undangan, atau buat dompet kas baru untuk RT/RW/organisasi Anda.
           </p>
         </div>
-        <button
-          onClick={onOpenCreateWallet}
-          className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all"
-        >
-          + Buat Dompet Kas Pertama
-        </button>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          {onOpenJoinWallet && (
+            <button
+              onClick={onOpenJoinWallet}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
+            >
+              <KeyRound className="w-4 h-4" />
+              Gabung Komunitas (Pakai Kode)
+            </button>
+          )}
+          <button
+            onClick={onOpenCreateWallet}
+            className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-sm transition-all flex items-center justify-center gap-2"
+          >
+            <PlusCircle className="w-4 h-4" />
+            + Buat Dompet Baru (Admin)
+          </button>
+        </div>
       </div>
     );
   }
@@ -161,7 +201,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Halo, {user?.fullName.split(' ')[0]} 👋
+            Halo, {user?.fullName.split(' ')[0]} ??
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             Ringkasan kas komunitas untuk{' '}
@@ -181,6 +221,59 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         )}
       </div>
+
+      {/* Community Private Access / Invite Code Banner */}
+      {activeWallet && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-slate-900 text-white dark:bg-slate-900/90 dark:border dark:border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+          <div className="space-y-1 z-10">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                Akses Komunitas Tertutup
+              </span>
+              <span className="text-xs text-slate-400">
+                Role Join: <strong>WARGA (Instant)</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 pt-0.5">
+              <span className="text-xs text-slate-300">Kode Akses:</span>
+              <span className="font-mono text-base font-extrabold tracking-wider text-emerald-400 bg-black/40 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                {activeWallet.inviteCode || 'KAS-KOMUNITAS'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
+              Hanya warga yang memiliki kode ini yang dapat masuk dan melihat pencatatan kas. Bagikan ke grup WhatsApp warga.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 z-10">
+            <button
+              onClick={handleCopyCode}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all flex items-center gap-1.5"
+            >
+              {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
+              {copiedCode ? 'Tersalin!' : 'Salin Kode'}
+            </button>
+
+            <button
+              onClick={handleShareWhatsApp}
+              className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Bagikan WA
+            </button>
+
+            {activeWallet.myRole === 'ADMIN' && (
+              <button
+                onClick={() => setManageCodeModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl border border-white/20 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-all flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                Atur Kode
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Primary Financial Balance Cards (Live Calculated via Ledger Algorithm) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -415,7 +508,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
                         <span>{tx.creator?.fullName?.split(' ')[0] || 'Warga'}</span>
-                        <span>•</span>
+                        <span>�</span>
                         <span>
                           {new Date(tx.createdAt).toLocaleDateString('id-ID', {
                             day: 'numeric',
@@ -457,6 +550,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         transaction={selectedTx}
         onClose={() => setSelectedTx(null)}
         onSuccess={fetchDashboardData}
+      />
+
+      {/* Manage Invite Code Modal */}
+      <ManageInviteCodeModal
+        isOpen={manageCodeModalOpen}
+        onClose={() => setManageCodeModalOpen(false)}
       />
     </div>
   );

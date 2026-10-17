@@ -28,6 +28,7 @@ export interface Wallet {
   name: string;
   description?: string | null;
   currency: string;
+  inviteCode?: string;
   status: 'ACTIVE' | 'ARCHIVED';
   myRole: WalletRole;
   memberCount: number;
@@ -35,6 +36,16 @@ export interface Wallet {
   requiredApprovals: number;
   joinedAt?: string;
   version?: number;
+}
+
+export interface WalletPreview {
+  id: string;
+  name: string;
+  description?: string | null;
+  currency: string;
+  memberCount: number;
+  inviteCode: string;
+  createdAt?: string;
 }
 
 export interface WalletMember {

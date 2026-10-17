@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import {
   WalletCards,
@@ -8,18 +8,32 @@ import {
   Users,
   CheckCircle2,
   ArrowRight,
+  KeyRound,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 interface WalletsPageProps {
   onOpenCreateWallet: () => void;
+  onOpenJoinWallet?: () => void;
   onNavigateHome: () => void;
 }
 
 export const WalletsPage: React.FC<WalletsPageProps> = ({
   onOpenCreateWallet,
+  onOpenJoinWallet,
   onNavigateHome,
 }) => {
   const { wallets, activeWallet, selectWallet } = useWallet();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyCode = (e: React.MouseEvent, code?: string, id?: string) => {
+    e.stopPropagation();
+    if (!code || !id) return;
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -56,17 +70,28 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
             Kantong Kas Komunitas
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Daftar seluruh dompet kas yang Anda ikuti atau kelola dengan hak akses per-dompet.
+            Daftar seluruh dompet kas tertutup yang Anda ikuti atau kelola.
           </p>
         </div>
 
-        <button
-          onClick={onOpenCreateWallet}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all self-start sm:self-auto"
-        >
-          <PlusCircle className="w-4 h-4" />
-          + Buat Dompet Baru
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {onOpenJoinWallet && (
+            <button
+              onClick={onOpenJoinWallet}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-sm transition-all"
+            >
+              <KeyRound className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              + Gabung Kode
+            </button>
+          )}
+          <button
+            onClick={onOpenCreateWallet}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all"
+          >
+            <PlusCircle className="w-4 h-4" />
+            + Buat Dompet Baru
+          </button>
+        </div>
       </div>
 
       {/* Grid of Wallets */}
@@ -93,6 +118,31 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                 <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                   {wallet.description || 'Tidak ada deskripsi tambahan.'}
                 </p>
+
+                {/* Invite Code Pill */}
+                {wallet.inviteCode && (
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/80 text-[11px]">
+                    <div className="flex items-center gap-1.5 text-slate-500">
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Kode:</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                        {wallet.inviteCode}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyCode(e, wallet.inviteCode, wallet.id)}
+                      className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1"
+                      title="Salin Kode Undangan"
+                    >
+                      {copiedId === wallet.id ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                )}
 
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 gap-2 text-xs">
                   <div>

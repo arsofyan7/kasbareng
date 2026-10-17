@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WalletProvider } from './context/WalletContext';
@@ -12,12 +12,27 @@ import { Sidebar, NavTab } from './components/common/Sidebar';
 import { BottomNav } from './components/common/BottomNav';
 import { WalletSwitcherModal } from './components/common/WalletSwitcherModal';
 import { CreateWalletModal } from './components/common/CreateWalletModal';
+import { JoinWalletModal } from './components/common/JoinWalletModal';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
   const [currentTab, setCurrentTab] = useState<NavTab>('beranda');
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [createWalletOpen, setCreateWalletOpen] = useState(false);
+  const [joinWalletOpen, setJoinWalletOpen] = useState(false);
+  const [joinInitialCode, setJoinInitialCode] = useState('');
+
+  // Check URL query parameters or hash on mount (e.g. ?join=RT05-SEJAHTERA)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const joinParam = searchParams.get('join');
+    if (joinParam) {
+      setJoinInitialCode(joinParam.trim().toUpperCase());
+      setJoinWalletOpen(true);
+      // Clean URL without page reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -38,6 +53,7 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       <Navbar
         onOpenCreateWallet={() => setCreateWalletOpen(true)}
+        onOpenJoinWallet={() => setJoinWalletOpen(true)}
         onOpenWalletModal={() => setWalletModalOpen(true)}
       />
 
@@ -47,6 +63,7 @@ function AppContent() {
           currentTab={currentTab}
           onSelectTab={setCurrentTab}
           onOpenCreateWallet={() => setCreateWalletOpen(true)}
+          onOpenJoinWallet={() => setJoinWalletOpen(true)}
         />
 
         {/* Main Workspace Area */}
@@ -54,12 +71,14 @@ function AppContent() {
           {currentTab === 'beranda' && (
             <DashboardPage
               onOpenCreateWallet={() => setCreateWalletOpen(true)}
+              onOpenJoinWallet={() => setJoinWalletOpen(true)}
               onNavigateToTab={setCurrentTab}
             />
           )}
           {currentTab === 'kantong' && (
             <WalletsPage
               onOpenCreateWallet={() => setCreateWalletOpen(true)}
+              onOpenJoinWallet={() => setJoinWalletOpen(true)}
               onNavigateHome={() => setCurrentTab('beranda')}
             />
           )}
@@ -76,11 +95,24 @@ function AppContent() {
         isOpen={walletModalOpen}
         onClose={() => setWalletModalOpen(false)}
         onOpenCreateWallet={() => setCreateWalletOpen(true)}
+        onOpenJoinWallet={() => setJoinWalletOpen(true)}
       />
 
       <CreateWalletModal
         isOpen={createWalletOpen}
         onClose={() => setCreateWalletOpen(false)}
+      />
+
+      <JoinWalletModal
+        isOpen={joinWalletOpen}
+        initialCode={joinInitialCode}
+        onClose={() => {
+          setJoinWalletOpen(false);
+          setJoinInitialCode('');
+        }}
+        onSuccess={() => {
+          setCurrentTab('beranda');
+        }}
       />
     </div>
   );

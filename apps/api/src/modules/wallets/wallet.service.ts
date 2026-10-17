@@ -1,12 +1,20 @@
-import { z } from 'zod';
 import { prisma } from '../../common/prisma';
-import { WalletRole, UserStatus } from '@prisma/client';
+import { WalletRole, UserStatus, WalletStatus } from '@prisma/client';
+import { z } from 'zod';
+import crypto from 'crypto';
 
 export const CreateWalletSchema = z.object({
   name: z.string().min(3, 'Nama dompet kas minimal 3 karakter').max(100),
   description: z.string().max(500).optional(),
   currency: z.string().optional().default('IDR'),
   requiredApprovals: z.number().int().min(1, 'Minimal persetujuan adalah 1').default(2),
+  customInviteCode: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => !v || /^[A-Za-z0-9_-]{4,20}$/.test(v), {
+      message: 'Kode kustom harus 4-20 karakter alfanumerik (bisa strip atau underscore).',
+    }),
 });
 
 export const AddMemberSchema = z.object({
@@ -19,13 +27,67 @@ export const UpdateMemberSchema = z.object({
   status: z.nativeEnum(UserStatus).optional(),
 });
 
+export const JoinWalletSchema = z.object({
+  inviteCode: z.string().min(3, 'Kode undangan wajib diisi').max(30),
+});
+
+export const UpdateInviteCodeSchema = z.object({
+  customCode: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => !v || /^[A-Za-z0-9_-]{4,20}$/.test(v), {
+      message: 'Kode kustom harus 4-20 karakter alfanumerik (bisa strip atau underscore).',
+    }),
+});
+
 export type CreateWalletInput = z.input<typeof CreateWalletSchema>;
 export type AddMemberInput = z.infer<typeof AddMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof UpdateMemberSchema>;
+export type JoinWalletInput = z.infer<typeof JoinWalletSchema>;
+export type UpdateInviteCodeInput = z.infer<typeof UpdateInviteCodeSchema>;
 
 export class WalletService {
+  /**
+   * Helper to generate unambiguous random invite code (e.g. KAS-8X92KP)
+   */
+  static async generateUniqueInviteCode(prefix = 'KAS'): Promise<string> {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    for (let attempt = 0; attempt < 10; attempt++) {
+      let rand = '';
+      const bytes = crypto.randomBytes(6);
+      for (let i = 0; i < 6; i++) {
+        rand += chars[bytes[i] % chars.length];
+      }
+      const candidate = `${prefix}-${rand}`;
+      const existing = await prisma.wallet.findUnique({
+        where: { inviteCode: candidate },
+      });
+      if (!existing) return candidate;
+    }
+    return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
+  }
+
   static async createWallet(userId: string, input: CreateWalletInput) {
     const validated = CreateWalletSchema.parse(input);
+
+    let inviteCode: string;
+    if (validated.customInviteCode && validated.customInviteCode.trim().length > 0) {
+      const code = validated.customInviteCode.trim().toUpperCase();
+      const existing = await prisma.wallet.findUnique({
+        where: { inviteCode: code },
+      });
+      if (existing) {
+        throw {
+          status: 409,
+          code: 'INVITE_CODE_TAKEN',
+          message: `Kode undangan "${code}" sudah digunakan oleh dompet lain. Silakan pilih kode lain.`,
+        };
+      }
+      inviteCode = code;
+    } else {
+      inviteCode = await WalletService.generateUniqueInviteCode();
+    }
 
     return await prisma.$transaction(async (tx) => {
       // 1. Create Wallet
@@ -34,6 +96,7 @@ export class WalletService {
           name: validated.name,
           description: validated.description,
           currency: validated.currency,
+          inviteCode,
         },
       });
 
@@ -96,6 +159,7 @@ export class WalletService {
       name: m.wallet.name,
       description: m.wallet.description,
       currency: m.wallet.currency,
+      inviteCode: m.wallet.inviteCode,
       status: m.wallet.status,
       myRole: m.role,
       joinedAt: m.joinedAt,
@@ -141,6 +205,7 @@ export class WalletService {
       name: wallet.name,
       description: wallet.description,
       currency: wallet.currency,
+      inviteCode: wallet.inviteCode,
       status: wallet.status,
       version: wallet.version,
       createdAt: wallet.createdAt,
@@ -149,6 +214,199 @@ export class WalletService {
       transactionCount: wallet._count.transactions,
       activePolicy: wallet.approvalPolicies[0] || null,
     };
+  }
+
+  static async previewWalletByCode(rawCode: string) {
+    if (!rawCode || typeof rawCode !== 'string') {
+      throw {
+        status: 400,
+        code: 'INVALID_CODE',
+        message: 'Kode undangan wajib diisi.',
+      };
+    }
+    const code = rawCode.trim().toUpperCase();
+
+    const wallet = await prisma.wallet.findUnique({
+      where: { inviteCode: code },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        currency: true,
+        status: true,
+        inviteCode: true,
+        createdAt: true,
+        _count: {
+          select: { members: { where: { status: UserStatus.ACTIVE } } },
+        },
+      },
+    });
+
+    if (!wallet || wallet.status !== WalletStatus.ACTIVE) {
+      throw {
+        status: 404,
+        code: 'WALLET_NOT_FOUND',
+        message: 'Kode undangan tidak valid atau dompet kas tidak aktif.',
+      };
+    }
+
+    return {
+      id: wallet.id,
+      name: wallet.name,
+      description: wallet.description,
+      currency: wallet.currency,
+      inviteCode: wallet.inviteCode,
+      memberCount: wallet._count.members,
+      createdAt: wallet.createdAt,
+    };
+  }
+
+  static async checkCodeAvailability(rawCode: string, excludeWalletId?: string) {
+    if (!rawCode || typeof rawCode !== 'string') {
+      return { available: false, message: 'Kode tidak boleh kosong.' };
+    }
+    const code = rawCode.trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{4,20}$/.test(code)) {
+      return {
+        available: false,
+        message: 'Kode harus 4-20 karakter alfanumerik (bisa strip atau underscore).',
+      };
+    }
+
+    const existing = await prisma.wallet.findUnique({
+      where: { inviteCode: code },
+    });
+
+    if (existing && existing.id !== excludeWalletId) {
+      return {
+        available: false,
+        message: 'Kode sudah digunakan oleh dompet kas lain.',
+      };
+    }
+
+    return {
+      available: true,
+      code,
+      message: 'Kode tersedia!',
+    };
+  }
+
+  static async joinWalletByCode(userId: string, rawCode: string) {
+    if (!rawCode || typeof rawCode !== 'string') {
+      throw {
+        status: 400,
+        code: 'INVALID_CODE',
+        message: 'Kode undangan wajib diisi.',
+      };
+    }
+    const code = rawCode.trim().toUpperCase();
+
+    const wallet = await prisma.wallet.findUnique({
+      where: { inviteCode: code },
+      include: {
+        _count: {
+          select: { members: { where: { status: UserStatus.ACTIVE } } },
+        },
+      },
+    });
+
+    if (!wallet || wallet.status !== WalletStatus.ACTIVE) {
+      throw {
+        status: 404,
+        code: 'WALLET_NOT_FOUND',
+        message: 'Kode undangan tidak valid atau komunitas kas tidak aktif.',
+      };
+    }
+
+    const existingMember = await prisma.walletMember.findUnique({
+      where: {
+        walletId_userId: {
+          walletId: wallet.id,
+          userId,
+        },
+      },
+    });
+
+    let finalRole = WalletRole.WARGA;
+
+    if (existingMember) {
+      if (existingMember.status === UserStatus.ACTIVE) {
+        throw {
+          status: 409,
+          code: 'ALREADY_MEMBER',
+          message: `Anda sudah menjadi anggota di dompet kas "${wallet.name}".`,
+        };
+      }
+      finalRole = existingMember.role;
+      await prisma.walletMember.update({
+        where: { id: existingMember.id },
+        data: {
+          status: UserStatus.ACTIVE,
+        },
+      });
+    } else {
+      await prisma.walletMember.create({
+        data: {
+          walletId: wallet.id,
+          userId,
+          role: WalletRole.WARGA,
+          status: UserStatus.ACTIVE,
+        },
+      });
+    }
+
+    return {
+      walletId: wallet.id,
+      name: wallet.name,
+      description: wallet.description,
+      currency: wallet.currency,
+      inviteCode: wallet.inviteCode,
+      myRole: finalRole,
+      memberCount: wallet._count.members + (existingMember ? 0 : 1),
+    };
+  }
+
+  static async updateInviteCode(walletId: string, customCode?: string) {
+    let finalCode: string;
+
+    if (customCode && customCode.trim().length > 0) {
+      const code = customCode.trim().toUpperCase();
+      if (!/^[A-Z0-9_-]{4,20}$/.test(code)) {
+        throw {
+          status: 400,
+          code: 'INVALID_CODE_FORMAT',
+          message: 'Kode kustom harus 4-20 karakter alfanumerik (bisa strip atau underscore).',
+        };
+      }
+
+      const existing = await prisma.wallet.findUnique({
+        where: { inviteCode: code },
+      });
+
+      if (existing && existing.id !== walletId) {
+        throw {
+          status: 409,
+          code: 'INVITE_CODE_TAKEN',
+          message: `Kode "${code}" sudah digunakan oleh dompet lain.`,
+        };
+      }
+
+      finalCode = code;
+    } else {
+      finalCode = await WalletService.generateUniqueInviteCode();
+    }
+
+    const updated = await prisma.wallet.update({
+      where: { id: walletId },
+      data: { inviteCode: finalCode },
+      select: {
+        id: true,
+        name: true,
+        inviteCode: true,
+      },
+    });
+
+    return updated;
   }
 
   static async getWalletMembers(walletId: string) {
@@ -209,7 +467,6 @@ export class WalletService {
           message: 'Pengguna sudah menjadi anggota aktif di dompet ini.',
         };
       }
-      // Reactivate inactive member
       return await prisma.walletMember.update({
         where: { id: existingMembership.id },
         data: {
@@ -257,10 +514,9 @@ export class WalletService {
       };
     }
 
-    // Invariant: Do not demote or deactivate the last ADMIN in the wallet
     if (
       targetMember.role === WalletRole.ADMIN &&
-      (validated.role !== undefined && validated.role !== WalletRole.ADMIN ||
+      ((validated.role !== undefined && validated.role !== WalletRole.ADMIN) ||
         validated.status === UserStatus.INACTIVE)
     ) {
       const activeAdminCount = await prisma.walletMember.count({

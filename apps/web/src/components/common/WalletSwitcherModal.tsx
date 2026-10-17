@@ -1,17 +1,19 @@
 import React from 'react';
 import { useWallet } from '../../context/WalletContext';
-import { X, Check, PlusCircle } from 'lucide-react';
+import { X, Check, PlusCircle, KeyRound } from 'lucide-react';
 
 interface WalletSwitcherModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenCreateWallet: () => void;
+  onOpenJoinWallet?: () => void;
 }
 
 export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
   isOpen,
   onClose,
   onOpenCreateWallet,
+  onOpenJoinWallet,
 }) => {
   const { wallets, activeWallet, selectWallet } = useWallet();
 
@@ -26,7 +28,7 @@ export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
               Pilih Dompet Kas Komunitas
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Setiap dompet memiliki saldo dan aturan persetujuan independen.
+              Setiap dompet kas bersifat tertutup dan memiliki aturan mandiri.
             </p>
           </div>
           <button
@@ -41,7 +43,7 @@ export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
         <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
           {wallets.length === 0 ? (
             <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm">
-              Belum ada dompet kas. Silakan buat dompet baru untuk memulai!
+              Belum ada dompet kas. Silakan buat dompet baru atau gabung dengan kode!
             </div>
           ) : (
             wallets.map((wallet) => {
@@ -71,11 +73,11 @@ export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
                       )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {wallet.memberCount} Anggota â€¢ Kuorum {wallet.requiredApprovals} Suara
+                      {wallet.memberCount} Anggota • Kuorum {wallet.requiredApprovals} Suara
                     </p>
                   </div>
                   {isSelected && (
-                    <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
                       <Check className="w-4 h-4 stroke-[3]" />
                     </div>
                   )}
@@ -85,17 +87,29 @@ export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
           )}
         </div>
 
-        {/* Create new wallet trigger */}
-        <div className="pt-2">
+        {/* Actions trigger */}
+        <div className="pt-2 grid grid-cols-2 gap-2">
+          {onOpenJoinWallet && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenJoinWallet();
+              }}
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-colors"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              Gabung Kode
+            </button>
+          )}
           <button
             onClick={() => {
               onClose();
               onOpenCreateWallet();
             }}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-md shadow-emerald-600/20 transition-colors"
+            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition-colors col-span-1"
           >
-            <PlusCircle className="w-4 h-4" />
-            Buat Dompet Kas Baru
+            <PlusCircle className="w-3.5 h-3.5" />
+            Buat Baru
           </button>
         </div>
       </div>

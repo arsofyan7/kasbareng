@@ -12,15 +12,18 @@ import {
   Users,
   LogOut,
   PlusCircle,
+  KeyRound,
 } from 'lucide-react';
 
 interface NavbarProps {
   onOpenCreateWallet: () => void;
+  onOpenJoinWallet?: () => void;
   onOpenWalletModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreateWallet,
+  onOpenJoinWallet,
   onOpenWalletModal,
 }) => {
   const { user, logout } = useAuth();
@@ -104,8 +107,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         )}
 
-        {/* Right: Actions (Theme Toggle & Profile) */}
+        {/* Right: Actions (Theme Toggle, Join/Create, & Profile) */}
         <div className="flex items-center gap-2">
+          {/* Quick Join Button for Desktop */}
+          {user && onOpenJoinWallet && (
+            <button
+              onClick={onOpenJoinWallet}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Gabung ke Komunitas Lain dengan Kode"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Gabung Kode</span>
+            </button>
+          )}
+
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -148,6 +163,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
 
                   <div className="py-1">
+                    {onOpenJoinWallet && (
+                      <button
+                        onClick={() => {
+                          setProfileOpen(false);
+                          onOpenJoinWallet();
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      >
+                        <KeyRound className="w-4 h-4 text-emerald-500" />
+                        Gabung Komunitas (Kode)
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setProfileOpen(false);

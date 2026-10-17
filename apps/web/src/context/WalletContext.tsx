@@ -8,7 +8,14 @@ interface WalletContextType {
   isLoading: boolean;
   selectWallet: (walletId: string) => void;
   refreshWallets: () => Promise<void>;
-  createWallet: (name: string, description?: string, requiredApprovals?: number) => Promise<Wallet>;
+  createWallet: (
+    name: string,
+    description?: string,
+    requiredApprovals?: number,
+    customInviteCode?: string
+  ) => Promise<Wallet>;
+  joinWallet: (inviteCode: string) => Promise<{ walletId: string; name: string }>;
+  updateInviteCode: (walletId: string, customCode?: string) => Promise<{ id: string; inviteCode: string }>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -75,7 +82,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const createWallet = async (name: string, description?: string, requiredApprovals = 2) => {
+  const createWallet = async (
+    name: string,
+    description?: string,
+    requiredApprovals = 2,
+    customInviteCode?: string
+  ) => {
     if (!token) throw new Error('Otentikasi diperlukan.');
 
     const res = await fetch('/api/v1/wallets', {
@@ -84,7 +96,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, description, requiredApprovals }),
+      body: JSON.stringify({
+        name,
+        description,
+        requiredApprovals,
+        customInviteCode: customInviteCode || undefined,
+      }),
     });
 
     const json: ApiResponse<Wallet> = await res.json();
@@ -97,6 +114,49 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return json.data;
   };
 
+  const joinWallet = async (inviteCode: string) => {
+    if (!token) throw new Error('Otentikasi diperlukan.');
+
+    const res = await fetch('/api/v1/wallets/join', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ inviteCode: inviteCode.trim().toUpperCase() }),
+    });
+
+    const json: ApiResponse<{ walletId: string; name: string }> = await res.json();
+    if (!res.ok || !json.data) {
+      throw new Error(json.error?.message || 'Gagal bergabung ke dompet kas.');
+    }
+
+    await refreshWallets();
+    selectWallet(json.data.walletId);
+    return json.data;
+  };
+
+  const updateInviteCode = async (walletId: string, customCode?: string) => {
+    if (!token) throw new Error('Otentikasi diperlukan.');
+
+    const res = await fetch(`/api/v1/wallets/${walletId}/invite-code`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ customCode: customCode ? customCode.trim().toUpperCase() : undefined }),
+    });
+
+    const json: ApiResponse<{ id: string; inviteCode: string }> = await res.json();
+    if (!res.ok || !json.data) {
+      throw new Error(json.error?.message || 'Gagal memperbarui kode undangan.');
+    }
+
+    await refreshWallets();
+    return json.data;
+  };
+
   return (
     <WalletContext.Provider
       value={{
@@ -106,6 +166,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         selectWallet,
         refreshWallets,
         createWallet,
+        joinWallet,
+        updateInviteCode,
       }}
     >
       {children}

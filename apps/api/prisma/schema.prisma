@@ -108,6 +108,7 @@ model Wallet {
   name        String
   description String?
   currency    String       @default("IDR")
+  inviteCode  String?      @unique @map("invite_code")
   status      WalletStatus @default(ACTIVE)
   version     Int          @default(1)
   createdAt   DateTime     @default(now()) @map("created_at")
