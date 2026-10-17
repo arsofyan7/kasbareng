@@ -5,7 +5,7 @@ import { WalletRole, UserStatus } from '@prisma/client';
 export const CreateWalletSchema = z.object({
   name: z.string().min(3, 'Nama dompet kas minimal 3 karakter').max(100),
   description: z.string().max(500).optional(),
-  currency: z.string().default('IDR'),
+  currency: z.string().optional().default('IDR'),
   requiredApprovals: z.number().int().min(1, 'Minimal persetujuan adalah 1').default(2),
 });
 
@@ -19,7 +19,7 @@ export const UpdateMemberSchema = z.object({
   status: z.nativeEnum(UserStatus).optional(),
 });
 
-export type CreateWalletInput = z.infer<typeof CreateWalletSchema>;
+export type CreateWalletInput = z.input<typeof CreateWalletSchema>;
 export type AddMemberInput = z.infer<typeof AddMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof UpdateMemberSchema>;
 

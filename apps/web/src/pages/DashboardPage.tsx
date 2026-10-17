@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
 import {
@@ -8,9 +8,12 @@ import {
   TrendingDown,
   Clock,
   CheckCircle,
-  FileText,
   Users,
+  PlusCircle,
 } from 'lucide-react';
+import { Transaction, TransactionType, TransactionState, WalletSummary, ApiResponse } from '../types';
+import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
+import { TransactionDetailModal } from '../components/common/TransactionDetailModal';
 
 interface DashboardPageProps {
   onOpenCreateWallet: () => void;
@@ -21,8 +24,51 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenCreateWallet,
   onNavigateToTab,
 }) => {
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const { activeWallet, wallets } = useWallet();
+
+  const [summary, setSummary] = useState<WalletSummary | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
+
+  // Modals
+  const [recordModalOpen, setRecordModalOpen] = useState<boolean>(false);
+  const [recordType, setRecordType] = useState<TransactionType>('INCOME');
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+
+  const fetchDashboardData = useCallback(async () => {
+    if (!token || !activeWallet) return;
+    setIsLoading(true);
+
+    try {
+      // 1. Fetch balance summary
+      const sumRes = await fetch(`/api/v1/wallets/${activeWallet.id}/summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const sumJson: ApiResponse<WalletSummary> = await sumRes.json();
+      if (sumRes.ok && sumJson.data) {
+        setSummary(sumJson.data);
+      }
+
+      // 2. Fetch recent transactions
+      const txRes = await fetch(`/api/v1/wallets/${activeWallet.id}/transactions?limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const txJson: ApiResponse<Transaction[]> = await txRes.json();
+      if (txRes.ok && txJson.data) {
+        setTransactions(txJson.data);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, activeWallet]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   if (wallets.length === 0) {
     return (
@@ -47,6 +93,67 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       </div>
     );
   }
+
+  const openRecordModal = (t: TransactionType) => {
+    setRecordType(t);
+    setRecordModalOpen(true);
+  };
+
+  const filteredTransactions = transactions.filter((tx) => {
+    if (activeFilter === 'INCOME') return tx.type === 'INCOME';
+    if (activeFilter === 'EXPENSE') return tx.type === 'EXPENSE';
+    return true;
+  });
+
+  const getStateBadge = (state: TransactionState) => {
+    switch (state) {
+      case 'DRAFT':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            Draf
+          </span>
+        );
+      case 'SUBMITTED':
+      case 'PENDING_APPROVAL':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+            Menunggu Kuorum
+          </span>
+        );
+      case 'APPROVED':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/20">
+            Disetujui
+          </span>
+        );
+      case 'COMPLETED':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+            Selesai
+          </span>
+        );
+      case 'CANCELLED':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400">
+            Dibatalkan
+          </span>
+        );
+      case 'REJECTED':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20">
+            Ditolak
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+            {state}
+          </span>
+        );
+    }
+  };
+
+  const isManagerOrAdmin = activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -75,7 +182,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         )}
       </div>
 
-      {/* Primary Financial Balance Cards */}
+      {/* Primary Financial Balance Cards (Live Calculated via Ledger Algorithm) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Card 1: Saldo Tercatat */}
         <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xl shadow-emerald-600/15 relative overflow-hidden">
@@ -89,7 +196,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </span>
           </div>
           <div className="text-3xl font-extrabold tracking-tight mb-3">
-            Rp 0
+            Rp {(summary?.postedBalance || 0).toLocaleString('id-ID')}
           </div>
           <p className="text-xs text-emerald-100/90 leading-relaxed">
             Total saldo yang telah diverifikasi dan dibukukan resmi dalam ledger.
@@ -103,7 +210,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <CheckCircle className="w-4 h-4 text-sky-500" />
           </div>
           <div className="text-2xl font-bold text-slate-900 dark:text-white">
-            Rp 0
+            Rp {(summary?.availableBalance || 0).toLocaleString('id-ID')}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Saldo riil yang dapat digunakan setelah dipotong reservasi pengeluaran.
@@ -117,7 +224,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold text-slate-900 dark:text-white">
-            Rp 0
+            Rp {(summary?.activeReservations || 0).toLocaleString('id-ID')}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Dana yang direservasi untuk transaksi yang sedang menunggu persetujuan.
@@ -127,11 +234,68 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* Quick Actions Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Action 1: Catat Pemasukan */}
+        {isManagerOrAdmin ? (
+          <button
+            onClick={() => openRecordModal('INCOME')}
+            className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 text-left transition-all group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center mb-2.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+              Catat Pemasukan
+            </div>
+            <div className="text-xs text-emerald-700 dark:text-emerald-400">
+              Iuran kas & donasi
+            </div>
+          </button>
+        ) : (
+          <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 opacity-60 text-left">
+            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center mb-2.5">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+              Pemasukan Kas
+            </div>
+            <div className="text-[11px] text-slate-400">Khusus Pengelola/Admin</div>
+          </div>
+        )}
+
+        {/* Action 2: Ajukan Pengeluaran */}
+        {isManagerOrAdmin ? (
+          <button
+            onClick={() => openRecordModal('EXPENSE')}
+            className="p-4 rounded-2xl border border-rose-200 dark:border-rose-800/80 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/60 text-left transition-all group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center mb-2.5 shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">
+              <TrendingDown className="w-4 h-4" />
+            </div>
+            <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+              Ajukan Pengeluaran
+            </div>
+            <div className="text-xs text-rose-700 dark:text-rose-400">
+              Perlu kuorum M-of-N
+            </div>
+          </button>
+        ) : (
+          <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 opacity-60 text-left">
+            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center mb-2.5">
+              <TrendingDown className="w-4 h-4" />
+            </div>
+            <div className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+              Pengeluaran Kas
+            </div>
+            <div className="text-[11px] text-slate-400">Khusus Pengelola/Admin</div>
+          </div>
+        )}
+
+        {/* Action 3: Kelola Anggota */}
         <button
           onClick={() => onNavigateToTab('anggota')}
           className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-slate-800/80 text-left transition-all group"
         >
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
             <Users className="w-4 h-4" />
           </div>
           <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
@@ -142,70 +306,158 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </button>
 
+        {/* Action 4: Kantong Kas */}
         <button
           onClick={() => onNavigateToTab('kantong')}
           className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-slate-800/80 text-left transition-all group"
         >
-          <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
             <Wallet className="w-4 h-4" />
           </div>
           <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-            Daftar Kantong
+            Kantong Kas
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
             {wallets.length} Dompet Diikuti
           </div>
         </button>
-
-        <div className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/60 dark:bg-slate-900/40 text-left opacity-75">
-          <div className="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-2.5">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-          <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-            Catat Pemasukan
-          </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-            Fase 3: Core Transaction
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/60 dark:bg-slate-900/40 text-left opacity-75">
-          <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-2.5">
-            <TrendingDown className="w-4 h-4" />
-          </div>
-          <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-            Ajukan Pengeluaran
-          </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-            Fase 4: Multi-Approval
-          </div>
-        </div>
       </div>
 
-      {/* Recent Activity / Audit Status Card */}
+      {/* Transaction Feed & Chronology */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-              Aktivitas Transparansi & Audit
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h3 className="font-bold text-base text-slate-900 dark:text-white">
+              Riwayat Transaksi Kas
             </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Setiap transaksi divalidasi oleh Finite State Machine (FSM).
+            </p>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            SHA-256 Chain Intact
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold">
+            <button
+              onClick={() => setActiveFilter('ALL')}
+              className={`px-3 py-1 rounded-lg transition-all ${
+                activeFilter === 'ALL'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              Semua ({transactions.length})
+            </button>
+            <button
+              onClick={() => setActiveFilter('INCOME')}
+              className={`px-3 py-1 rounded-lg transition-all ${
+                activeFilter === 'INCOME'
+                  ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              Pemasukan
+            </button>
+            <button
+              onClick={() => setActiveFilter('EXPENSE')}
+              className={`px-3 py-1 rounded-lg transition-all ${
+                activeFilter === 'EXPENSE'
+                  ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              Pengeluaran
+            </button>
           </div>
         </div>
 
-        <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-xs space-y-1">
-          <p className="font-medium text-slate-600 dark:text-slate-300">
-            Belum ada mutasi transaksi yang tercatat di dompet ini.
-          </p>
-          <p>
-            Semua draf dan transaksi yang disetujui akan diverifikasi ke dalam rantai hash audit tahan manipulasi.
-          </p>
-        </div>
+        {/* Transaction Items */}
+        {isLoading ? (
+          <div className="text-center py-10 text-xs text-slate-400 animate-pulse">
+            Memuat daftar transaksi...
+          </div>
+        ) : filteredTransactions.length === 0 ? (
+          <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-xs space-y-2">
+            <p className="font-semibold text-slate-700 dark:text-slate-300">
+              Belum ada transaksi pada kategori ini.
+            </p>
+            {isManagerOrAdmin && (
+              <button
+                onClick={() => openRecordModal('INCOME')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                Catat Transaksi Pertama
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+            {filteredTransactions.map((tx) => {
+              const isIncome = tx.type === 'INCOME';
+              return (
+                <div
+                  key={tx.id}
+                  onClick={() => setSelectedTx(tx)}
+                  className="py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 px-2 -mx-2 rounded-2xl cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      isIncome
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
+                    }`}>
+                      {isIncome ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                    </div>
+
+                    <div>
+                      <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                        {tx.category}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                        <span>{tx.creator?.fullName?.split(' ')[0] || 'Warga'}</span>
+                        <span>•</span>
+                        <span>
+                          {new Date(tx.createdAt).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right space-y-1">
+                    <div className={`font-bold text-sm ${
+                      isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
+                    }`}>
+                      {isIncome ? '+ ' : '- '}
+                      Rp {tx.amount.toLocaleString('id-ID')}
+                    </div>
+                    <div>{getStateBadge(tx.state)}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Record Transaction Modal */}
+      <RecordTransactionModal
+        isOpen={recordModalOpen}
+        initialType={recordType}
+        availableBalance={summary?.availableBalance || 0}
+        onClose={() => setRecordModalOpen(false)}
+        onSuccess={fetchDashboardData}
+      />
+
+      {/* Transaction Detail Modal */}
+      <TransactionDetailModal
+        transaction={selectedTx}
+        onClose={() => setSelectedTx(null)}
+        onSuccess={fetchDashboardData}
+      />
     </div>
   );
 };
