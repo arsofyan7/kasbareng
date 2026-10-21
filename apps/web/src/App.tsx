@@ -6,6 +6,9 @@ import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { WalletsPage } from './pages/WalletsPage';
 import { MembersPage } from './pages/MembersPage';
+import { ApprovalsPage } from './pages/ApprovalsPage';
+import { ReconciliationPage } from './pages/ReconciliationPage';
+import { AiParserPage } from './pages/AiParserPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { Navbar } from './components/common/Navbar';
 import { Sidebar, NavTab } from './components/common/Sidebar';
@@ -13,6 +16,7 @@ import { BottomNav } from './components/common/BottomNav';
 import { WalletSwitcherModal } from './components/common/WalletSwitcherModal';
 import { CreateWalletModal } from './components/common/CreateWalletModal';
 import { JoinWalletModal } from './components/common/JoinWalletModal';
+import { AuditChainModal } from './components/common/AuditChainModal';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -21,6 +25,7 @@ function AppContent() {
   const [createWalletOpen, setCreateWalletOpen] = useState(false);
   const [joinWalletOpen, setJoinWalletOpen] = useState(false);
   const [joinInitialCode, setJoinInitialCode] = useState('');
+  const [auditModalOpen, setAuditModalOpen] = useState(false);
 
   // Check URL query parameters or hash on mount (e.g. ?join=RT05-SEJAHTERA)
   useEffect(() => {
@@ -55,6 +60,7 @@ function AppContent() {
         onOpenCreateWallet={() => setCreateWalletOpen(true)}
         onOpenJoinWallet={() => setJoinWalletOpen(true)}
         onOpenWalletModal={() => setWalletModalOpen(true)}
+        onOpenAuditChain={() => setAuditModalOpen(true)}
       />
 
       <div className="flex-1 flex max-w-7xl mx-auto w-full">
@@ -64,6 +70,7 @@ function AppContent() {
           onSelectTab={setCurrentTab}
           onOpenCreateWallet={() => setCreateWalletOpen(true)}
           onOpenJoinWallet={() => setJoinWalletOpen(true)}
+          onOpenAuditChain={() => setAuditModalOpen(true)}
         />
 
         {/* Main Workspace Area */}
@@ -73,6 +80,7 @@ function AppContent() {
               onOpenCreateWallet={() => setCreateWalletOpen(true)}
               onOpenJoinWallet={() => setJoinWalletOpen(true)}
               onNavigateToTab={setCurrentTab}
+              onOpenAuditChain={() => setAuditModalOpen(true)}
             />
           )}
           {currentTab === 'kantong' && (
@@ -82,6 +90,9 @@ function AppContent() {
               onNavigateHome={() => setCurrentTab('beranda')}
             />
           )}
+          {currentTab === 'persetujuan' && <ApprovalsPage />}
+          {currentTab === 'rekonsiliasi' && <ReconciliationPage />}
+          {currentTab === 'ai-parser' && <AiParserPage />}
           {currentTab === 'anggota' && <MembersPage />}
           {currentTab === 'profil' && <ProfilePage />}
         </main>
@@ -113,6 +124,12 @@ function AppContent() {
         onSuccess={() => {
           setCurrentTab('beranda');
         }}
+      />
+
+      {/* Tamper-Evident SHA-256 Audit Chain Modal */}
+      <AuditChainModal
+        isOpen={auditModalOpen}
+        onClose={() => setAuditModalOpen(false)}
       />
     </div>
   );

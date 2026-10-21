@@ -8,15 +8,19 @@ import {
   PlusCircle,
   KeyRound,
   CheckCircle2,
+  ShieldCheck,
+  Scale,
+  Sparkles,
 } from 'lucide-react';
 
-export type NavTab = 'beranda' | 'kantong' | 'anggota' | 'profil';
+export type NavTab = 'beranda' | 'kantong' | 'persetujuan' | 'rekonsiliasi' | 'ai-parser' | 'anggota' | 'profil';
 
 interface SidebarProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   onOpenCreateWallet: () => void;
   onOpenJoinWallet?: () => void;
+  onOpenAuditChain?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -24,12 +28,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectTab,
   onOpenCreateWallet,
   onOpenJoinWallet,
+  onOpenAuditChain,
 }) => {
   const { activeWallet } = useWallet();
 
   const navItems = [
     { id: 'beranda' as NavTab, label: 'Beranda Kas', icon: LayoutDashboard },
     { id: 'kantong' as NavTab, label: 'Kantong Kas', icon: WalletCards },
+    { id: 'persetujuan' as NavTab, label: 'Persetujuan Kas', icon: ShieldCheck },
+    { id: 'rekonsiliasi' as NavTab, label: 'Rekonsiliasi Bank', icon: Scale },
+    { id: 'ai-parser' as NavTab, label: 'Parser Chat AI', icon: Sparkles },
     { id: 'anggota' as NavTab, label: 'Kelola Anggota', icon: Users2 },
     { id: 'profil' as NavTab, label: 'Profil & Tema', icon: UserCircle },
   ];
@@ -94,6 +102,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="text-[11px] text-slate-500 dark:text-slate-400">
             Peran Anda: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{activeWallet.myRole}</span>
           </div>
+
+          {onOpenAuditChain && (
+            <button
+              onClick={onOpenAuditChain}
+              className="w-full mt-1.5 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 text-xs font-semibold transition-colors border border-indigo-200/50 dark:border-indigo-800/40"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span>Audit Rantai SHA-256</span>
+            </button>
+          )}
         </div>
       )}
     </aside>

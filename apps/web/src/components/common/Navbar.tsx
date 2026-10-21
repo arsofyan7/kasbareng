@@ -19,12 +19,14 @@ interface NavbarProps {
   onOpenCreateWallet: () => void;
   onOpenJoinWallet?: () => void;
   onOpenWalletModal: () => void;
+  onOpenAuditChain?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreateWallet,
   onOpenJoinWallet,
   onOpenWalletModal,
+  onOpenAuditChain,
 }) => {
   const { user, logout } = useAuth();
   const { activeWallet } = useWallet();
@@ -118,6 +120,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Gabung Kode</span>
+            </button>
+          )}
+
+          {/* Audit Chain Verification Button */}
+          {activeWallet && onOpenAuditChain && (
+            <button
+              onClick={onOpenAuditChain}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/50 text-xs font-semibold transition-colors"
+              title="Periksa Integritas Rantai Hash Kriptografi SHA-256 (Audit Trail)"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="hidden sm:inline">Audit SHA-256</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </button>
           )}
 

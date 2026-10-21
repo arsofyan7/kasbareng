@@ -5,6 +5,8 @@ import { sendSuccess, sendError, generateRequestId } from './common/response';
 import { authRouter } from './modules/auth/auth.routes';
 import { walletRouter } from './modules/wallets/wallet.routes';
 import { transactionRouter } from './modules/transactions/transaction.routes';
+import { auditRouter } from './modules/audit/audit.routes';
+import { reconciliationRouter } from './modules/reconciliation/reconciliation.routes';
 
 export const app = express();
 
@@ -62,6 +64,8 @@ app.get('/api/v1/health', async (_req: Request, res: Response) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/wallets', walletRouter);
 app.use('/api/v1', transactionRouter);
+app.use('/api/v1', auditRouter);
+app.use('/api/v1', reconciliationRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

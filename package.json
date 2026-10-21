@@ -12,7 +12,8 @@
     "build:api": "npm --workspace=apps/api run build",
     "build:web": "npm --workspace=apps/web run build",
     "test:api": "npm --workspace=apps/api run test",
-    "test:algorithms": "npm --workspace=apps/api run test:algorithms"
+    "test:algorithms": "npm --workspace=apps/api run test:algorithms",
+    "db:seed": "npm --workspace=apps/api run prisma:seed"
   },
   "keywords": [
     "kasbareng",

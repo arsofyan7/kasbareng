@@ -25,12 +25,14 @@ interface DashboardPageProps {
   onOpenCreateWallet: () => void;
   onOpenJoinWallet?: () => void;
   onNavigateToTab: (tab: 'kantong' | 'anggota') => void;
+  onOpenAuditChain?: () => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenCreateWallet,
   onOpenJoinWallet,
   onNavigateToTab,
+  onOpenAuditChain,
 }) => {
   const { token, user } = useAuth();
   const { activeWallet, wallets } = useWallet();
@@ -211,13 +213,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </p>
         </div>
 
-        {/* Quorum Policy Badge */}
+        {/* Quorum Policy & Audit Badges */}
         {activeWallet && (
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>
-              Kuorum: <strong>{activeWallet.requiredApprovals} dari {activeWallet.memberCount} Suara</strong>
-            </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>
+                Kuorum: <strong>{activeWallet.requiredApprovals} dari {activeWallet.memberCount} Suara</strong>
+              </span>
+            </div>
+
+            {onOpenAuditChain && (
+              <button
+                onClick={onOpenAuditChain}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition-colors shadow-sm cursor-pointer"
+                title="Periksa Keaslian Buku Kas & Rantai Hash Kriptografi SHA-256"
+              >
+                <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span>Audit SHA-256</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -508,7 +524,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
                         <span>{tx.creator?.fullName?.split(' ')[0] || 'Warga'}</span>
-                        <span>•</span>
+                        <span>ï¿½</span>
                         <span>
                           {new Date(tx.createdAt).toLocaleDateString('id-ID', {
                             day: 'numeric',

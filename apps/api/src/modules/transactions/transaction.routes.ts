@@ -255,3 +255,68 @@ transactionRouter.post(
     }
   }
 );
+
+// 8. Submit Approval / Rejection Decision (ADMIN / PENGELOLA)
+transactionRouter.post(
+  '/transactions/:transactionId/approvals',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const transactionId = String(req.params.transactionId);
+      const result = await TransactionService.processApproval(
+        transactionId,
+        req.user!.id,
+        req.body
+      );
+
+      const msg =
+        req.body?.decision === 'REJECT'
+          ? 'Keputusan penolakan transaksi telah dicatat.'
+          : result.quorumResult.approved
+          ? 'Kuorum terpenuhi! Pengeluaran kas berhasil disetujui.'
+          : 'Persetujuan Anda telah dicatat. Menunggu persetujuan pengelola/admin lainnya.';
+
+      return sendSuccess(res, result, 200, { message: msg });
+    } catch (err: any) {
+      if (err instanceof ZodError) {
+        return sendError(res, 'VALIDATION_ERROR', 'Format data persetujuan tidak valid.', 400, err.errors);
+      }
+      return sendError(
+        res,
+        err.code || 'APPROVAL_FAILED',
+        err.message || 'Gagal memproses persetujuan transaksi.',
+        err.status || 400
+      );
+    }
+  }
+);
+
+// 9. Execute Payment & Post Ledger DEBIT (ADMIN / PENGELOLA)
+transactionRouter.post(
+  ['/transactions/:transactionId/pay', '/transactions/:transactionId/payment-records'],
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const transactionId = String(req.params.transactionId);
+      const result = await TransactionService.executePayment(
+        transactionId,
+        req.user!.id,
+        req.body
+      );
+
+      return sendSuccess(res, result, 200, {
+        message: 'Pembayaran kas berhasil dieksekusi dan dibukukan resmi ke ledger.',
+      });
+    } catch (err: any) {
+      if (err instanceof ZodError) {
+        return sendError(res, 'VALIDATION_ERROR', 'Format data pembayaran tidak valid.', 400, err.errors);
+      }
+      return sendError(
+        res,
+        err.code || 'PAYMENT_EXECUTION_FAILED',
+        err.message || 'Gagal mengeksekusi pembayaran transaksi.',
+        err.status || 400
+      );
+    }
+  }
+);

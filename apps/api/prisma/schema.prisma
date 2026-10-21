@@ -234,16 +234,17 @@ model TransactionEvent {
 }
 
 model AuditLog {
-  id           String   @id @default(uuid())
-  walletId     String   @map("wallet_id")
-  sequenceNo   Int      @map("sequence_no")
-  eventId      String?  @map("event_id")
-  payloadHash  String   @map("payload_hash")
-  previousHash String   @map("previous_hash")
-  currentHash  String   @map("current_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id               String   @id @default(uuid())
+  walletId         String   @map("wallet_id")
+  sequenceNo       Int      @map("sequence_no")
+  eventId          String?  @map("event_id")
+  canonicalPayload String?  @map("canonical_payload") @db.Text
+  payloadHash      String   @map("payload_hash")
+  previousHash     String   @map("previous_hash")
+  currentHash      String   @map("current_hash")
+  createdAt        DateTime @default(now()) @map("created_at")
 
-  wallet       Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  wallet           Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@unique([walletId, sequenceNo])
   @@map("audit_logs")

@@ -1,8 +1,19 @@
-import { Prisma, TransactionType, TransactionState, LedgerEntryType, WalletRole } from '@prisma/client';
+import {
+  Prisma,
+  TransactionType,
+  TransactionState,
+  LedgerEntryType,
+  WalletRole,
+  ApprovalDecision,
+  PaymentStatus,
+  UserStatus,
+} from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../../common/prisma';
 import { validateTransition } from '../../algorithms/fsm/transition-validator';
 import { calculateBalance, LedgerEntry as AlgoLedgerEntry } from '../../algorithms/ledger/balance-calculator';
+import { evaluateQuorum } from '../../algorithms/quorum/quorum-evaluator';
+import { AuditService } from '../audit/audit.service';
 
 export const CreateTransactionSchema = z.object({
   type: z.nativeEnum(TransactionType),
@@ -21,8 +32,23 @@ export const UpdateTransactionSchema = z.object({
   receiptAttachmentId: z.string().optional(),
 });
 
+export const ProcessApprovalSchema = z.object({
+  decision: z.nativeEnum(ApprovalDecision),
+  expectedVersion: z.number().int().positive().optional(),
+  comment: z.string().max(500).optional(),
+});
+
+export const ExecutePaymentSchema = z.object({
+  paymentReference: z.string().max(100).optional(),
+  evidenceAttachmentId: z.string().optional(),
+  notes: z.string().max(500).optional(),
+  expectedVersion: z.number().int().positive().optional(),
+});
+
 export type CreateTransactionInput = z.input<typeof CreateTransactionSchema>;
 export type UpdateTransactionInput = z.infer<typeof UpdateTransactionSchema>;
+export type ProcessApprovalInput = z.infer<typeof ProcessApprovalSchema>;
+export type ExecutePaymentInput = z.infer<typeof ExecutePaymentSchema>;
 
 export class TransactionService {
   /**
@@ -139,6 +165,21 @@ export class TransactionService {
         },
       });
 
+      await AuditService.recordAuditEvent(tx, {
+        walletId,
+        actorId,
+        eventType: 'DRAFT_CREATED',
+        transactionId: transaction.id,
+        transactionVersion: 1,
+        fromState: null,
+        toState: TransactionState.DRAFT,
+        metadata: {
+          type: validated.type,
+          amount: validated.amount,
+          category: validated.category,
+        },
+      });
+
       return transaction;
     });
   }
@@ -205,7 +246,16 @@ export class TransactionService {
           select: { id: true, fullName: true, email: true },
         },
         wallet: {
-          select: { id: true, name: true, currency: true },
+          select: {
+            id: true,
+            name: true,
+            currency: true,
+            approvalPolicies: {
+              where: { status: 'ACTIVE' },
+              take: 1,
+              orderBy: { policyVersion: 'desc' },
+            },
+          },
         },
         approvals: {
           include: {
@@ -222,6 +272,9 @@ export class TransactionService {
             },
           },
           orderBy: { createdAt: 'asc' },
+        },
+        paymentRecords: {
+          orderBy: { createdAt: 'desc' },
         },
       },
     });
@@ -296,6 +349,23 @@ export class TransactionService {
               category: validated.category,
               notes: validated.notes,
             },
+          },
+        },
+      });
+
+      await AuditService.recordAuditEvent(tx, {
+        walletId: transaction.walletId,
+        actorId,
+        eventType: 'DRAFT_UPDATED',
+        transactionId,
+        transactionVersion: updated.version,
+        fromState: TransactionState.DRAFT,
+        toState: TransactionState.DRAFT,
+        metadata: {
+          updatedFields: {
+            amount: validated.amount,
+            category: validated.category,
+            notes: validated.notes,
           },
         },
       });
@@ -421,6 +491,21 @@ export class TransactionService {
         },
       });
 
+      await AuditService.recordAuditEvent(tx, {
+        walletId: transaction.walletId,
+        actorId,
+        eventType: transaction.type === TransactionType.EXPENSE ? 'APPROVAL_REQUESTED' : 'INCOME_POSTED',
+        transactionId,
+        transactionVersion: updated.version,
+        fromState: transaction.state,
+        toState: finalState,
+        metadata: {
+          submittedAt: new Date().toISOString(),
+          type: transaction.type,
+          amount: Number(transaction.amount),
+        },
+      });
+
       return {
         ...updated,
         amount: Number(updated.amount),
@@ -474,9 +559,530 @@ export class TransactionService {
         },
       });
 
+      await AuditService.recordAuditEvent(tx, {
+        walletId: transaction.walletId,
+        actorId,
+        eventType: 'TRANSACTION_CANCELLED',
+        transactionId,
+        transactionVersion: updated.version,
+        fromState: transaction.state,
+        toState: TransactionState.CANCELLED,
+        metadata: { reason: reason || 'Dibatalkan oleh pengguna.' },
+      });
+
       return {
         ...updated,
         amount: Number(updated.amount),
+      };
+    });
+  }
+
+  /**
+   * Processes an approval decision (APPROVE or REJECT) on a transaction.
+   * Integrates pure M-of-N Quorum Evaluator with strict anti-self approval and concurrency locking.
+   */
+  static async processApproval(
+    transactionId: string,
+    actorId: string,
+    input: ProcessApprovalInput
+  ) {
+    const validated = ProcessApprovalSchema.parse(input);
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. Fetch transaction with wallet
+      const transaction = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: {
+          wallet: true,
+          approvals: {
+            include: {
+              approver: {
+                select: { id: true, fullName: true, email: true },
+              },
+            },
+            orderBy: { signedAt: 'asc' },
+          },
+        },
+      });
+
+      if (!transaction) {
+        throw { status: 404, code: 'NOT_FOUND', message: 'Transaksi tidak ditemukan.' };
+      }
+
+      // 2. Validate current state: must be PENDING_APPROVAL
+      if (transaction.state !== TransactionState.PENDING_APPROVAL) {
+        throw {
+          status: 400,
+          code: 'INVALID_STATE_TRANSITION',
+          message: `Transaksi tidak dalam status menunggu persetujuan (Status saat ini: ${transaction.state}).`,
+        };
+      }
+
+      // 3. Optimistic locking / Version check
+      if (validated.expectedVersion !== undefined && transaction.version !== validated.expectedVersion) {
+        throw {
+          status: 409,
+          code: 'TRANSACTION_VERSION_CONFLICT',
+          message: `Data transaksi telah berubah (Versi server: ${transaction.version}, Versi klien: ${validated.expectedVersion}). Muat ulang rincian transaksi.`,
+        };
+      }
+
+      // 4. Verify Actor membership & role
+      const member = await tx.walletMember.findUnique({
+        where: {
+          walletId_userId: {
+            walletId: transaction.walletId,
+            userId: actorId,
+          },
+        },
+      });
+
+      if (!member || member.status !== UserStatus.ACTIVE) {
+        throw {
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Anda bukan anggota aktif dari dompet kas ini.',
+        };
+      }
+
+      if (member.role !== WalletRole.ADMIN && member.role !== WalletRole.PENGELOLA) {
+        throw {
+          status: 403,
+          code: 'NOT_AN_ELIGIBLE_APPROVER',
+          message: 'Hanya Pengelola dan Admin yang berhak memberikan persetujuan pengeluaran.',
+        };
+      }
+
+      // 5. Anti-Self Approval Guard
+      if (transaction.creatorId === actorId) {
+        throw {
+          status: 403,
+          code: 'SELF_APPROVAL_NOT_ALLOWED',
+          message: 'Pembuat pengeluaran tidak diperbolehkan menyetujui pengeluarannya sendiri (Aturan Anti-Self Approval). Diperlukan persetujuan dari pengelola/admin lain.',
+        };
+      }
+
+      // 6. Deduplication check on (transactionId, approverId, transactionVersion)
+      const existingApproval = await tx.transactionApproval.findUnique({
+        where: {
+          transactionId_approverId_transactionVersion: {
+            transactionId,
+            approverId: actorId,
+            transactionVersion: transaction.version,
+          },
+        },
+      });
+
+      if (existingApproval) {
+        throw {
+          status: 409,
+          code: 'DUPLICATE_APPROVAL',
+          message: 'Anda sudah memberikan keputusan persetujuan untuk versi transaksi ini.',
+        };
+      }
+
+      // 7. Get active ApprovalPolicy
+      const activePolicy = await tx.approvalPolicy.findFirst({
+        where: { walletId: transaction.walletId, status: 'ACTIVE' },
+        orderBy: { policyVersion: 'desc' },
+      });
+
+      const policyVersion = activePolicy?.policyVersion || 1;
+      const requiredApprovals = activePolicy?.requiredApprovals || 2;
+
+      // 8. Record the approval decision
+      const approvalRecord = await tx.transactionApproval.create({
+        data: {
+          transactionId,
+          approverId: actorId,
+          decision: validated.decision,
+          transactionVersion: transaction.version,
+          policyVersion,
+        },
+        include: {
+          approver: {
+            select: { id: true, fullName: true, email: true },
+          },
+        },
+      });
+
+      // 9. Process Decision
+      if (validated.decision === ApprovalDecision.REJECT) {
+        const fsmResult = validateTransition({
+          currentState: transaction.state as any,
+          event: 'REJECT',
+        });
+
+        if (!fsmResult.allowed) {
+          throw {
+            status: 400,
+            code: fsmResult.errorCode || 'INVALID_STATE_TRANSITION',
+            message: fsmResult.errorMessage,
+          };
+        }
+
+        const updatedTx = await tx.transaction.update({
+          where: { id: transactionId },
+          data: {
+            state: TransactionState.REJECTED,
+            version: { increment: 1 },
+          },
+        });
+
+        await tx.transactionEvent.create({
+          data: {
+            transactionId,
+            actorId,
+            eventType: 'TRANSACTION_REJECTED',
+            fromState: transaction.state,
+            toState: TransactionState.REJECTED,
+            transactionVersion: updatedTx.version,
+            metadata: {
+              rejectionComment: validated.comment || 'Pengeluaran ditolak oleh pengelola/admin.',
+              rejectedBy: actorId,
+            },
+          },
+        });
+
+        await AuditService.recordAuditEvent(tx, {
+          walletId: transaction.walletId,
+          actorId,
+          eventType: 'TRANSACTION_REJECTED',
+          transactionId,
+          transactionVersion: updatedTx.version,
+          fromState: transaction.state,
+          toState: TransactionState.REJECTED,
+          metadata: {
+            rejectionComment: validated.comment || 'Pengeluaran ditolak oleh pengelola/admin.',
+            rejectedBy: actorId,
+          },
+        });
+
+        return {
+          transaction: {
+            ...updatedTx,
+            amount: Number(updatedTx.amount),
+          },
+          approval: approvalRecord,
+          quorumResult: {
+            approved: false,
+            requiredApprovals,
+            validApprovalCount: 0,
+            hasRejectionDecision: true,
+          },
+        };
+      }
+
+      // Decision is APPROVE:
+      const allApprovals = await tx.transactionApproval.findMany({
+        where: {
+          transactionId,
+          transactionVersion: transaction.version,
+        },
+        orderBy: { signedAt: 'asc' },
+      });
+
+      const eligibleMembers = await tx.walletMember.findMany({
+        where: {
+          walletId: transaction.walletId,
+          status: UserStatus.ACTIVE,
+          role: { in: [WalletRole.ADMIN, WalletRole.PENGELOLA] },
+        },
+        select: { userId: true },
+      });
+
+      const quorumResult = evaluateQuorum({
+        creatorId: transaction.creatorId,
+        transactionVersion: transaction.version,
+        policyVersion,
+        requiredApprovals,
+        eligibleApproverIds: eligibleMembers.map((m) => m.userId),
+        approvals: allApprovals.map((a) => ({
+          approverId: a.approverId,
+          decision: a.decision as 'APPROVE' | 'REJECT',
+          transactionVersion: a.transactionVersion,
+          policyVersion: a.policyVersion,
+          createdAt: a.signedAt,
+          comment: validated.comment,
+        })),
+        options: { allowSelfApproval: false },
+      });
+
+      let updatedTx = transaction;
+
+      if (quorumResult.approved) {
+        const fsmResult = validateTransition({
+          currentState: transaction.state as any,
+          event: 'APPROVE_WITH_QUORUM',
+          context: {
+            quorumSatisfied: true,
+            currentVersion: transaction.version,
+            expectedVersion: transaction.version,
+          },
+        });
+
+        if (!fsmResult.allowed) {
+          throw {
+            status: 400,
+            code: fsmResult.errorCode || 'INVALID_STATE_TRANSITION',
+            message: fsmResult.errorMessage,
+          };
+        }
+
+        const nextTx = await tx.transaction.update({
+          where: { id: transactionId },
+          data: {
+            state: TransactionState.APPROVED,
+            version: { increment: 1 },
+          },
+        });
+
+        await tx.transactionEvent.create({
+          data: {
+            transactionId,
+            actorId,
+            eventType: 'QUORUM_APPROVED',
+            fromState: transaction.state,
+            toState: TransactionState.APPROVED,
+            transactionVersion: nextTx.version,
+            metadata: {
+              validApprovalCount: quorumResult.validApprovalCount,
+              requiredApprovals: quorumResult.requiredApprovals,
+              validApproverIds: quorumResult.validApproverIds,
+              comment: validated.comment,
+            },
+          },
+        });
+
+        await AuditService.recordAuditEvent(tx, {
+          walletId: transaction.walletId,
+          actorId,
+          eventType: 'QUORUM_APPROVED',
+          transactionId,
+          transactionVersion: nextTx.version,
+          fromState: transaction.state,
+          toState: TransactionState.APPROVED,
+          metadata: {
+            validApprovalCount: quorumResult.validApprovalCount,
+            requiredApprovals: quorumResult.requiredApprovals,
+            validApproverIds: quorumResult.validApproverIds,
+            comment: validated.comment,
+          },
+        });
+
+        updatedTx = nextTx as any;
+      } else {
+        await tx.transactionEvent.create({
+          data: {
+            transactionId,
+            actorId,
+            eventType: 'APPROVAL_RECORDED',
+            fromState: transaction.state,
+            toState: transaction.state,
+            transactionVersion: transaction.version,
+            metadata: {
+              validApprovalCount: quorumResult.validApprovalCount,
+              requiredApprovals: quorumResult.requiredApprovals,
+              validApproverIds: quorumResult.validApproverIds,
+              comment: validated.comment,
+            },
+          },
+        });
+
+        await AuditService.recordAuditEvent(tx, {
+          walletId: transaction.walletId,
+          actorId,
+          eventType: 'APPROVAL_RECORDED',
+          transactionId,
+          transactionVersion: transaction.version,
+          fromState: transaction.state,
+          toState: transaction.state,
+          metadata: {
+            validApprovalCount: quorumResult.validApprovalCount,
+            requiredApprovals: quorumResult.requiredApprovals,
+            validApproverIds: quorumResult.validApproverIds,
+            comment: validated.comment,
+          },
+        });
+      }
+
+      return {
+        transaction: {
+          ...updatedTx,
+          amount: Number(updatedTx.amount),
+        },
+        approval: approvalRecord,
+        quorumResult,
+      };
+    });
+  }
+
+  /**
+   * Executes disbursement payment for an APPROVED expense.
+   * Posts official DEBIT to ledger, creates PaymentRecord, and moves state to COMPLETED.
+   */
+  static async executePayment(
+    transactionId: string,
+    actorId: string,
+    input: ExecutePaymentInput = {}
+  ) {
+    const validated = ExecutePaymentSchema.parse(input);
+
+    return await prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: { wallet: true },
+      });
+
+      if (!transaction) {
+        throw { status: 404, code: 'NOT_FOUND', message: 'Transaksi tidak ditemukan.' };
+      }
+
+      if (
+        transaction.state !== TransactionState.APPROVED &&
+        transaction.state !== TransactionState.PAYMENT_PENDING
+      ) {
+        throw {
+          status: 400,
+          code: 'INVALID_STATE_TRANSITION',
+          message: `Transaksi belum disetujui atau tidak dapat dibayar (Status saat ini: ${transaction.state}).`,
+        };
+      }
+
+      if (validated.expectedVersion !== undefined && transaction.version !== validated.expectedVersion) {
+        throw {
+          status: 409,
+          code: 'TRANSACTION_VERSION_CONFLICT',
+          message: 'Data transaksi telah berubah. Muat ulang rincian transaksi.',
+        };
+      }
+
+      const member = await tx.walletMember.findUnique({
+        where: {
+          walletId_userId: {
+            walletId: transaction.walletId,
+            userId: actorId,
+          },
+        },
+      });
+
+      if (!member || member.status !== UserStatus.ACTIVE) {
+        throw {
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Anda bukan anggota aktif dari dompet kas ini.',
+        };
+      }
+
+      if (member.role !== WalletRole.ADMIN && member.role !== WalletRole.PENGELOLA) {
+        throw {
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Hanya Pengelola dan Admin yang berhak mengeksekusi pembayaran kas.',
+        };
+      }
+
+      if (transaction.state === TransactionState.APPROVED) {
+        const initFsm = validateTransition({
+          currentState: 'APPROVED',
+          event: 'INITIATE_PAYMENT',
+        });
+
+        if (!initFsm.allowed) {
+          throw {
+            status: 400,
+            code: initFsm.errorCode || 'INVALID_STATE_TRANSITION',
+            message: initFsm.errorMessage,
+          };
+        }
+      }
+
+      const completeFsm = validateTransition({
+        currentState: 'PAYMENT_PENDING',
+        event: 'CONFIRM_PAYMENT',
+        context: {
+          paymentVerified: true,
+          ledgerPosted: true,
+        },
+      });
+
+      if (!completeFsm.allowed) {
+        throw {
+          status: 400,
+          code: completeFsm.errorCode || 'INVALID_STATE_TRANSITION',
+          message: completeFsm.errorMessage,
+        };
+      }
+
+      const ledgerEntry = await tx.ledgerEntry.create({
+        data: {
+          walletId: transaction.walletId,
+          transactionId: transaction.id,
+          entryType: LedgerEntryType.DEBIT,
+          amount: transaction.amount,
+          currency: transaction.currency,
+        },
+      });
+
+      const paymentRecord = await tx.paymentRecord.create({
+        data: {
+          transactionId: transaction.id,
+          paymentStatus: PaymentStatus.VERIFIED,
+          paymentReference: validated.paymentReference || `PAY-${Date.now().toString(36).toUpperCase()}`,
+          evidenceAttachmentId: validated.evidenceAttachmentId,
+          verifiedBy: actorId,
+          verifiedAt: new Date(),
+        },
+      });
+
+      const updatedTx = await tx.transaction.update({
+        where: { id: transactionId },
+        data: {
+          state: TransactionState.COMPLETED,
+          version: { increment: 1 },
+        },
+      });
+
+      await tx.transactionEvent.create({
+        data: {
+          transactionId,
+          actorId,
+          eventType: 'PAYMENT_COMPLETED',
+          fromState: transaction.state,
+          toState: TransactionState.COMPLETED,
+          transactionVersion: updatedTx.version,
+          metadata: {
+            paymentReference: paymentRecord.paymentReference,
+            ledgerEntryId: ledgerEntry.id,
+            amount: Number(transaction.amount),
+            notes: validated.notes,
+          },
+        },
+      });
+
+      await AuditService.recordAuditEvent(tx, {
+        walletId: transaction.walletId,
+        actorId,
+        eventType: 'PAYMENT_COMPLETED',
+        transactionId,
+        transactionVersion: updatedTx.version,
+        fromState: transaction.state,
+        toState: TransactionState.COMPLETED,
+        metadata: {
+          paymentReference: paymentRecord.paymentReference,
+          ledgerEntryId: ledgerEntry.id,
+          amount: Number(transaction.amount),
+          notes: validated.notes,
+        },
+      });
+
+      return {
+        transaction: {
+          ...updatedTx,
+          amount: Number(updatedTx.amount),
+        },
+        paymentRecord,
+        ledgerEntry,
       };
     });
   }

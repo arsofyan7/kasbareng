@@ -1,0 +1,49 @@
+KASBARENG - AUDIT DAN KRIPTOGRAFI
+Versi 1.0
+
+1. TERMINOLOGI
+MVP menggunakan istilah "tamper-evident SHA-256 hash chain".
+Jangan menyebut mekanisme sebagai forward-secure kecuali ada desain key evolution, penghapusan kunci lama, threat model, dan pengujian yang mendukung klaim tersebut.
+
+2. PAYLOAD AUDIT
+Minimal berisi:
+- event_id
+- wallet_id
+- sequence_no
+- actor_id atau system actor
+- transaction_id jika ada
+- event_type
+- from_state/to_state jika relevan
+- transaction_version
+- server_timestamp
+- metadata yang sudah disaring dari secret/PII berlebih
+
+3. HASH
+Gunakan canonical JSON yang deterministik.
+payload_hash = SHA256(canonical_payload)
+current_hash = SHA256(wallet_id || sequence_no || previous_hash || payload_hash || server_timestamp)
+Definisikan encoding dan separator/length-prefix dengan jelas agar concatenation tidak ambigu. Implementasi yang lebih aman dapat membuat canonical object yang memuat semua field, lalu hash satu representasi byte yang stabil.
+
+4. VERIFIKASI
+- Periksa sequence_no.
+- Periksa previous_hash.
+- Hitung ulang payload_hash.
+- Hitung ulang current_hash.
+- Laporkan wallet, sequence, dan event pertama yang gagal.
+- Verifikasi seluruh rentang yang dipilih.
+- Jangan menyatakan "100% aman"; gunakan "rantai valid pada rentang yang diperiksa".
+
+5. BATASAN
+Jika penyerang menguasai database dan dapat menulis ulang semua record beserta rantai, hash chain tanpa anchoring terpisah mungkin tidak cukup mendeteksi rewrite total.
+Untuk penguatan berikutnya: signed checkpoint, anchoring ke storage terpisah, backup immutable, separation of duties, dan monitoring.
+Jangan menyimpan private key di database plaintext atau source code.
+
+6. APPROVAL CRYPTOGRAPHY
+HMAC menggunakan secret bersama; bukan tanda tangan digital asimetris.
+Jika menggunakan tanda tangan asimetris:
+- Pilih algoritma/library yang mapan.
+- Tanda tangani payload transaksi kanonis beserta transaction_id, wallet_id, transaction_version, policy_version, approver identity, decision, dan nonce/timestamp sesuai desain.
+- Verifikasi signature di backend.
+- Definisikan enrollment, rotasi, pencabutan, dan pemulihan kunci.
+- Jangan membangun primitive kriptografi sendiri.
+Jika tanda tangan digital belum diterapkan, sebut fitur sebagai approval record terautentikasi, bukan digital signature.

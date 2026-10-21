@@ -1,5 +1,10 @@
 import { Router, Response } from 'express';
-import { WalletService, JoinWalletSchema, UpdateInviteCodeSchema } from './wallet.service';
+import {
+  WalletService,
+  JoinWalletSchema,
+  UpdateInviteCodeSchema,
+  UpdatePolicySchema,
+} from './wallet.service';
 import { requireAuth, requireWalletRole, AuthRequest } from '../auth/auth.middleware';
 import { sendSuccess, sendError } from '../../common/response';
 import { WalletRole } from '@prisma/client';
@@ -45,7 +50,7 @@ walletRouter.post('/join', requireAuth, async (req: AuthRequest, res: Response) 
   try {
     const validated = JoinWalletSchema.parse(req.body);
     const result = await WalletService.joinWalletByCode(req.user!.id, validated.inviteCode);
-    return sendSuccess(res, result, 200, 'Berhasil bergabung dengan dompet kas!');
+    return sendSuccess(res, result, 200, { message: 'Berhasil bergabung dengan dompet kas!' });
   } catch (err: any) {
     if (err instanceof ZodError) {
       return sendError(res, 'VALIDATION_ERROR', 'Format kode undangan tidak valid.', 400, err.errors);
@@ -78,7 +83,7 @@ walletRouter.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
 walletRouter.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const wallet = await WalletService.createWallet(req.user!.id, req.body);
-    return sendSuccess(res, wallet, 201, 'Dompet kas komunitas berhasil dibuat!');
+    return sendSuccess(res, wallet, 201, { message: 'Dompet kas komunitas berhasil dibuat!' });
   } catch (err: any) {
     if (err instanceof ZodError) {
       return sendError(res, 'VALIDATION_ERROR', 'Format data tidak valid.', 400, err.errors);
@@ -102,7 +107,7 @@ walletRouter.patch(
       const walletId = String(req.params.walletId);
       const validated = UpdateInviteCodeSchema.parse(req.body);
       const updated = await WalletService.updateInviteCode(walletId, validated.customCode);
-      return sendSuccess(res, updated, 200, 'Kode undangan berhasil diperbarui!');
+      return sendSuccess(res, updated, 200, { message: 'Kode undangan berhasil diperbarui!' });
     } catch (err: any) {
       if (err instanceof ZodError) {
         return sendError(res, 'VALIDATION_ERROR', 'Format kode tidak valid.', 400, err.errors);
@@ -158,7 +163,7 @@ walletRouter.post(
     try {
       const walletId = String(req.params.walletId);
       const newMember = await WalletService.addWalletMember(walletId, req.body);
-      return sendSuccess(res, newMember, 201, 'Anggota berhasil ditambahkan.');
+      return sendSuccess(res, newMember, 201, { message: 'Anggota berhasil ditambahkan.' });
     } catch (err: any) {
       if (err instanceof ZodError) {
         return sendError(res, 'VALIDATION_ERROR', 'Format data tidak valid.', 400, err.errors);
@@ -187,7 +192,7 @@ walletRouter.patch(
         memberId,
         req.body
       );
-      return sendSuccess(res, updated, 200, 'Data anggota berhasil diperbarui.');
+      return sendSuccess(res, updated, 200, { message: 'Data anggota berhasil diperbarui.' });
     } catch (err: any) {
       if (err instanceof ZodError) {
         return sendError(res, 'VALIDATION_ERROR', 'Format data tidak valid.', 400, err.errors);
@@ -196,6 +201,55 @@ walletRouter.patch(
         res,
         err.code || 'UPDATE_MEMBER_FAILED',
         err.message || 'Gagal memperbarui data anggota.',
+        err.status || 400
+      );
+    }
+  }
+);
+
+// 11. Get M-of-N Approval Policy (Any active member)
+walletRouter.get(
+  '/:walletId/policy',
+  requireAuth,
+  requireWalletRole(),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const walletId = String(req.params.walletId);
+      const policyData = await WalletService.getWalletPolicy(walletId);
+      return sendSuccess(res, policyData, 200);
+    } catch (err: any) {
+      return sendError(
+        res,
+        err.code || 'INTERNAL_ERROR',
+        err.message || 'Gagal memuat aturan persetujuan dompet.',
+        err.status || 500
+      );
+    }
+  }
+);
+
+// 12. Update M-of-N Approval Policy (ADMIN only)
+walletRouter.put(
+  '/:walletId/policy',
+  requireAuth,
+  requireWalletRole([WalletRole.ADMIN]),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const walletId = String(req.params.walletId);
+      const updated = await WalletService.updateWalletPolicy(
+        walletId,
+        req.user!.id,
+        req.body
+      );
+      return sendSuccess(res, updated, 200, { message: 'Kebijakan kuorum persetujuan berhasil diperbarui!' });
+    } catch (err: any) {
+      if (err instanceof ZodError) {
+        return sendError(res, 'VALIDATION_ERROR', 'Format data kebijakan tidak valid.', 400, err.errors);
+      }
+      return sendError(
+        res,
+        err.code || 'UPDATE_POLICY_FAILED',
+        err.message || 'Gagal memperbarui kebijakan kuorum dompet.',
         err.status || 400
       );
     }

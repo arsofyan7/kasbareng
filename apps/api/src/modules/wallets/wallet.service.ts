@@ -1,7 +1,8 @@
 import { prisma } from '../../common/prisma';
-import { WalletRole, UserStatus, WalletStatus } from '@prisma/client';
+import { Prisma, WalletRole, UserStatus, WalletStatus } from '@prisma/client';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { AuditService } from '../audit/audit.service';
 
 export const CreateWalletSchema = z.object({
   name: z.string().min(3, 'Nama dompet kas minimal 3 karakter').max(100),
@@ -41,11 +42,17 @@ export const UpdateInviteCodeSchema = z.object({
     }),
 });
 
+export const UpdatePolicySchema = z.object({
+  requiredApprovals: z.number().int().min(1, 'Jumlah persetujuan minimal adalah 1'),
+  thresholdAmount: z.number().positive().optional().nullable(),
+});
+
 export type CreateWalletInput = z.input<typeof CreateWalletSchema>;
 export type AddMemberInput = z.infer<typeof AddMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof UpdateMemberSchema>;
 export type JoinWalletInput = z.infer<typeof JoinWalletSchema>;
 export type UpdateInviteCodeInput = z.infer<typeof UpdateInviteCodeSchema>;
+export type UpdatePolicyInput = z.infer<typeof UpdatePolicySchema>;
 
 export class WalletService {
   /**
@@ -117,6 +124,19 @@ export class WalletService {
           requiredApprovals: validated.requiredApprovals,
           policyVersion: 1,
           createdBy: userId,
+        },
+      });
+
+      // 4. Record Genesis Audit Event for this wallet
+      await AuditService.recordAuditEvent(tx, {
+        walletId: wallet.id,
+        actorId: userId,
+        eventType: 'WALLET_GENESIS_CREATED',
+        metadata: {
+          name: validated.name,
+          currency: validated.currency,
+          requiredApprovals: validated.requiredApprovals,
+          inviteCode,
         },
       });
 
@@ -327,7 +347,7 @@ export class WalletService {
       },
     });
 
-    let finalRole = WalletRole.WARGA;
+    let finalRole: WalletRole = WalletRole.WARGA;
 
     if (existingMember) {
       if (existingMember.status === UserStatus.ACTIVE) {
@@ -551,6 +571,121 @@ export class WalletService {
           },
         },
       },
+    });
+  }
+
+  /**
+   * Fetches the active M-of-N approval policy and eligible approvers.
+   */
+  static async getWalletPolicy(walletId: string) {
+    const policy = await prisma.approvalPolicy.findFirst({
+      where: { walletId, status: 'ACTIVE' },
+      orderBy: { policyVersion: 'desc' },
+    });
+
+    const eligibleMembers = await prisma.walletMember.findMany({
+      where: {
+        walletId,
+        status: UserStatus.ACTIVE,
+        role: { in: [WalletRole.ADMIN, WalletRole.PENGELOLA] },
+      },
+      include: {
+        user: {
+          select: { id: true, fullName: true, email: true },
+        },
+      },
+      orderBy: { joinedAt: 'asc' },
+    });
+
+    return {
+      policy: policy
+        ? {
+            ...policy,
+            thresholdAmount: policy.thresholdAmount ? Number(policy.thresholdAmount) : null,
+          }
+        : {
+            id: 'default',
+            walletId,
+            requiredApprovals: 1,
+            thresholdAmount: null,
+            policyVersion: 1,
+            status: 'ACTIVE',
+            createdAt: new Date(),
+          },
+      eligibleApproverCount: eligibleMembers.length,
+      eligibleApprovers: eligibleMembers.map((m) => ({
+        id: m.user.id,
+        fullName: m.user.fullName,
+        email: m.user.email,
+        role: m.role,
+      })),
+    };
+  }
+
+  /**
+   * Updates M-of-N approval policy (ADMIN only).
+   * Archives previous policy to maintain strict audit trail.
+   */
+  static async updateWalletPolicy(walletId: string, actorId: string, input: UpdatePolicyInput) {
+    const validated = UpdatePolicySchema.parse(input);
+
+    const eligibleCount = await prisma.walletMember.count({
+      where: {
+        walletId,
+        status: UserStatus.ACTIVE,
+        role: { in: [WalletRole.ADMIN, WalletRole.PENGELOLA] },
+      },
+    });
+
+    if (validated.requiredApprovals > eligibleCount) {
+      throw {
+        status: 400,
+        code: 'INVALID_POLICY_QUORUM',
+        message: `Jumlah persetujuan kuorum (${validated.requiredApprovals}) tidak boleh melebihi jumlah pengelola/admin yang ada (${eligibleCount}).`,
+      };
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const currentPolicy = await tx.approvalPolicy.findFirst({
+        where: { walletId, status: 'ACTIVE' },
+        orderBy: { policyVersion: 'desc' },
+      });
+
+      const nextVersion = (currentPolicy?.policyVersion || 0) + 1;
+
+      if (currentPolicy) {
+        await tx.approvalPolicy.update({
+          where: { id: currentPolicy.id },
+          data: { status: 'ARCHIVED' },
+        });
+      }
+
+      const newPolicy = await tx.approvalPolicy.create({
+        data: {
+          walletId,
+          requiredApprovals: validated.requiredApprovals,
+          thresholdAmount: validated.thresholdAmount ? new Prisma.Decimal(validated.thresholdAmount) : null,
+          policyVersion: nextVersion,
+          status: 'ACTIVE',
+          createdBy: actorId,
+        },
+      });
+
+      await AuditService.recordAuditEvent(tx, {
+        walletId,
+        actorId,
+        eventType: 'POLICY_UPDATED',
+        metadata: {
+          policyVersion: nextVersion,
+          requiredApprovals: validated.requiredApprovals,
+          thresholdAmount: validated.thresholdAmount || null,
+        },
+      });
+
+      return {
+        ...newPolicy,
+        thresholdAmount: newPolicy.thresholdAmount ? Number(newPolicy.thresholdAmount) : null,
+      };
     });
   }
 }

@@ -58,6 +58,44 @@ export interface WalletMember {
   joinedAt: string;
 }
 
+export type ApprovalDecision = 'APPROVE' | 'REJECT';
+
+export interface TransactionApproval {
+  id: string;
+  transactionId: string;
+  approverId: string;
+  decision: ApprovalDecision;
+  transactionVersion: number;
+  policyVersion: number;
+  signedAt: string;
+  approver?: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
+}
+
+export interface PaymentRecord {
+  id: string;
+  transactionId: string;
+  paymentStatus: 'PENDING' | 'PAID' | 'VERIFIED' | 'REJECTED';
+  paymentReference?: string | null;
+  evidenceAttachmentId?: string | null;
+  verifiedBy?: string | null;
+  verifiedAt?: string | null;
+  createdAt: string;
+}
+
+export interface ApprovalPolicy {
+  id: string;
+  walletId: string;
+  requiredApprovals: number;
+  thresholdAmount?: number | null;
+  policyVersion: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  createdAt?: string;
+}
+
 export interface Transaction {
   id: string;
   walletId: string;
@@ -78,6 +116,28 @@ export interface Transaction {
   };
   approvalsCount?: number;
   eventsCount?: number;
+  approvals?: TransactionApproval[];
+  paymentRecords?: PaymentRecord[];
+  wallet?: {
+    id: string;
+    name: string;
+    currency: string;
+    approvalPolicies?: ApprovalPolicy[];
+  };
+  events?: Array<{
+    id: string;
+    eventType: string;
+    fromState: string | null;
+    toState: string;
+    transactionVersion: number;
+    createdAt: string;
+    metadata?: any;
+    actor?: {
+      id: string;
+      fullName: string;
+      email: string;
+    };
+  }>;
 }
 
 export interface WalletSummary {
@@ -89,6 +149,31 @@ export interface WalletSummary {
   postedCreditTotal: number;
   postedDebitTotal: number;
   isValid: boolean;
+}
+
+export interface AuditLog {
+  id: string;
+  walletId: string;
+  sequenceNo: number;
+  eventId: string;
+  payloadHash: string;
+  previousHash: string;
+  currentHash: string;
+  createdAt: string;
+  payload?: any;
+}
+
+export interface AuditVerificationResult {
+  valid: boolean;
+  totalEvents: number;
+  walletId: string;
+  latestSequenceNo: number;
+  latestCurrentHash: string;
+  verifiedAt: string;
+  failedIndex?: number;
+  failedSequenceNo?: number;
+  errorCode?: string;
+  errorMessage?: string;
 }
 
 export interface ApiResponse<T> {
@@ -104,3 +189,61 @@ export interface ApiResponse<T> {
     details?: unknown;
   } | null;
 }
+
+export type MovementDirection = 'CREDIT' | 'DEBIT';
+export type ReconciliationStatus = 'MATCHED' | 'AMBIGUOUS' | 'UNMATCHED' | 'DUPLICATE_POTENTIAL';
+
+export interface BankStatementItem {
+  id: string;
+  sourceRowNumber: number;
+  transactionDate: string;
+  amount: number;
+  direction: MovementDirection;
+  description: string;
+  externalReference: string | null;
+  matchStatus: ReconciliationStatus;
+  ruleCode: string;
+  transactionId: string | null;
+  transaction?: {
+    id: string;
+    category: string;
+    amount: number;
+    type: TransactionType;
+    state: TransactionState;
+    creatorName?: string;
+    reference?: string;
+  } | null;
+  candidateTransactions?: Array<{
+    id: string;
+    category: string;
+    amount: number;
+    type: TransactionType;
+    createdAt: string;
+    reference?: string;
+  }>;
+}
+
+export interface UnmatchedInternalTransaction {
+  id: string;
+  category: string;
+  amount: number;
+  type: TransactionType;
+  state: TransactionState;
+  createdAt: string;
+  notes?: string | null;
+  reference: string;
+}
+
+export interface ReconciliationSummary {
+  importBatchId?: string;
+  totalBankMutations: number;
+  matchedCount: number;
+  ambiguousCount: number;
+  unmatchedBankCount: number;
+  unmatchedInternalCount: number;
+  duplicateAlertsCount: number;
+  precisionAutoMatchPercent: number;
+  bankStatements: BankStatementItem[];
+  unmatchedInternalTransactions: UnmatchedInternalTransaction[];
+}
+
