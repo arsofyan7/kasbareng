@@ -7,6 +7,7 @@ import { walletRouter } from './modules/wallets/wallet.routes';
 import { transactionRouter } from './modules/transactions/transaction.routes';
 import { auditRouter } from './modules/audit/audit.routes';
 import { reconciliationRouter } from './modules/reconciliation/reconciliation.routes';
+import { attachmentRouter } from './modules/attachments/attachment.routes';
 
 export const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/v1/wallets', walletRouter);
 app.use('/api/v1', transactionRouter);
 app.use('/api/v1', auditRouter);
 app.use('/api/v1', reconciliationRouter);
+app.use('/api/v1', attachmentRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

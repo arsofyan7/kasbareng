@@ -18,6 +18,8 @@ import {
   CreditCard,
   History,
   Lock,
+  Camera,
+  ExternalLink,
 } from 'lucide-react';
 
 interface TransactionDetailModalProps {
@@ -240,6 +242,43 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
   };
 
+  const handleVerifyIncome = async (decision: 'APPROVE' | 'REJECT') => {
+    let reason: string | undefined = undefined;
+    if (decision === 'REJECT') {
+      const inputReason = prompt('Masukkan alasan penolakan laporan iuran (misal: Bukti transfer tidak valid/dana belum masuk):');
+      if (inputReason === null) return;
+      reason = inputReason.trim() || 'Laporan iuran ditolak oleh pengurus kas.';
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/v1/transactions/${transaction.id}/verify-income`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          decision,
+          notes: reason,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error?.message || 'Gagal memverifikasi laporan pemasukan.');
+      }
+
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getStateBadge = (state: TransactionState) => {
     switch (state) {
       case 'DRAFT':
@@ -249,6 +288,20 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </span>
         );
       case 'SUBMITTED':
+        if (isIncome) {
+          return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+              <Clock className="w-3.5 h-3.5" />
+              Menunggu Verifikasi Pengurus
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+            <Clock className="w-3.5 h-3.5" />
+            Menunggu Persetujuan
+          </span>
+        );
       case 'PENDING_APPROVAL':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
@@ -362,6 +415,33 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
           <div>{getStateBadge(transaction.state)}</div>
         </div>
+
+        {/* Receipt Attachment Card */}
+        {transaction.receiptAttachmentId && (
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Foto Bukti Pembayaran / Transfer
+              </span>
+              <a
+                href={`/api/v1/attachments/${transaction.receiptAttachmentId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+              >
+                Buka Penuh <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <div className="relative rounded-xl overflow-hidden max-h-56 bg-black/5 dark:bg-black/20 flex items-center justify-center p-1">
+              <img
+                src={`/api/v1/attachments/${transaction.receiptAttachmentId}`}
+                alt="Bukti Transfer"
+                className="max-h-52 w-auto object-contain rounded-lg shadow-sm"
+              />
+            </div>
+          </div>
+        )}
 
         {/* M-of-N Quorum Progress Card (For EXPENSE) */}
         {!isIncome && !isDraft && !isRejected && (
@@ -682,6 +762,39 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               <CreditCard className="w-3.5 h-3.5" />
               Eksekusi Pembayaran Kas
             </button>
+          )}
+
+          {/* INCOME SUBMITTED: Verifikasi Laporan Pemasukan Warga (Single Manager) */}
+          {isIncome && transaction.state === 'SUBMITTED' && (
+            <>
+              {isEligibleRole ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleVerifyIncome('REJECT')}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-100"
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5" />
+                    Tolak Laporan
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleVerifyIncome('APPROVE')}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Verifikasi & Masukkan Kas
+                  </button>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-semibold">
+                  <Clock className="w-3.5 h-3.5" />
+                  Menunggu Verifikasi Pengurus Kas
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>

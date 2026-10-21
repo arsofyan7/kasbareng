@@ -4,20 +4,24 @@ Versi 1.0
 1. ROLE
 WARGA:
 - Melihat saldo dan transaksi yang dipublikasikan.
-- Mengonfirmasi/meninjau status iuran.
+- Melaporkan setoran pemasukan/iuran mandiri (INCOME) disertai foto bukti transfer/kamera (status aman: SUBMITTED).
+- Dilarang keras mengajukan pengeluaran (EXPENSE) (ditolak 403 Forbidden).
+- Mengonfirmasi/meninjau status iuran sendiri dan anggota komunitas.
 - Mengajukan pertanyaan atau keberatan.
-- Tidak mengubah policy, role, atau saldo.
+- Tidak dapat memverifikasi laporan pemasukan sendiri atau mengubah policy, role, dan saldo kas aktif.
 PENGELOLA:
-- Membuat draf transaksi.
-- Mencatat pemasukan jika diizinkan.
-- Mengajukan pengeluaran.
+- Membuat draf transaksi pemasukan dan pengeluaran kas.
+- Mencatat pemasukan langsung (otomatis COMPLETED).
+- Memverifikasi atau menolak laporan setoran iuran warga (Single-Approver: 1 pengurus cukup).
+- Mengajukan pengeluaran untuk persetujuan kuorum M-of-N.
 - Mengunggah CSV dan menjalankan rekonsiliasi jika diizinkan.
-- Dapat menjadi approver hanya jika policy secara eksplisit menunjuknya dan aturan pemisahan tugas dipenuhi.
+- Dapat menjadi approver pengeluaran hanya jika policy secara eksplisit menunjuknya dan aturan pemisahan tugas dipenuhi.
 ADMIN:
 - Mengelola anggota dan role.
-- Mengatur policy, kuorum, dan ambang batas.
-- Menyetujui/menolak transaksi hanya jika terdaftar sebagai approver yang memenuhi syarat.
-- Tidak boleh menyetujui transaksi sendiri jika kebijakan melarangnya.
+- Mengatur policy, kuorum M-of-N, dan ambang batas pengeluaran.
+- Memverifikasi atau menolak laporan setoran iuran warga.
+- Menyetujui/menolak transaksi pengeluaran hanya jika terdaftar sebagai approver yang memenuhi syarat.
+- Tidak boleh menyetujui transaksi pengeluaran sendiri jika kebijakan melarangnya (Anti-Self Approval Guard).
 
 2. ROLE PER WALLET
 Role disimpan pada wallet_members atau model membership sejenis.

@@ -45,9 +45,15 @@ export const ExecutePaymentSchema = z.object({
   expectedVersion: z.number().int().positive().optional(),
 });
 
+export const VerifyIncomeSchema = z.object({
+  decision: z.enum(['APPROVE', 'REJECT']),
+  notes: z.string().max(500).optional(),
+});
+
 export type CreateTransactionInput = z.input<typeof CreateTransactionSchema>;
 export type UpdateTransactionInput = z.infer<typeof UpdateTransactionSchema>;
 export type ProcessApprovalInput = z.infer<typeof ProcessApprovalSchema>;
+export type VerifyIncomeInput = z.infer<typeof VerifyIncomeSchema>;
 export type ExecutePaymentInput = z.infer<typeof ExecutePaymentSchema>;
 
 export class TransactionService {
@@ -452,19 +458,38 @@ export class TransactionService {
           };
         }
       } else {
-        // INCOME workflow (Pemasukan Kas, e.g. Iuran Warga):
-        // Automatically completes and posts credit to ledger upon submission!
-        finalState = TransactionState.COMPLETED;
-
-        await tx.ledgerEntry.create({
-          data: {
-            walletId: transaction.walletId,
-            transactionId: transaction.id,
-            entryType: LedgerEntryType.CREDIT,
-            amount: transaction.amount,
-            currency: transaction.currency,
+        // INCOME workflow:
+        // Check if transaction creator is a WARGA (Member Self-Report)
+        const creatorMember = await tx.walletMember.findUnique({
+          where: {
+            walletId_userId: {
+              walletId: transaction.walletId,
+              userId: transaction.creatorId,
+            },
           },
         });
+
+        const isWargaCreator = creatorMember?.role === WalletRole.WARGA;
+
+        if (isWargaCreator) {
+          // Member Self-Report: Stays in SUBMITTED state (Awaiting verification by Pengurus/Admin)
+          // Financial Security: Saldo kas TIDAK bertambah sebelum diverifikasi pengurus!
+          finalState = TransactionState.SUBMITTED;
+        } else {
+          // Recorded by ADMIN / PENGELOLA:
+          // Directly completes and posts credit to ledger upon submission!
+          finalState = TransactionState.COMPLETED;
+
+          await tx.ledgerEntry.create({
+            data: {
+              walletId: transaction.walletId,
+              transactionId: transaction.id,
+              entryType: LedgerEntryType.CREDIT,
+              amount: transaction.amount,
+              currency: transaction.currency,
+            },
+          });
+        }
       }
 
       const updated = await tx.transaction.update({
@@ -475,11 +500,18 @@ export class TransactionService {
         },
       });
 
+      const eventType =
+        transaction.type === TransactionType.EXPENSE
+          ? 'APPROVAL_REQUESTED'
+          : finalState === TransactionState.SUBMITTED
+          ? 'INCOME_REPORTED'
+          : 'INCOME_POSTED';
+
       await tx.transactionEvent.create({
         data: {
           transactionId,
           actorId,
-          eventType: transaction.type === TransactionType.EXPENSE ? 'APPROVAL_REQUESTED' : 'INCOME_POSTED',
+          eventType,
           fromState: transaction.state,
           toState: finalState,
           transactionVersion: updated.version,
@@ -494,7 +526,7 @@ export class TransactionService {
       await AuditService.recordAuditEvent(tx, {
         walletId: transaction.walletId,
         actorId,
-        eventType: transaction.type === TransactionType.EXPENSE ? 'APPROVAL_REQUESTED' : 'INCOME_POSTED',
+        eventType,
         transactionId,
         transactionVersion: updated.version,
         fromState: transaction.state,
@@ -1084,6 +1116,191 @@ export class TransactionService {
         paymentRecord,
         ledgerEntry,
       };
+    });
+  }
+
+  /**
+   * Verifies an income report submitted by a citizen / WARGA.
+   * Single-approver: 1 eligible manager (ADMIN / PENGELOLA) can verify or reject.
+   * If APPROVE: transitions to COMPLETED, creates CREDIT ledger entry, and increases cash balance.
+   * If REJECT: transitions to REJECTED, records rejection reason, cash balance unaffected.
+   */
+  static async verifyIncomeReport(
+    transactionId: string,
+    actorId: string,
+    input: VerifyIncomeInput
+  ) {
+    const validated = VerifyIncomeSchema.parse(input);
+
+    return await prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: {
+          wallet: true,
+          creator: { select: { id: true, fullName: true, email: true } },
+        },
+      });
+
+      if (!transaction) {
+        throw { status: 404, code: 'NOT_FOUND', message: 'Transaksi tidak ditemukan.' };
+      }
+
+      if (transaction.type !== TransactionType.INCOME) {
+        throw {
+          status: 400,
+          code: 'INVALID_TRANSACTION_TYPE',
+          message: 'Hanya laporan pemasukan/iuran kas yang dapat diverifikasi melalui alur ini.',
+        };
+      }
+
+      if (transaction.state !== TransactionState.SUBMITTED) {
+        throw {
+          status: 400,
+          code: 'INVALID_STATE',
+          message: `Transaksi berstatus ${transaction.state}. Hanya laporan yang menunggu verifikasi (SUBMITTED) yang dapat diproses.`,
+        };
+      }
+
+      // Check actor eligibility: must be ADMIN or PENGELOLA
+      const actorMember = await tx.walletMember.findUnique({
+        where: {
+          walletId_userId: {
+            walletId: transaction.walletId,
+            userId: actorId,
+          },
+        },
+      });
+
+      if (
+        !actorMember ||
+        (actorMember.role !== WalletRole.ADMIN && actorMember.role !== WalletRole.PENGELOLA)
+      ) {
+        throw {
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Hanya Admin atau Pengelola yang berhak memverifikasi laporan pemasukan kas warga.',
+        };
+      }
+
+      if (validated.decision === 'APPROVE') {
+        // 1. Post credit to ledger
+        const ledgerEntry = await tx.ledgerEntry.create({
+          data: {
+            walletId: transaction.walletId,
+            transactionId: transaction.id,
+            entryType: LedgerEntryType.CREDIT,
+            amount: transaction.amount,
+            currency: transaction.currency,
+          },
+        });
+
+        // 2. Transition state to COMPLETED
+        const updated = await tx.transaction.update({
+          where: { id: transactionId },
+          data: {
+            state: TransactionState.COMPLETED,
+            version: { increment: 1 },
+          },
+          include: {
+            creator: { select: { id: true, fullName: true, email: true } },
+          },
+        });
+
+        // 3. Record event
+        await tx.transactionEvent.create({
+          data: {
+            transactionId,
+            actorId,
+            eventType: 'INCOME_VERIFIED',
+            fromState: TransactionState.SUBMITTED,
+            toState: TransactionState.COMPLETED,
+            transactionVersion: updated.version,
+            metadata: {
+              verifiedAt: new Date().toISOString(),
+              verifiedBy: actorId,
+              notes: validated.notes,
+              ledgerEntryId: ledgerEntry.id,
+              amount: Number(transaction.amount),
+            },
+          },
+        });
+
+        // 4. Record Audit Log
+        await AuditService.recordAuditEvent(tx, {
+          walletId: transaction.walletId,
+          actorId,
+          eventType: 'INCOME_VERIFIED',
+          transactionId,
+          transactionVersion: updated.version,
+          fromState: TransactionState.SUBMITTED,
+          toState: TransactionState.COMPLETED,
+          metadata: {
+            verifiedAt: new Date().toISOString(),
+            verifiedBy: actorId,
+            notes: validated.notes,
+            amount: Number(transaction.amount),
+            creatorId: transaction.creatorId,
+          },
+        });
+
+        return {
+          ...updated,
+          amount: Number(updated.amount),
+          ledgerEntry,
+        };
+      } else {
+        // REJECT
+        const updated = await tx.transaction.update({
+          where: { id: transactionId },
+          data: {
+            state: TransactionState.REJECTED,
+            version: { increment: 1 },
+          },
+          include: {
+            creator: { select: { id: true, fullName: true, email: true } },
+          },
+        });
+
+        // Record rejection event
+        await tx.transactionEvent.create({
+          data: {
+            transactionId,
+            actorId,
+            eventType: 'INCOME_REJECTED',
+            fromState: TransactionState.SUBMITTED,
+            toState: TransactionState.REJECTED,
+            transactionVersion: updated.version,
+            metadata: {
+              rejectedAt: new Date().toISOString(),
+              rejectedBy: actorId,
+              reason: validated.notes || 'Laporan iuran ditolak oleh pengurus kas.',
+            },
+          },
+        });
+
+        // Record Audit Log
+        await AuditService.recordAuditEvent(tx, {
+          walletId: transaction.walletId,
+          actorId,
+          eventType: 'INCOME_REJECTED',
+          transactionId,
+          transactionVersion: updated.version,
+          fromState: TransactionState.SUBMITTED,
+          toState: TransactionState.REJECTED,
+          metadata: {
+            rejectedAt: new Date().toISOString(),
+            rejectedBy: actorId,
+            reason: validated.notes || 'Laporan iuran ditolak oleh pengurus kas.',
+            amount: Number(transaction.amount),
+            creatorId: transaction.creatorId,
+          },
+        });
+
+        return {
+          ...updated,
+          amount: Number(updated.amount),
+        };
+      }
     });
   }
 }

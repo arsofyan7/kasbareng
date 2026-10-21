@@ -18,10 +18,13 @@ POST /api/v1/wallets/:walletId/members
 PATCH /api/v1/wallets/:walletId/members/:memberId
 GET  /api/v1/wallets/:walletId/transactions
 POST /api/v1/wallets/:walletId/transactions
+POST /api/v1/wallets/:walletId/attachments
+GET  /api/v1/attachments/:attachmentId
 GET  /api/v1/transactions/:transactionId
 PATCH /api/v1/transactions/:transactionId
 POST /api/v1/transactions/:transactionId/submit
 POST /api/v1/transactions/:transactionId/approvals
+POST /api/v1/transactions/:transactionId/verify-income
 POST /api/v1/transactions/:transactionId/payment-records
 POST /api/v1/transactions/:transactionId/clarifications
 POST /api/v1/wallets/:walletId/imports

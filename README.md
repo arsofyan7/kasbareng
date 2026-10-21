@@ -9,7 +9,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Express](https://img.shields.io/badge/Express-4.21-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Vitest](https://img.shields.io/badge/Vitest-90%2F90_Tests_Passed-green?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-95%2F95_Tests_Passed-green?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-orange?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 
 ---
@@ -26,6 +26,7 @@
   - [4. Rekonsiliasi Bank CSV 3-Pass Deterministik](#4-rekonsiliasi-bank-csv-3-pass-deterministik)
   - [5. Arsitektur Komunitas Tertutup & Akses Instan (Gated Access)](#5-arsitektur-komunitas-tertutup--akses-instan-gated-access)
   - [6. Parser Chat AI (Human-in-the-Loop)](#6-parser-chat-ai-human-in-the-loop)
+  - [7. Pelaporan Iuran Mandiri Warga & Verifikasi Pengurus (Single-Manager Approval)](#7-pelaporan-iuran-mandiri-warga--verifikasi-pengurus-single-manager-approval)
 - [Matriks Hak Akses (RBAC)](#-matriks-hak-akses-rbac)
 - [Panduan Instalasi & Menjalankan Lokal](#-panduan-instalasi--menjalankan-lokal)
 - [Dataset Demo & Akun Siap Pakai](#-dataset-demo--akun-siap-pakai)
@@ -114,7 +115,7 @@ graph TD
 - **Frontend**: React 18, TypeScript 5.6, Vite 5.4, Tailwind CSS 3.4, TanStack Query 5, Lucide Icons.
 - **Backend**: Node.js, Express 4.21, TypeScript 5.6, Prisma ORM 5.22, Zod 3.23 (Validasi Skema), Jose / JWT, Bcrypt.
 - **Kriptografi & Integritas**: Node.js `crypto` (SHA-256), RFC 8785 Canonical JSON Serialization.
-- **Testing**: Vitest 2.1 (90 tests unit & integrasi lulus 100%).
+- **Testing**: Vitest 2.1 (95 tests unit & integrasi lulus 100%).
 
 ---
 
@@ -293,6 +294,38 @@ sequenceDiagram
 
 ---
 
+### 7. Pelaporan Iuran Mandiri Warga & Verifikasi Pengurus (Single-Manager Approval)
+
+Warga dapat melaporkan pembayaran kas/iuran secara mandiri dengan melampirkan foto struk transfer langsung dari kamera HP atau galeri. Berbeda dengan pengeluaran uang yang memerlukan kuorum $M$-dari-$N$, verifikasi pemasukan kas dirancang cepat dan cukup disetujui oleh **1 pengurus saja** (`ADMIN` atau `PENGELOLA`):
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Warga as Bpk. Joko (Warga RT)
+    actor Pengurus as Ibu Ratna (Bendahara / Pengelola)
+    participant API as Backend Service
+    participant Store as Attachment Storage (SHA-256)
+    participant Ledger as Ledger Engine
+    participant Audit as SHA-256 Hash Chain
+
+    Warga->>API: 1. Lapor Pembayaran Iuran Rp 50.000 + Foto Struk Transfer
+    API->>Store: Simpan berkas gambar & hitung Checksum SHA-256
+    API->>Ledger: Set status SUBMITTED (Menunggu Verifikasi)
+    Note over API,Ledger: Keamanan Finansial: Saldo kas TIDAK bertambah sebelum verifikasi!
+    API-->>Warga: ✅ Laporan tersimpan (Lencana: 'Menunggu Verifikasi')
+
+    Pengurus->>API: 2. Buka Tab 'Iuran Warga' di Menu Persetujuan (/approvals)
+    API-->>Pengurus: Daftar transaksi pending + foto bukti transfer
+    Pengurus->>API: 3. Klik 'Verifikasi Masuk' (Single-Manager Verification)
+    API->>Ledger: Posting CREDIT Rp 50.000 ke Saldo Aktif (Posted Balance)
+    API->>Audit: Rekam hash chain blok baru (INCOME_VERIFIED)
+    API-->>Pengurus: ✅ Status berubah COMPLETED & Saldo kas resmi bertambah!
+```
+
+> 🛡️ **Invarian Keamanan Finansial**: Warga dilarang keras membuat transaksi pengeluaran (`EXPENSE` -> ditolak `403 Forbidden`). Pemasukan yang disubmit warga tidak akan pernah mempengaruhi saldo kas aktif sebelum diverifikasi oleh pengurus sah.
+
+---
+
 ## 👥 Matriks Hak Akses (RBAC)
 
 Hak akses bersifat **spesifik per dompet kas** (*per-wallet scope*). Pengguna yang menjadi `WARGA` di kas RT dapat menjadi `ADMIN` di kas panitia 17-an.
@@ -301,8 +334,10 @@ Hak akses bersifat **spesifik per dompet kas** (*per-wallet scope*). Pengguna ya
 | :--- | :---: | :---: | :---: |
 | **Melihat Saldo & Riwayat Transaksi** | ✅ Ya | ✅ Ya | ✅ Ya |
 | **Melihat Rantai Audit Kriptografis** | ✅ Ya | ✅ Ya | ✅ Ya |
-| **Membuat Draf Pemasukan & Pengeluaran** | ✅ Ya | ✅ Ya | ❌ Tidak |
-| **Memberikan Persetujuan Kuorum (Approval)** | ✅ Ya | ✅ Ya | ❌ Tidak |
+| **Lapor Iuran Mandiri (+ Foto Struk / Kamera)** | ✅ Ya | ✅ Ya | ✅ Ya (Khusus Pemasukan Kas) |
+| **Membuat Pengeluaran Kas (Expense)** | ✅ Ya | ✅ Ya | ❌ Tidak (403 Forbidden) |
+| **Verifikasi Iuran Masuk (Single-Manager)** | ✅ Ya | ✅ Ya (Cukup 1 Pengurus) | ❌ Tidak |
+| **Memberikan Persetujuan Kuorum (Approval M-of-N)** | ✅ Ya | ✅ Ya | ❌ Tidak |
 | **Mengeksekusi Pembayaran Pengeluaran** | ✅ Ya | ✅ Ya | ❌ Tidak |
 | **Upload Rekening Koran & Rekonsiliasi Bank** | ✅ Ya | ✅ Ya | ❌ Tidak |
 | **Mengubah Aturan Kuorum M-of-N** | ✅ Ya | ❌ Tidak | ❌ Tidak |
@@ -407,6 +442,10 @@ Setelah menjalankan `npm run db:seed`, Anda dapat langsung masuk menggunakan aku
   - Saldo Tercatat: **Rp 2.150.000** (*Posted Balance*)
   - Dana Terkunci: **Rp 600.000** (*Reserved Balance* untuk Pengadaan Tempat Sampah — Menunggu 1 suara kuorum!)
   - Saldo Tersedia: **Rp 1.550.000** (*Available Balance*)
+- **Laporan Iuran Warga Siap Verifikasi**:
+  - `warga1@kasbareng.id` (Bpk. Joko Santoso): Iuran Kas Warga Rp 50.000 + Foto Struk Transfer BCA.
+  - `warga2@kasbareng.id` (Ibu Siti Rahayu): Iuran Kas Warga Rp 50.000 + Foto Struk QRIS.
+  - Siap diverifikasi oleh Bendahara atau Admin pada tab **"Iuran Warga"** di menu **Persetujuan** (`/approvals`).
 
 ---
 
@@ -415,7 +454,7 @@ Setelah menjalankan `npm run db:seed`, Anda dapat langsung masuk menggunakan aku
 KasBareng memiliki cakupan test suite yang komprehensif menguji algoritma murni dan endpoint integrasi.
 
 ```bash
-# Menjalankan seluruh test suite integrasi backend (90 tests)
+# Menjalankan seluruh test suite integrasi backend (95 tests)
 npm run test:api
 
 # Menjalankan khusus test algoritma murni (FSM, Quorum, Hash Chain, Reconciliation)
@@ -427,6 +466,7 @@ npm run test:algorithms
  ✓ src/modules/wallets.test.ts (13 tests)
  ✓ src/modules/auth.test.ts (13 tests)
  ✓ src/modules/approvals.test.ts (11 tests)
+ ✓ src/modules/income-reports.test.ts (5 tests)
  ✓ src/modules/audit.test.ts (6 tests)
  ✓ src/modules/reconciliation.test.ts (8 tests)
  ✓ src/modules/transactions.test.ts (8 tests)
@@ -436,8 +476,8 @@ npm run test:algorithms
  ✓ src/algorithms/fsm/fsm.test.ts (6 tests)
  ✓ src/algorithms/ledger/ledger.test.ts (6 tests)
 
- Test Files  11 passed (11)
-      Tests  90 passed (90) - 100%
+ Test Files  12 passed (12)
+      Tests  95 passed (95) - 100%
 ```
 
 ---
@@ -461,10 +501,11 @@ kasbareng/
 │   │       │   └── reconciliation/    # 3-Pass bank statement matcher
 │   │       ├── common/                # Utility, error handling, prisma client
 │   │       └── modules/               # API routes & business logic
+│   │           ├── attachments/       # Upload bukti transfer & SHA-256 checksum
 │   │           ├── audit/             # Layanan audit kriptografis & verifikasi
 │   │           ├── auth/              # Registrasi, login, & JWT
 │   │           ├── reconciliation/    # Parser CSV bank & matcher service
-│   │           ├── transactions/      # FSM transaksi & siklus pembayaran
+│   │           ├── transactions/      # FSM transaksi & verifikasi iuran warga
 │   │           └── wallets/           # Manajemen dompet, kode akses, kuorum
 │   │
 │   └── web/                           # Frontend Web Client (React 18 + Vite PWA)
@@ -501,7 +542,8 @@ kasbareng/
 - [x] **Fase 5**: Tamper-Evident SHA-256 Audit Hash Chain, endpoint verifikasi, & simulasi tamper drill.
 - [x] **Fase 6**: Rekonsiliasi Bank CSV 3-Pass Deterministik (BCA, Mandiri, BRI, BNI).
 - [x] **Fase 7**: Parser Chat AI (Draf Pasif berpagar *Human-in-the-Loop* - *UI Preview*).
-- [x] **Fase 8**: Hardening, 90/90 regression tests passed (100%), & demo dataset seeder.
+- [x] **Fase 8**: Hardening, 95/95 regression tests passed (100%), & demo dataset seeder.
+- [x] **Ekstensi Warga**: Pelaporan Iuran Mandiri Warga via Kamera/Galeri & Verifikasi 1-Pengurus (*Single-Manager Approval*) tanpa kuorum berat.
 
 ---
 

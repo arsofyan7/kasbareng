@@ -17,6 +17,7 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
 | **Fase 6** | Rekonsiliasi Bank CSV (Deterministik) | **COMPLETED** | 2026-10-21 | 8/8 tests baru (Total 90/90 tests lulus 100%), Parser multi-format BCA/Mandiri/BRI/BNI, 3-Pass matching deterministik, manual match audit trail, auto-create tx |
 | **Fase 7** | Parser Chat AI (Draf Transaksi Pasif) | **HALF FEATURE (UI PREVIEW)** | 2026-10-21 | UI Chat Simulator, Ekstraksi deterministik nominal & kategori, Human-in-The-Loop gate, Skema output terstruktur, konversi ke draf resmi |
 | **Fase 8** | Hardening, Security Drills, & Demo Dataset | **COMPLETED** | 2026-10-21 | 90/90 tests lulus 100%, Demo dataset seed `npm run db:seed` (RT 05 Asri, 6 user, kuorum M-of-N, saldo aktif, rekonsiliasi, audit SHA-256) |
+| **Fitur Khusus**| Pelaporan Iuran Mandiri Warga & Verifikasi Pengurus (Single-Manager) | **COMPLETED** | 2026-10-21 | 5 test baru (Total: 95 tests lulus 100%), Kamera/Foto bukti bayar, status aman SUBMITTED, verifikasi 1-klik saldo aktif, audit SHA-256 |
 
 ---
 
@@ -202,3 +203,40 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
       - Saldo Tersedia: **Rp 1.550.000** (Available Balance)
     - **Rekonsiliasi Bank**: Rekening koran bank BCA/Mandiri siap demonstrasi (*Matched*, *Ambiguous*, dan *Unmatched*).
     - **Rantai Audit SHA-256**: 5 blok kejadian berurutan berlabuh dari genesis hash `0000...0000`.
+
+---
+
+### Fitur Khusus: Pelaporan Pemasukan Mandiri Warga (Member Income Self-Report) & Verifikasi Pengurus (Single-Manager)
+- **Status**: **COMPLETED**
+- **Tanggal Selesai**: 2026-10-21
+- **Hasil Pengujian**: 5 test integrasi baru di `apps/api/src/modules/income-reports.test.ts` (Total: **95/95 tests lulus 100%**).
+- **Latar Belakang & Masalah Komunitas**:
+  - Pada komunitas riil (RT/RW, paguyuban, panitia), warga mentransfer iuran kas melalui bank/QRIS lalu mengirim bukti bayar ke grup WhatsApp, mengakibatkan bukti tenggelam dan bendahara kewalahan merekap satu per satu.
+  - Fitur ini memberikan portal mandiri bagi warga untuk melaporkan setoran iuran lengkap dengan foto struk/transfer langsung dari kamera HP atau galeri.
+- **Mekanisme Keamanan Finansial (Financial Invariant)**:
+  - **Izin Ketat Warga**: Akun berstatus `WARGA` diizinkan membuat transaksi bertipe `INCOME`, namun dilarang keras membuat `EXPENSE` (ditolak `403 FORBIDDEN`).
+  - **Status Aman (`SUBMITTED`)**: Laporan yang disubmit warga berstatus `SUBMITTED` (*Menunggu Verifikasi Pengurus*). Sistem **dilarang membukukan kredit** ke buku kas sebelum ada verifikasi pengurus, sehingga saldo kas aktif tidak akan menggelembung sebelum ada validasi uang riil.
+- **Penyimpanan Berkas Bukti Transfer (`attachments`)**:
+  - Endpoint `POST /api/v1/wallets/:walletId/attachments`: Menerima base64 data URL gambar, menghitung checksum SHA-256, dan menyimpannya di direktori `uploads/`.
+  - Endpoint `GET /api/v1/attachments/:attachmentId`: Menampilkan berkas bukti bayar dengan header MIME yang tepat.
+- **Verifikasi Pengurus (Single-Manager Approval)**:
+  - Cukup 1 pengurus (`ADMIN` atau `PENGELOLA`) untuk memverifikasi tanpa beban kuorum M-of-N:
+    - `POST /api/v1/transactions/:transactionId/verify-income` dengan `{ decision: 'APPROVE' | 'REJECT', notes?: string }`.
+    - **Keputusan APPROVE**: Status berpindah ke `COMPLETED`, otomatis membukukan entri `CREDIT` ke `LedgerEntry`, saldo kas aktif bertambah seketika, dan tercatat di rantai audit SHA-256 (`INCOME_VERIFIED`).
+    - **Keputusan REJECT**: Status berpindah ke `REJECTED`, menyimpan catatan alasan penolakan (misal: dana belum masuk/bukti buram), saldo kas tidak berubah, dan tercatat di rantai audit SHA-256 (`INCOME_REJECTED`).
+- **UI / Antarmuka Pengguna**:
+  - `RecordTransactionModal.tsx`:
+    - Tampilan khusus Warga: judul *"Lapor Pembayaran Kas / Setor Iuran"*, penguncian tipe otomatis ke `INCOME`, dan tombol tunggal *"Kirim Laporan Pembayaran"*.
+    - Komponen upload foto & akses kamera dengan pratinjau thumbnail instan.
+  - `ApprovalsPage.tsx`:
+    - Tab baru: **"Iuran Warga (X)"** dengan lencana counter laporan masuk.
+    - Kartu laporan menampilkan nama warga, email, nominal hijau, catatan, tombol *"📸 Lihat Foto Bukti Transfer"*, serta tombol aksi *"✅ Verifikasi & Masukkan Kas"* dan *"❌ Tolak"*.
+    - Modal lightbox untuk zoom gambar bukti transfer.
+  - `DashboardPage.tsx`:
+    - Tombol aksi cepat *"Lapor Pembayaran"* aktif bagi akun `WARGA`.
+    - Lencana status transaksi berlabel kuning *"Menunggu Verifikasi"*.
+  - `TransactionDetailModal.tsx`:
+    - Pratinjau foto bukti bayar dan tombol verifikasi pengurus terintegrasi.
+- **Demo Dataset**:
+  - 2 laporan iuran siap verifikasi dari `warga1` (Bpk. Joko Santoso) dan `warga2` (Ibu Siti Rahayu) dengan lampiran bukti transfer bawaan pada perintah `npm run db:seed`.
+

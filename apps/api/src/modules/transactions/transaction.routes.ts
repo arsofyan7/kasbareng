@@ -50,17 +50,38 @@ transactionRouter.get(
   }
 );
 
-// 3. Create Transaction Draft (ADMIN / PENGELOLA)
+// 3. Create Transaction Draft (ADMIN / PENGELOLA can create any; WARGA can report INCOME only)
 transactionRouter.post(
   '/wallets/:walletId/transactions',
   requireAuth,
-  requireWalletRole([WalletRole.ADMIN, WalletRole.PENGELOLA]),
+  requireWalletRole(),
   async (req: AuthRequest, res: Response) => {
     try {
       const walletId = String(req.params.walletId);
+      const userId = req.user!.id;
+
+      // Check role permissions: WARGA can only create INCOME
+      const member = await prisma.walletMember.findUnique({
+        where: {
+          walletId_userId: {
+            walletId,
+            userId,
+          },
+        },
+      });
+
+      if (member?.role === WalletRole.WARGA && req.body.type !== TransactionType.INCOME) {
+        return sendError(
+          res,
+          'FORBIDDEN',
+          'Anggota warga hanya dapat melaporkan pemasukan / iuran kas. Pengeluaran hanya dapat diajukan oleh Pengelola atau Admin.',
+          403
+        );
+      }
+
       const transaction = await TransactionService.createDraft(
         walletId,
-        req.user!.id,
+        userId,
         req.body
       );
       return sendSuccess(res, transaction, 201);
@@ -315,6 +336,45 @@ transactionRouter.post(
         res,
         err.code || 'PAYMENT_EXECUTION_FAILED',
         err.message || 'Gagal mengeksekusi pembayaran transaksi.',
+        err.status || 400
+      );
+    }
+  }
+);
+
+// 10. Verify Income Report (Single-approver: ADMIN / PENGELOLA)
+transactionRouter.post(
+  '/transactions/:transactionId/verify-income',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const transactionId = String(req.params.transactionId);
+      const actorId = req.user!.id;
+      const { decision, notes } = req.body;
+
+      if (!decision || !['APPROVE', 'REJECT'].includes(decision)) {
+        return sendError(res, 'INVALID_PAYLOAD', 'Keputusan harus berupa APPROVE atau REJECT.', 400);
+      }
+
+      const result = await TransactionService.verifyIncomeReport(transactionId, actorId, {
+        decision,
+        notes,
+      });
+
+      const message =
+        decision === 'APPROVE'
+          ? 'Laporan pemasukan kas berhasil diverifikasi dan dibukukan ke saldo kas aktif.'
+          : 'Laporan pemasukan kas telah ditolak.';
+
+      return sendSuccess(res, result, 200, { message });
+    } catch (err: any) {
+      if (err instanceof ZodError) {
+        return sendError(res, 'VALIDATION_ERROR', 'Format data verifikasi tidak valid.', 400, err.errors);
+      }
+      return sendError(
+        res,
+        err.code || 'VERIFY_INCOME_FAILED',
+        err.message || 'Gagal memproses verifikasi laporan pemasukan.',
         err.status || 400
       );
     }

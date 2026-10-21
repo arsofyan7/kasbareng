@@ -353,6 +353,76 @@ async function main() {
     requiredApprovals: 2,
   });
 
+  // Tx 5 & 6: Member Income Self-Reports (Iuran Warga Menunggu Verifikasi)
+  console.log('💳 Seeding Member Income Self-Reports (Iuran Warga)...');
+  const attach1 = await prisma.attachment.create({
+    data: {
+      walletId: wallet.id,
+      uploadedBy: warga1.id,
+      storageKey: 'bukti_transfer_joko_oktober.jpg',
+      originalFilename: 'struk_transfer_bca_joko.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: BigInt(24560),
+      checksum: crypto.createHash('sha256').update('mock_receipt_joko').digest('hex'),
+    },
+  });
+
+  const tx5 = await prisma.transaction.create({
+    data: {
+      walletId: wallet.id,
+      creatorId: warga1.id,
+      type: TransactionType.INCOME,
+      amount: 150000,
+      category: 'Iuran Warga Bulanan',
+      notes: 'Iuran kas bulanan Oktober 2026 - Rumah No. 12 (Bpk. Joko Santoso)',
+      receiptAttachmentId: attach1.id,
+      state: TransactionState.SUBMITTED,
+      version: 1,
+    },
+  });
+
+  await appendAuditEvent('INCOME_REPORTED', warga1.id, {
+    transactionId: tx5.id,
+    amount: 150000,
+    type: 'INCOME',
+    category: tx5.category,
+    receiptAttachmentId: attach1.id,
+  });
+
+  const attach2 = await prisma.attachment.create({
+    data: {
+      walletId: wallet.id,
+      uploadedBy: warga2.id,
+      storageKey: 'bukti_transfer_siti_kebersihan.jpg',
+      originalFilename: 'bukti_donasi_siti.png',
+      mimeType: 'image/png',
+      sizeBytes: BigInt(18920),
+      checksum: crypto.createHash('sha256').update('mock_receipt_siti').digest('hex'),
+    },
+  });
+
+  const tx6 = await prisma.transaction.create({
+    data: {
+      walletId: wallet.id,
+      creatorId: warga2.id,
+      type: TransactionType.INCOME,
+      amount: 100000,
+      category: 'Sumbangan Sukarela Kebersihan',
+      notes: 'Donasi sukarela tambahan operasional angkut sampah lingkungan',
+      receiptAttachmentId: attach2.id,
+      state: TransactionState.SUBMITTED,
+      version: 1,
+    },
+  });
+
+  await appendAuditEvent('INCOME_REPORTED', warga2.id, {
+    transactionId: tx6.id,
+    amount: 100000,
+    type: 'INCOME',
+    category: tx6.category,
+    receiptAttachmentId: attach2.id,
+  });
+
   // 6. Seed Bank Statements for Reconciliation Demo
   console.log('🏦 Seeding Bank Statements for Reconciliation Demo...');
   const importBatchId = crypto.randomUUID();

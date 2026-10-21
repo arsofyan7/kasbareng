@@ -78,3 +78,13 @@ Buat modul algoritma FSM murni yang memvalidasi:
 - role/permission hasil validasi service
 - kondisi bisnis yang diperlukan
 Kembalikan state berikutnya atau error code yang eksplisit.
+
+8. ALUR PEMASUKAN MANDIRI WARGA (MEMBER INCOME SELF-REPORT)
+- Pemasukan oleh Pengurus (Admin / Pengelola): Langsung COMPLETED dan membukukan CREDIT ke ledger saat diajukan.
+- Pemasukan oleh Warga (Setoran Iuran Mandiri):
+  * Warga menginput nominal, kategori, catatan, dan foto bukti transfer / kamera.
+  * Transaksi masuk status SUBMITTED (Label: 'Menunggu Verifikasi Pengurus').
+  * Saldo Kas Aman (Security Invariant): Sistem TIDAK membukukan CREDIT ke buku kas sebelum diverifikasi pengurus; saldo kas aktif tidak berubah.
+  * Verifikasi Pengurus (Single-Approver):
+    - APPROVE: Berpindah ke COMPLETED, membukukan entri CREDIT resmi ke LedgerEntry, saldo aktif bertambah, dan tercatat di rantai audit SHA-256.
+    - REJECT: Berpindah ke REJECTED dengan mencatat alasan penolakan, saldo kas tidak berubah.

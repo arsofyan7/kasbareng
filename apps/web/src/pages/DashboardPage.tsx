@@ -147,7 +147,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     return true;
   });
 
-  const getStateBadge = (state: TransactionState) => {
+  const getStateBadge = (state: TransactionState, type?: TransactionType) => {
     switch (state) {
       case 'DRAFT':
         return (
@@ -156,6 +156,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </span>
         );
       case 'SUBMITTED':
+        if (type === 'INCOME') {
+          return (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Menunggu Verifikasi
+            </span>
+          );
+        }
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+            Menunggu Kuorum
+          </span>
+        );
       case 'PENDING_APPROVAL':
         return (
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
@@ -360,15 +373,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           </button>
         ) : (
-          <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 opacity-60 text-left">
-            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center mb-2.5">
+          <button
+            onClick={() => openRecordModal('INCOME')}
+            className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 text-left transition-all group cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center mb-2.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
               <TrendingUp className="w-4 h-4" />
             </div>
-            <div className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-              Pemasukan Kas
+            <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+              Lapor Pembayaran
             </div>
-            <div className="text-[11px] text-slate-400">Khusus Pengelola/Admin</div>
-          </div>
+            <div className="text-xs text-emerald-700 dark:text-emerald-400">
+              Setor iuran & bukti transfer
+            </div>
+          </button>
         )}
 
         {/* Action 2: Ajukan Pengeluaran */}
@@ -543,7 +561,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       {isIncome ? '+ ' : '- '}
                       Rp {tx.amount.toLocaleString('id-ID')}
                     </div>
-                    <div>{getStateBadge(tx.state)}</div>
+                    <div>{getStateBadge(tx.state, tx.type)}</div>
                   </div>
                 </div>
               );
