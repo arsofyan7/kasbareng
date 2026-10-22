@@ -227,4 +227,43 @@ describe('Special Feature: Member Income Self-Report & Single-Manager Verificati
     const auditChain = await AuditService.verifyWalletChain(wallet.id);
     expect(auditChain.valid).toBe(true);
   });
+
+  it('6. transaction visibility scoping: ADMIN/PENGELOLA can view all transactions, while WARGA can only view their own transactions', async () => {
+    // 1. Admin creates an expense transaction
+    const adminExpense = await TransactionService.createDraft(wallet.id, adminUser.id, {
+      type: TransactionType.EXPENSE,
+      amount: 40000,
+      category: 'Perlengkapan Pos Ronda',
+      notes: 'Beli lampu bohlam & sapu',
+    });
+
+    // 2. Query as Admin / Pengelola (no creatorId filter) -> sees all 3 transactions (2 warga income reports + 1 admin expense)
+    const allTransactions = await TransactionService.getWalletTransactions(wallet.id);
+    expect(allTransactions.transactions.length).toBe(3);
+    const txIds = allTransactions.transactions.map((t) => t.id);
+    expect(txIds).toContain(reportedIncomeTx.id);
+    expect(txIds).toContain(secondIncomeTx.id);
+    expect(txIds).toContain(adminExpense.id);
+
+    // 3. Query as WARGA (with creatorId: wargaUser.id) -> ONLY sees their own 2 transactions
+    const wargaTransactions = await TransactionService.getWalletTransactions(wallet.id, {
+      creatorId: wargaUser.id,
+    });
+    expect(wargaTransactions.transactions.length).toBe(2);
+    const wargaTxIds = wargaTransactions.transactions.map((t) => t.id);
+    expect(wargaTxIds).toContain(reportedIncomeTx.id);
+    expect(wargaTxIds).toContain(secondIncomeTx.id);
+    expect(wargaTxIds).not.toContain(adminExpense.id);
+
+    // Every returned transaction must have creatorId === wargaUser.id
+    for (const tx of wargaTransactions.transactions) {
+      expect(tx.creatorId).toBe(wargaUser.id);
+    }
+  });
+
+  it('7. verifies WARGA tracking integrity: warga can inspect their own transaction details', async () => {
+    const ownTx = await TransactionService.getTransactionById(reportedIncomeTx.id);
+    expect(ownTx.id).toBe(reportedIncomeTx.id);
+    expect(ownTx.creatorId).toBe(wargaUser.id);
+  });
 });

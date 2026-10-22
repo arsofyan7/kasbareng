@@ -455,10 +455,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h3 className="font-bold text-base text-slate-900 dark:text-white">
-              Riwayat Transaksi Kas
+              {isManagerOrAdmin ? 'Riwayat Transaksi Kas' : 'Riwayat Transaksi Saya'}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Setiap transaksi divalidasi oleh Finite State Machine (FSM).
+              {isManagerOrAdmin
+                ? 'Semua transaksi kas komunitas yang divalidasi oleh Finite State Machine (FSM).'
+                : 'Tracking laporan setoran iuran dan transaksi kas yang Anda buat sendiri.'}
             </p>
           </div>
 
@@ -505,15 +507,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         ) : filteredTransactions.length === 0 ? (
           <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-xs space-y-2">
             <p className="font-semibold text-slate-700 dark:text-slate-300">
-              Belum ada transaksi pada kategori ini.
+              {isManagerOrAdmin
+                ? 'Belum ada transaksi pada kategori ini.'
+                : 'Anda belum memiliki riwayat transaksi atau laporan pembayaran.'}
             </p>
-            {isManagerOrAdmin && (
+            {isManagerOrAdmin ? (
               <button
                 onClick={() => openRecordModal('INCOME')}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 Catat Transaksi Pertama
+              </button>
+            ) : (
+              <button
+                onClick={() => openRecordModal('INCOME')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-500/20 cursor-pointer transition-all"
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                Lapor Pembayaran Sekarang
               </button>
             )}
           </div>

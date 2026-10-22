@@ -195,7 +195,7 @@ export class TransactionService {
    */
   static async getWalletTransactions(
     walletId: string,
-    filter?: { type?: TransactionType; state?: TransactionState; page?: number; limit?: number }
+    filter?: { type?: TransactionType; state?: TransactionState; page?: number; limit?: number; creatorId?: string }
   ) {
     const page = Math.max(1, filter?.page || 1);
     const limit = Math.min(100, Math.max(1, filter?.limit || 20));
@@ -205,6 +205,7 @@ export class TransactionService {
       walletId,
       ...(filter?.type && { type: filter.type }),
       ...(filter?.state && { state: filter.state }),
+      ...(filter?.creatorId && { creatorId: filter.creatorId }),
     };
 
     const [transactions, total] = await Promise.all([

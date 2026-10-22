@@ -9,7 +9,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Express](https://img.shields.io/badge/Express-4.21-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Vitest](https://img.shields.io/badge/Vitest-95%2F95_Tests_Passed-green?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-97%2F97_Tests_Passed-green?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-orange?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 
 ---
@@ -115,7 +115,7 @@ graph TD
 - **Frontend**: React 18, TypeScript 5.6, Vite 5.4, Tailwind CSS 3.4, TanStack Query 5, Lucide Icons.
 - **Backend**: Node.js, Express 4.21, TypeScript 5.6, Prisma ORM 5.22, Zod 3.23 (Validasi Skema), Jose / JWT, Bcrypt.
 - **Kriptografi & Integritas**: Node.js `crypto` (SHA-256), RFC 8785 Canonical JSON Serialization.
-- **Testing**: Vitest 2.1 (95 tests unit & integrasi lulus 100%).
+- **Testing**: Vitest 2.1 (97 tests unit & integrasi lulus 100%).
 
 ---
 
@@ -332,7 +332,8 @@ Hak akses bersifat **spesifik per dompet kas** (*per-wallet scope*). Pengguna ya
 
 | Hak Akses / Kemampuan | `ADMIN` (Ketua RT / Pemilik) | `PENGELOLA` (Bendahara / Sekretaris) | `WARGA` (Anggota Umum) |
 | :--- | :---: | :---: | :---: |
-| **Melihat Saldo & Riwayat Transaksi** | ✅ Ya | ✅ Ya | ✅ Ya |
+| **Melihat Saldo Kas Komunitas** | ✅ Ya | ✅ Ya | ✅ Ya |
+| **Melihat Riwayat Transaksi Kas** | ✅ Semua Transaksi | ✅ Semua Transaksi | 🔒 Khusus Transaksi Sendiri (Tracking Pribadi) |
 | **Melihat Rantai Audit Kriptografis** | ✅ Ya | ✅ Ya | ✅ Ya |
 | **Lapor Iuran Mandiri (+ Foto Struk / Kamera)** | ✅ Ya | ✅ Ya | ✅ Ya (Khusus Pemasukan Kas) |
 | **Membuat Pengeluaran Kas (Expense)** | ✅ Ya | ✅ Ya | ❌ Tidak (403 Forbidden) |
@@ -454,7 +455,7 @@ Setelah menjalankan `npm run db:seed`, Anda dapat langsung masuk menggunakan aku
 KasBareng memiliki cakupan test suite yang komprehensif menguji algoritma murni dan endpoint integrasi.
 
 ```bash
-# Menjalankan seluruh test suite integrasi backend (95 tests)
+# Menjalankan seluruh test suite integrasi backend (97 tests)
 npm run test:api
 
 # Menjalankan khusus test algoritma murni (FSM, Quorum, Hash Chain, Reconciliation)
@@ -466,7 +467,7 @@ npm run test:algorithms
  ✓ src/modules/wallets.test.ts (13 tests)
  ✓ src/modules/auth.test.ts (13 tests)
  ✓ src/modules/approvals.test.ts (11 tests)
- ✓ src/modules/income-reports.test.ts (5 tests)
+ ✓ src/modules/income-reports.test.ts (7 tests)
  ✓ src/modules/audit.test.ts (6 tests)
  ✓ src/modules/reconciliation.test.ts (8 tests)
  ✓ src/modules/transactions.test.ts (8 tests)
@@ -477,7 +478,7 @@ npm run test:algorithms
  ✓ src/algorithms/ledger/ledger.test.ts (6 tests)
 
  Test Files  12 passed (12)
-      Tests  95 passed (95) - 100%
+      Tests  97 passed (97) - 100%
 ```
 
 ---
@@ -542,8 +543,8 @@ kasbareng/
 - [x] **Fase 5**: Tamper-Evident SHA-256 Audit Hash Chain, endpoint verifikasi, & simulasi tamper drill.
 - [x] **Fase 6**: Rekonsiliasi Bank CSV 3-Pass Deterministik (BCA, Mandiri, BRI, BNI).
 - [x] **Fase 7**: Parser Chat AI (Draf Pasif berpagar *Human-in-the-Loop* - *UI Preview*).
-- [x] **Fase 8**: Hardening, 95/95 regression tests passed (100%), & demo dataset seeder.
-- [x] **Ekstensi Warga**: Pelaporan Iuran Mandiri Warga via Kamera/Galeri & Verifikasi 1-Pengurus (*Single-Manager Approval*) tanpa kuorum berat.
+- [x] **Fase 8**: Hardening, 97/97 regression tests passed (100%), & demo dataset seeder.
+- [x] **Ekstensi Warga**: Pelaporan Iuran Mandiri Warga via Kamera/Galeri, Verifikasi 1-Pengurus (*Single-Manager Approval*), & Scoping Visibilitas Riwayat Transaksi per Role.
 
 ---
 

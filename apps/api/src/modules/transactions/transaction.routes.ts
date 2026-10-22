@@ -33,12 +33,19 @@ transactionRouter.get(
     try {
       const walletId = String(req.params.walletId);
       const { type, state, page, limit } = req.query;
+      const member = req.walletMember!;
+
+      // Scope transaction visibility:
+      // ADMIN & PENGELOLA: can see all transactions.
+      // WARGA: can ONLY see transactions created by themselves.
+      const creatorId = member.role === WalletRole.WARGA ? req.user!.id : undefined;
 
       const result = await TransactionService.getWalletTransactions(walletId, {
         type: type as TransactionType,
         state: state as TransactionState,
         page: page ? parseInt(String(page), 10) : 1,
         limit: limit ? parseInt(String(limit), 10) : 20,
+        creatorId,
       });
 
       return sendSuccess(res, result.transactions, 200, {
@@ -120,6 +127,16 @@ transactionRouter.get(
 
       if (!member || member.status !== 'ACTIVE') {
         return sendError(res, 'FORBIDDEN', 'Anda bukan anggota aktif dari dompet transaksi ini.', 403);
+      }
+
+      // WARGA can only view details of transactions they created themselves
+      if (member.role === WalletRole.WARGA && transaction.creatorId !== req.user!.id) {
+        return sendError(
+          res,
+          'FORBIDDEN',
+          'Anda hanya berwenang melihat detail transaksi yang Anda laporkan sendiri.',
+          403
+        );
       }
 
       return sendSuccess(res, transaction, 200);

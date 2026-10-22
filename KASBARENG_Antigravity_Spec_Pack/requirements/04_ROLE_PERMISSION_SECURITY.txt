@@ -3,13 +3,15 @@ Versi 1.0
 
 1. ROLE
 WARGA:
-- Melihat saldo dan transaksi yang dipublikasikan.
+- Melihat ringkasan saldo kas dompet kas.
+- Riwayat Transaksi: WARGA HANYA DAPAT MELIHAT TRANSAKSI YANG DIBUAT/DILAPORKAN SENDIRI (untuk tracking iuran dan setoran pribadi). Akses detail transaksi pihak lain ditolak (403 Forbidden).
 - Melaporkan setoran pemasukan/iuran mandiri (INCOME) disertai foto bukti transfer/kamera (status aman: SUBMITTED).
 - Dilarang keras mengajukan pengeluaran (EXPENSE) (ditolak 403 Forbidden).
-- Mengonfirmasi/meninjau status iuran sendiri dan anggota komunitas.
+- Mengonfirmasi/meninjau status iuran sendiri.
 - Mengajukan pertanyaan atau keberatan.
 - Tidak dapat memverifikasi laporan pemasukan sendiri atau mengubah policy, role, dan saldo kas aktif.
 PENGELOLA:
+- Melihat SELURUH transaksi kas komunitas dalam dompet.
 - Membuat draf transaksi pemasukan dan pengeluaran kas.
 - Mencatat pemasukan langsung (otomatis COMPLETED).
 - Memverifikasi atau menolak laporan setoran iuran warga (Single-Approver: 1 pengurus cukup).
@@ -17,6 +19,7 @@ PENGELOLA:
 - Mengunggah CSV dan menjalankan rekonsiliasi jika diizinkan.
 - Dapat menjadi approver pengeluaran hanya jika policy secara eksplisit menunjuknya dan aturan pemisahan tugas dipenuhi.
 ADMIN:
+- Melihat SELURUH transaksi kas komunitas dalam dompet.
 - Mengelola anggota dan role.
 - Mengatur policy, kuorum M-of-N, dan ambang batas pengeluaran.
 - Memverifikasi atau menolak laporan setoran iuran warga.

@@ -68,7 +68,8 @@ Fase 8 - Hardening dan Demo
 
 Ekstensi - Pelaporan Iuran Mandiri Warga & Single-Manager Verification
 - Status: COMPLETED
-- File/commit: apps/api/src/modules/attachments, apps/api/src/modules/transactions, apps/web/src/components/common/RecordTransactionModal.tsx, apps/web/src/pages/ApprovalsPage.tsx
+- File/commit: apps/api/src/modules/attachments, apps/api/src/modules/transactions, apps/web/src/components/common/RecordTransactionModal.tsx, apps/web/src/pages/ApprovalsPage.tsx, apps/web/src/pages/DashboardPage.tsx
 - Test dijalankan: npm run test:api (src/modules/income-reports.test.ts)
-- Hasil: 95/95 tests passed (100% across 12 test suites)
+- Hasil: 97/97 tests passed (100% across 12 test suites)
+- Catatan: Pembatasan visibilitas riwayat transaksi kas: Admin & Pengelola melihat seluruh transaksi; Warga/anggota hanya melihat transaksi miliknya sendiri untuk tracking pribadi.
 - Blocker: None

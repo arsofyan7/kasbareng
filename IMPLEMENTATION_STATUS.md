@@ -17,7 +17,7 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
 | **Fase 6** | Rekonsiliasi Bank CSV (Deterministik) | **COMPLETED** | 2026-10-21 | 8/8 tests baru (Total 90/90 tests lulus 100%), Parser multi-format BCA/Mandiri/BRI/BNI, 3-Pass matching deterministik, manual match audit trail, auto-create tx |
 | **Fase 7** | Parser Chat AI (Draf Transaksi Pasif) | **HALF FEATURE (UI PREVIEW)** | 2026-10-21 | UI Chat Simulator, Ekstraksi deterministik nominal & kategori, Human-in-The-Loop gate, Skema output terstruktur, konversi ke draf resmi |
 | **Fase 8** | Hardening, Security Drills, & Demo Dataset | **COMPLETED** | 2026-10-21 | 90/90 tests lulus 100%, Demo dataset seed `npm run db:seed` (RT 05 Asri, 6 user, kuorum M-of-N, saldo aktif, rekonsiliasi, audit SHA-256) |
-| **Fitur Khusus**| Pelaporan Iuran Mandiri Warga & Verifikasi Pengurus (Single-Manager) | **COMPLETED** | 2026-10-21 | 5 test baru (Total: 95 tests lulus 100%), Kamera/Foto bukti bayar, status aman SUBMITTED, verifikasi 1-klik saldo aktif, audit SHA-256 |
+| **Fitur Khusus**| Pelaporan Iuran Mandiri Warga, Verifikasi 1-Pengurus, & Scoping Riwayat Transaksi | **COMPLETED** | 2026-10-22 | 7 test baru (Total: 97 tests lulus 100%), Kamera/Foto bukti bayar, verifikasi saldo aktif, scoping riwayat transaksi per role (Warga hanya lihat transaksi miliknya sendiri) |
 
 ---
 
@@ -209,13 +209,16 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
 ### Fitur Khusus: Pelaporan Pemasukan Mandiri Warga (Member Income Self-Report) & Verifikasi Pengurus (Single-Manager)
 - **Status**: **COMPLETED**
 - **Tanggal Selesai**: 2026-10-21
-- **Hasil Pengujian**: 5 test integrasi baru di `apps/api/src/modules/income-reports.test.ts` (Total: **95/95 tests lulus 100%**).
+- **Hasil Pengujian**: 7 test integrasi di `apps/api/src/modules/income-reports.test.ts` (Total: **97/97 tests lulus 100%**).
 - **Latar Belakang & Masalah Komunitas**:
   - Pada komunitas riil (RT/RW, paguyuban, panitia), warga mentransfer iuran kas melalui bank/QRIS lalu mengirim bukti bayar ke grup WhatsApp, mengakibatkan bukti tenggelam dan bendahara kewalahan merekap satu per satu.
   - Fitur ini memberikan portal mandiri bagi warga untuk melaporkan setoran iuran lengkap dengan foto struk/transfer langsung dari kamera HP atau galeri.
 - **Mekanisme Keamanan Finansial (Financial Invariant)**:
   - **Izin Ketat Warga**: Akun berstatus `WARGA` diizinkan membuat transaksi bertipe `INCOME`, namun dilarang keras membuat `EXPENSE` (ditolak `403 FORBIDDEN`).
   - **Status Aman (`SUBMITTED`)**: Laporan yang disubmit warga berstatus `SUBMITTED` (*Menunggu Verifikasi Pengurus*). Sistem **dilarang membukukan kredit** ke buku kas sebelum ada verifikasi pengurus, sehingga saldo kas aktif tidak akan menggelembung sebelum ada validasi uang riil.
+- **Pembatasan Visibilitas Riwayat Transaksi Kas (Transaction History Scoping)**:
+  - **Admin & Pengelola (`ADMIN`, `PENGELOLA`)**: Berwenang melihat seluruh transaksi kas komunitas dalam dompet (`GET /api/v1/wallets/:walletId/transactions`).
+  - **Warga / Anggota (`WARGA`)**: Hanya dapat melihat transaksi yang dibuat/dilaporkan oleh dirinya sendiri (`creatorId === currentUserId`) untuk keperluan pelacakan setoran pribadi. Endpoint detail transaksi (`GET /api/v1/transactions/:transactionId`) secara tegas menolak warga yang mencoba melihat transaksi milik orang lain dengan `403 FORBIDDEN`.
 - **Penyimpanan Berkas Bukti Transfer (`attachments`)**:
   - Endpoint `POST /api/v1/wallets/:walletId/attachments`: Menerima base64 data URL gambar, menghitung checksum SHA-256, dan menyimpannya di direktori `uploads/`.
   - Endpoint `GET /api/v1/attachments/:attachmentId`: Menampilkan berkas bukti bayar dengan header MIME yang tepat.
