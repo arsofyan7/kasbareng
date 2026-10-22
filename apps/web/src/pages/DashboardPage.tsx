@@ -251,8 +251,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         )}
       </div>
 
-      {/* Community Private Access / Invite Code Banner */}
-      {activeWallet && (
+      {/* Community Private Access / Invite Code Banner (Khusus Pengurus & Admin) */}
+      {activeWallet && isManagerOrAdmin && (
         <div className="p-4 sm:p-5 rounded-3xl bg-slate-900 text-white dark:bg-slate-900/90 dark:border dark:border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
           <div className="space-y-1 z-10">
             <div className="flex items-center gap-2">

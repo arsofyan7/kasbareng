@@ -39,6 +39,7 @@ export const MembersPage: React.FC = () => {
   const [modalError, setModalError] = useState<string | null>(null);
 
   const isAdmin = activeWallet?.myRole === 'ADMIN';
+  const isManagerOrAdmin = activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
 
   const fetchMembers = useCallback(async () => {
     if (!token || !activeWallet) return;
@@ -202,8 +203,8 @@ export const MembersPage: React.FC = () => {
         )}
       </div>
 
-      {/* Community Invite Code Share Card */}
-      {activeWallet && (
+      {/* Community Invite Code Share Card (Khusus Pengurus & Admin) */}
+      {activeWallet && isManagerOrAdmin && (
         <div className="p-5 rounded-3xl bg-slate-900 text-white dark:bg-slate-900/90 dark:border dark:border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
           <div className="space-y-1.5 z-10">
             <div className="flex items-center gap-2">

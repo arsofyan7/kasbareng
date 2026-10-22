@@ -119,8 +119,8 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                   {wallet.description || 'Tidak ada deskripsi tambahan.'}
                 </p>
 
-                {/* Invite Code Pill */}
-                {wallet.inviteCode && (
+                {/* Invite Code Pill (Khusus Pengurus & Admin) */}
+                {wallet.inviteCode && (wallet.myRole === 'ADMIN' || wallet.myRole === 'PENGELOLA') && (
                   <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/80 text-[11px]">
                     <div className="flex items-center gap-1.5 text-slate-500">
                       <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
