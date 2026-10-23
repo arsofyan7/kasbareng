@@ -9,7 +9,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Express](https://img.shields.io/badge/Express-4.21-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Vitest](https://img.shields.io/badge/Vitest-97%2F97_Tests_Passed-green?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-103%2F103_Tests_Passed-green?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-orange?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 
 ---
@@ -27,6 +27,8 @@
   - [5. Arsitektur Komunitas Tertutup & Akses Instan (Gated Access)](#5-arsitektur-komunitas-tertutup--akses-instan-gated-access)
   - [6. Parser Chat AI (Human-in-the-Loop)](#6-parser-chat-ai-human-in-the-loop)
   - [7. Pelaporan Iuran Mandiri Warga & Verifikasi Pengurus (Single-Manager Approval)](#7-pelaporan-iuran-mandiri-warga--verifikasi-pengurus-single-manager-approval)
+  - [8. Papan Rekap Iuran Komunitas (Community Billing Board) & Pembayaran Multi-Periode](#8-papan-rekap-iuran-komunitas-community-billing-board--pembayaran-multi-periode)
+  - [9. Modal Fitur Algoritma, Tata Kelola Komunitas, & Desain Responsif Modern](#9-modal-fitur-algoritma-tata-kelola-komunitas--desain-responsif-modern)
 - [Matriks Hak Akses (RBAC)](#-matriks-hak-akses-rbac)
 - [Panduan Instalasi & Menjalankan Lokal](#-panduan-instalasi--menjalankan-lokal)
 - [Dataset Demo & Akun Siap Pakai](#-dataset-demo--akun-siap-pakai)
@@ -361,6 +363,34 @@ flowchart TD
 
 ---
 
+### 9. Modal Fitur Algoritma, Tata Kelola Komunitas, & Desain Responsif Modern
+
+Untuk menjaga tampilan antarmuka tetap bersih, profesional, dan nyaman digunakan bagi warga awam tanpa menghilangkan kedalaman teknis dan pembuktian matematis bagi pengawas/auditor:
+
+```mermaid
+graph LR
+    subgraph UI_Header ["Navbar & Profil Pengguna"]
+        P[Klik Avatar Profil] --> M[Pilih 'Fitur Algoritma']
+    end
+
+    subgraph Modal ["Modal Fitur Algoritma & Tata Kelola"]
+        M --> C1["Card 1: Aturan Komunitas & Kuorum M-of-N<br/>(Syarat Kuorum, Peran User, Anti-Self Approval)"]
+        M --> C2["Card 2: Audit Rantai SHA-256<br/>(Status Valid, Tombol Simulator & Inspeksi Drill)"]
+        M --> C3["Algoritma Inti: Double-Entry Ledger & 3-Pass Bank Matcher"]
+    end
+
+    subgraph Responsive ["Optimasi Multi-Perangkat (Mobile vs Web)"]
+        D[Layar Web/Tablet ≥ 768px] --> D1[Tampilkan Toggle Dark/Light & Avatar Profil di Header Atas]
+        HP[Layar HP < 768px] --> HP1[Sembunyikan Toggle & Avatar di Atas demi Ruang Bersih]
+        HP --> HP2[Diakses Penuh via Tab 'Profil' di Bottom Navigation Bar]
+    end
+```
+
+- **Latar Belakang Animasi Kas Komunitas Gotong Royong (`community-fintech-bg.jpg`)**:
+  Halaman login dan pendaftaran akun dilengkapi dengan latar belakang ilustrasi 3D beranimasi halus (*breathing slow-zoom* 24s infinite) bernuansa rumah-rumah komunitas warga RT/RW terhubung dengan jalur sirkuit neon hijau toska & emerald, balok ledger (*DANA MASUK, DANA KELUAR, TRANSPARENCY*), dan perisai pengaman kriptografis. Kartu login di tengah menggunakan desain kaca tebal (*backdrop-blur-2xl bg-white/95 dark:bg-slate-900/90*) dengan bayangan mendalam yang menghasilkan kontras visual tinggi di mode terang maupun mode gelap.
+
+---
+
 ## 👥 Matriks Hak Akses (RBAC)
 
 Hak akses bersifat **spesifik per dompet kas** (*per-wallet scope*). Pengguna yang menjadi `WARGA` di kas RT dapat menjadi `ADMIN` di kas panitia 17-an.
@@ -557,11 +587,14 @@ kasbareng/
 │           ├── contexts/              # ThemeContext (Dark/Light/System) & AuthContext
 │           ├── pages/                 # Halaman utama aplikasi
 │           │   ├── DashboardPage.tsx  # Beranda saldo & feed mutasi
-│           │   ├── ApprovalsPage.tsx  # Manajemen persetujuan kuorum kas
+│           │   ├── DuesBoardPage.tsx  # Papan rekap iuran & matriks multi-periode
+│           │   ├── ApprovalsPage.tsx  # Manajemen persetujuan kuorum & iuran warga
 │           │   ├── ReconciliationPage.tsx # Rekonsiliasi rekening koran bank
 │           │   ├── AiParserPage.tsx   # Simulator parser obrolan grup warga
 │           │   ├── WalletsPage.tsx    # Daftar dompet & gabung kode
-│           │   └── MembersPage.tsx    # Manajemen warga & peran komunitas
+│           │   ├── MembersPage.tsx    # Manajemen warga & peran komunitas
+│           │   ├── ProfilePage.tsx    # Profil, kustomisasi tema, & fitur algoritma
+│           │   └── AuthPage.tsx       # Login/Daftar dengan latar animasi 3D kas
 │           └── types/                 # Definisi tipe TypeScript terpadu
 │
 ├── IMPLEMENTATION_STATUS.md           # Catatan pelacakan implementasi per fase
@@ -582,8 +615,10 @@ kasbareng/
 - [x] **Fase 5**: Tamper-Evident SHA-256 Audit Hash Chain, endpoint verifikasi, & simulasi tamper drill.
 - [x] **Fase 6**: Rekonsiliasi Bank CSV 3-Pass Deterministik (BCA, Mandiri, BRI, BNI).
 - [x] **Fase 7**: Parser Chat AI (Draf Pasif berpagar *Human-in-the-Loop* - *UI Preview*).
-- [x] **Fase 8**: Hardening, 97/97 regression tests passed (100%), & demo dataset seeder.
+- [x] **Fase 8**: Hardening, regression tests passed 100%, & demo dataset seeder.
 - [x] **Ekstensi Warga**: Pelaporan Iuran Mandiri Warga via Kamera/Galeri, Verifikasi 1-Pengurus (*Single-Manager Approval*), & Scoping Visibilitas Riwayat Transaksi per Role.
+- [x] **Papan Iuran**: Papan Rekap Iuran Komunitas (Community Billing Board), Skema Bulanan/Termin/Bebas, & Pembayaran Borongan Multi-Periode (103/103 tests passed).
+- [x] **Penyempurnaan UI/UX**: Modal Fitur Algoritma & Tata Kelola, Pembersihan Sidebar & Header, Optimasi Header Mobile, & Animasi Kas Komunitas Gotong Royong pada Halaman Login.
 
 ---
 

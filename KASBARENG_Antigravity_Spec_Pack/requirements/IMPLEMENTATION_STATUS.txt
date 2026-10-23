@@ -1,7 +1,7 @@
 KASBARENG IMPLEMENTATION STATUS
 Update file ini setelah setiap fase. Jangan menandai DONE tanpa test aktual.
 
-Status: COMPLETED (Fase 0 - 8 + Ekstensi Pelaporan Iuran Mandiri Warga)
+Status: COMPLETED (Fase 0 - 8 + Pelaporan Iuran Mandiri + Papan Rekap Iuran Komunitas + Penyempurnaan UI/UX)
 
 Fase 0 - Bootstrap
 - Status: COMPLETED
@@ -72,4 +72,20 @@ Ekstensi - Pelaporan Iuran Mandiri Warga & Single-Manager Verification
 - Test dijalankan: npm run test:api (src/modules/income-reports.test.ts)
 - Hasil: 97/97 tests passed (100% across 12 test suites)
 - Catatan: Pembatasan visibilitas riwayat transaksi kas: Admin & Pengelola melihat seluruh transaksi; Warga/anggota hanya melihat transaksi miliknya sendiri untuk tracking pribadi.
+- Blocker: None
+
+Ekstensi - Papan Rekap Iuran Komunitas (Community Billing Board) & Pembayaran Multi-Periode
+- Status: COMPLETED
+- File/commit: apps/api/src/modules/wallets/dues.service.ts, apps/web/src/pages/DuesBoardPage.tsx, apps/web/src/components/common/RecordTransactionModal.tsx, apps/web/src/components/common/CreateWalletModal.tsx
+- Test dijalankan: npm run test:api (src/modules/dues.test.ts)
+- Hasil: 103/103 tests passed (100% across 13 test suites)
+- Catatan: Mendukung skema MONTHLY, TARGET_INSTALLMENTS, dan FREEFORM dengan checklist multi-periode, kalkulasi kepatuhan, dan integrasi WhatsApp broadcast.
+- Blocker: None
+
+Penyempurnaan UI/UX - Modal Fitur Algoritma, Optimasi Mobile Header, & Animasi Login
+- Status: COMPLETED
+- File/commit: apps/web/src/components/common/AlgorithmRulesModal.tsx, apps/web/src/components/common/Navbar.tsx, apps/web/src/components/common/Sidebar.tsx, apps/web/src/pages/AuthPage.tsx, apps/web/src/index.css
+- Test dijalankan: npm --workspace=apps/web run build
+- Hasil: Clean production build (0 errors) & diverifikasi langsung via headless browser
+- Catatan: Relokasi Aturan Komunitas & Audit SHA-256 ke Profile modal, header HP rapi tanpa toggle/avatar, dan ilustrasi kas komunitas 3D gotong royong beranimasi breathing.
 - Blocker: None

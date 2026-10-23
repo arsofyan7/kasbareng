@@ -78,3 +78,33 @@ Buat modul algoritma FSM murni yang memvalidasi:
 - role/permission hasil validasi service
 - kondisi bisnis yang diperlukan
 Kembalikan state berikutnya atau error code yang eksplisit.
+
+8. ALUR PEMASUKAN MANDIRI WARGA (MEMBER INCOME SELF-REPORT)
+- Pemasukan oleh Pengurus (Admin / Pengelola): Langsung COMPLETED dan membukukan CREDIT ke ledger saat diajukan.
+- Pemasukan oleh Warga (Setoran Iuran Mandiri):
+  * Warga menginput nominal, kategori, catatan, dan foto bukti transfer / kamera.
+  * Transaksi masuk status SUBMITTED (Label: 'Menunggu Verifikasi Pengurus').
+  * Saldo Kas Aman (Security Invariant): Sistem TIDAK membukukan CREDIT ke buku kas sebelum diverifikasi pengurus; saldo kas aktif tidak berubah.
+  * Verifikasi Pengurus (Single-Approver):
+    - APPROVE: Berpindah ke COMPLETED, membukukan entri CREDIT resmi ke LedgerEntry, saldo aktif bertambah, dan tercatat di rantai audit SHA-256.
+    - REJECT: Berpindah ke REJECTED dengan mencatat alasan penolakan, saldo kas tidak berubah.
+
+9. PAPAN REKAP IURAN KOMUNITAS & PEMBAYARAN MULTI-PERIODE (DUES & BILLING BOARD)
+- Skema Tipe Iuran Kas per Dompet:
+  * MONTHLY: Rutin bulanan kalender (Januari - Desember).
+  * TARGET_INSTALLMENTS: Target N-kali setoran / termin berjangka (misal: 10 termin Qurban / 17-an).
+  * FREEFORM: Donasi sukarela tanpa tagihan rutin.
+- Nominal Iuran Bersifat Opsional:
+  * Boleh diisi atau dikosongkan saat dompet dibuat oleh Admin.
+  * Bila diisi, nominal ini menjadi pengali kalkulasi otomatis saat warga memilih periode iuran.
+- Multi-Period Payment (Checklist Borongan):
+  * Warga/Pengurus dapat mencentang beberapa periode sekaligus dalam satu transaksi (periodKeys).
+  * Setiap periode dicatat di tabel dues_records dengan status PENDING saat transaksi dibuat.
+  * Saat transaksi diverifikasi (APPROVE) atau disubmit langsung oleh Admin, seluruh periode bertransisi ke status PAID.
+  * Jika transaksi ditolak (REJECT) atau dibatalkan (CANCEL), dues_records dihapus sehingga slot periode dibebaskan kembali.
+- Transparansi Terbuka (Public Community Transparency):
+  * Berbeda dari riwayat transaksi kas yang dibatasi privat untuk warga, Papan Iuran dapat diakses dan dilihat oleh seluruh anggota (Admin, Pengelola, Warga) untuk akuntabilitas dan gotong royong.
+- Automasi Tindak Lanjut:
+  * Rumus Kepatuhan: (total slot lunas / total slot iuran) * 100%.
+  * Pembuatan otomatis pesan pengingat broadcast WhatsApp dan rekap tunggakan warga.
+

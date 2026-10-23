@@ -18,6 +18,8 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
 | **Fase 7** | Parser Chat AI (Draf Transaksi Pasif) | **HALF FEATURE (UI PREVIEW)** | 2026-10-21 | UI Chat Simulator, Ekstraksi deterministik nominal & kategori, Human-in-The-Loop gate, Skema output terstruktur, konversi ke draf resmi |
 | **Fase 8** | Hardening, Security Drills, & Demo Dataset | **COMPLETED** | 2026-10-21 | 90/90 tests lulus 100%, Demo dataset seed `npm run db:seed` (RT 05 Asri, 6 user, kuorum M-of-N, saldo aktif, rekonsiliasi, audit SHA-256) |
 | **Fitur Khusus**| Pelaporan Iuran Mandiri Warga, Verifikasi 1-Pengurus, & Scoping Riwayat Transaksi | **COMPLETED** | 2026-10-22 | 7 test baru (Total: 97 tests lulus 100%), Kamera/Foto bukti bayar, verifikasi saldo aktif, scoping riwayat transaksi per role (Warga hanya lihat transaksi miliknya sendiri) |
+| **Papan Iuran** | Papan Rekap Iuran Komunitas (Community Billing Board) & Multi-Period | **COMPLETED** | 2026-10-23 | 6 test baru (Total: 103/103 tests lulus 100%), Skema Bulanan/Termin/Bebas, checklist multi-periode, automasi pengingat WA, rekap tunggakan transparan |
+| **Penyempurnaan UI** | Modal Fitur Algoritma, Optimasi Mobile Navbar, & Animasi Latar Belakang Login | **COMPLETED** | 2026-10-23 | Relokasi Aturan Komunitas & Audit SHA-256 ke Profile Modal, perbaikan CSS stacking context, header HP bersih, ilustrasi kas komunitas 3D gotong royong beranimasi breathing |
 
 ---
 
@@ -281,5 +283,37 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
     - Tab *"Papan Iuran"* di `Sidebar.tsx` dan `BottomNav.tsx`, serta tombol shortcut langsung di Beranda `DashboardPage.tsx`.
 - **Demo Dataset**:
   - Data dompet RT 05 ASRI dikonfigurasi bertipe `MONTHLY` dengan nominal Rp 50.000/bulan, lengkap dengan 6 anggota yang memiliki status lunas, pending verifikasi, dan tunggakan untuk demo visual instan.
+
+---
+
+### Fase Penyempurnaan UI/UX: Modal Fitur Algoritma, Optimasi Header Mobile, & Animasi Latar Belakang Login
+- **Status**: **COMPLETED**
+- **Tanggal Selesai**: 2026-10-23
+- **Latar Belakang & Kebutuhan Pengguna**:
+  - Tampilan desktop sebelumnya memiliki card "Aturan Komunitas" di sidebar bawah dan tag "Audit SHA-256" di header beranda yang memadati ruang kerja visual.
+  - Pada perangkat mobile, tombol toggle tema dan avatar profil di navbar atas mempersempit ruang header yang seharusnya berfokus pada informasi dompet kas aktif, sementara mobile sudah memiliki tab navigasi bawah (*Bottom Nav*).
+  - Halaman autentikasi (Login/Daftar) membutuhkan estetika visual yang kuat, hidup, dan merepresentasikan semangat transparansi kas komunitas (*gotong royong*).
+- **Rincian Implementasi**:
+  1. **Modal Fitur Algoritma & Tata Kelola Komunitas (`AlgorithmRulesModal.tsx`)**:
+     - Memindahkan Card Aturan Komunitas (Kuorum M-of-N, Peran Pengguna) dan status Audit Rantai Kriptografis SHA-256 ke dalam modal interaktif terpusat.
+     - Diakses secara elegan melalui menu dropdown profil pengguna (*"Fitur Algoritma"* dengan ikon CPU dan badge *"Aturan & Audit"*).
+     - Dilengkapi tombol langsung *"Buka Simulator & Inspeksi Audit SHA-256"* yang memicu `AuditChainModal`.
+     - Menyajikan ringkasan algoritma inti: *Double-Entry Ledger* dan *Rekonsiliasi 3-Pass Bank*.
+     - **Perbaikan CSS Stacking Context**: Modal di-mount pada level root aplikasi (`App.tsx`) untuk menghindari perangkap containing block dari CSS `backdrop-filter` pada `<header>`, dilengkapi `fixed inset-0 z-50 flex items-center justify-center overflow-y-auto` dan `my-auto` sehingga modal presisi di tengah layar tanpa terpotong di perangkat apa pun.
+  2. **Pembersihan Sidebar & Header Beranda**:
+     - Menghapus card aturan komunitas dari `Sidebar.tsx` dan tag audit dari `DashboardPage.tsx`.
+     - Tampilan navigasi sidebar menjadi lebih ringkas dan beranda kas lebih luas.
+  3. **Optimasi Responsif Mobile Navbar**:
+     - Menyembunyikan tombol Toggle Tema dan Avatar Profil di layar mobile (`hidden md:flex` dan `hidden md:block`).
+     - Pengguna mobile memanfaatkan tab **"Profil"** di navigasi bawah (`BottomNav.tsx`) yang telah dilengkapi pemilih tema lengkap (Light, Dark, System), detail akun, tombol logout, dan card baru *"Fitur Algoritma & Tata Kelola"*.
+  4. **Latar Belakang Animasi Kas Komunitas Gotong Royong (`community-fintech-bg.jpg` & `AuthPage.tsx`)**:
+     - Aset ilustrasi 3D modern resolusi tinggi yang menampilkan rumah-rumah warga terhubung dengan sirkuit neon hijau toska & emerald, balok ledger kas (*DANA MASUK, DANA KELUAR, TRANSPARENCY*), dan perisai pengaman kriptografis.
+     - Animasi CSS hardware-accelerated: *breathing slow-zoom* 24s infinite (`animate-slow-zoom`) di `index.css`.
+     - Dilengkapi bola cahaya neon atmosferik (`animate-pulse`) dan soft radial vignette overlay berkanvas `bg-slate-950` dengan kontras 60%-70% yang seimbang.
+     - Kartu formulir login menggunakan desain kaca tebal (*backdrop-blur-2xl bg-white/95 dark:bg-slate-900/90*) dengan bayangan mendalam, menghasilkan tampilan kontras tinggi dan mewah di mode terang maupun mode gelap.
+- **Hasil Verifikasi**:
+  - `npm --workspace=apps/web run build`: 100% clean production build.
+  - `npm run test:api`: 103/103 tests passed (100% across 13 test suites).
+
 
 

@@ -67,6 +67,7 @@ kasbareng/
           transactions/
           approvals/
           reconciliation/
+          dues/
           audit/
           profile/
         lib/
@@ -80,6 +81,7 @@ kasbareng/
           memberships/
           transactions/
           approvals/
+          dues/
           ledger/
           audit/
           reconciliation/

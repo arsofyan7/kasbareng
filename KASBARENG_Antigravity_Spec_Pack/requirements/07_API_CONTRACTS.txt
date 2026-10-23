@@ -6,31 +6,57 @@ Format JSON konsisten.
 Semua endpoint yang menyentuh wallet wajib memeriksa membership dan permission di backend.
 Gunakan pagination untuk daftar transaksi/aktivitas.
 
-ENDPOINT RANCANGAN
+ENDPOINT TERIMPLEMENTASI
+1. Autentikasi & Pengguna:
 POST /api/v1/auth/login
-POST /api/v1/auth/logout
-GET  /api/v1/me
+POST /api/v1/auth/register
+GET  /api/v1/auth/me
+GET  /api/v1/health
+
+2. Dompet Kas & Keanggotaan:
 GET  /api/v1/wallets
-POST /api/v1/wallets
+POST /api/v1/wallets (dukung tipe iuran: MONTHLY, TARGET_INSTALLMENTS, FREEFORM)
+GET  /api/v1/wallets/:walletId
 GET  /api/v1/wallets/:walletId/summary
 GET  /api/v1/wallets/:walletId/members
 POST /api/v1/wallets/:walletId/members
 PATCH /api/v1/wallets/:walletId/members/:memberId
-GET  /api/v1/wallets/:walletId/transactions
-POST /api/v1/wallets/:walletId/transactions
-POST /api/v1/wallets/:walletId/attachments
-GET  /api/v1/attachments/:attachmentId
-GET  /api/v1/transactions/:transactionId
-PATCH /api/v1/transactions/:transactionId
-POST /api/v1/transactions/:transactionId/submit
-POST /api/v1/transactions/:transactionId/approvals
-POST /api/v1/transactions/:transactionId/verify-income
-POST /api/v1/transactions/:transactionId/payment-records
-POST /api/v1/transactions/:transactionId/clarifications
-POST /api/v1/wallets/:walletId/imports
-GET  /api/v1/imports/:importId
-POST /api/v1/imports/:importId/reconcile
-GET  /api/v1/wallets/:walletId/audit/verify
+DELETE /api/v1/wallets/:walletId/members/:memberId
+GET  /api/v1/wallets/preview-invite/:code
+GET  /api/v1/wallets/check-code/:code
+POST /api/v1/wallets/join
+POST /api/v1/wallets/:walletId/invite-code
+PATCH /api/v1/wallets/:walletId/policy (M-of-N rule)
+
+3. Transaksi & Tata Kelola Pengeluaran:
+GET  /api/v1/wallets/:walletId/transactions (Role-scoped: WARGA personal vs ADMIN/PENGELOLA all)
+POST /api/v1/wallets/:walletId/transactions (Pengeluaran kas atau Lapor Pemasukan Mandiri)
+GET  /api/v1/transactions/:id
+POST /api/v1/transactions/:id/submit
+POST /api/v1/transactions/:id/approvals (M-of-N quorum approval/rejection)
+POST /api/v1/transactions/:id/verify-income (Verifikasi pemasukan mandiri warga oleh Pengelola/Admin)
+POST /api/v1/transactions/:id/payment-records
+POST /api/v1/transactions/:id/clarifications
+PATCH /api/v1/transactions/:id/clarifications/:ticketId
+
+4. Papan Rekap Iuran (Community Dues Board):
+GET  /api/v1/wallets/:walletId/dues-board (Matrix iuran, filter tahun, compliance stats, WhatsApp reminder template)
+
+5. Audit Rantai Hash SHA-256:
+GET  /api/v1/wallets/:walletId/audit/verify (Verifikasi matematis rantai blok hash genesis-to-tip)
+GET  /api/v1/wallets/:walletId/audit/events (Daftar log event audit immutable dengan pagination)
+POST /api/v1/wallets/:walletId/audit/simulate-tamper (Simulasi serangan modifikasi payload untuk uji deteksi)
+POST /api/v1/wallets/:walletId/audit/repair (Pemulihan integritas payload log)
+
+6. Rekonsiliasi Mutasi Bank:
+POST /api/v1/wallets/:walletId/reconciliation/import (Impor CSV multi-bank BCA/Mandiri/BRI/BNI)
+GET  /api/v1/wallets/:walletId/reconciliation/summary (Ringkasan mutasi terverifikasi, pending, manual match)
+POST /api/v1/wallets/:walletId/reconciliation/manual-match (Pencocokan mutasi manual bersyarat audit)
+POST /api/v1/wallets/:walletId/reconciliation/create-from-mutation (Buat draft transaksi dari mutasi tak terduga)
+
+7. Lampiran & Berkas Bukti:
+POST /api/v1/wallets/:walletId/attachments (Upload berkas bukti transfer / foto kuitansi)
+GET  /api/v1/attachments/:id
 
 RESPONS API
 Sukses:

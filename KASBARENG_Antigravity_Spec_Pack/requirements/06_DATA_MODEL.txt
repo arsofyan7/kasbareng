@@ -15,6 +15,10 @@ wallets:
 - name
 - description
 - currency
+- invite_code nullable unique
+- dues_type: MONTHLY, TARGET_INSTALLMENTS, atau FREEFORM
+- dues_amount nullable (nominal acuan opsional)
+- target_installments_count nullable
 - status
 - version
 - created_at
@@ -151,6 +155,18 @@ clarification_tickets:
 - resolution_note nullable
 - created_at
 - resolved_at nullable
+
+dues_records:
+- id
+- wallet_id
+- user_id
+- transaction_id nullable
+- period_key (e.g. "2026-01", "TERMIN-1")
+- amount nullable
+- status (PENDING, PAID, REJECTED)
+- created_at
+- updated_at
+- unique: [wallet_id, user_id, period_key]
 
 2. ATURAN DATA
 - Nominal gunakan NUMERIC/DECIMAL atau integer unit terkecil. Jangan gunakan floating point.

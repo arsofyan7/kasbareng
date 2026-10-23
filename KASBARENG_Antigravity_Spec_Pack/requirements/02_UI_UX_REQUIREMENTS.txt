@@ -25,13 +25,16 @@ Target aksesibilitas: WCAG 2.2 AA untuk komponen utama.
 
 3. NAVIGASI UTAMA
 Menu:
-- Beranda
-- Kantong Kas
-- Aktivitas
-- Persetujuan (hanya jika pengguna punya permission approval)
-- Profil
-Mobile: bottom navigation.
-Desktop: sidebar.
+- Beranda (Dashboard Saldo & Feed Aktivitas)
+- Papan Iuran (Matriks Visual Iuran Bulanan/Termin/Bebas Seluruh Warga)
+- Kantong Kas (Sub-alokasi kas komunitas)
+- Persetujuan Kas (Kuorum M-of-N pengeluaran & tab verifikasi iuran warga)
+- Rekonsiliasi Bank (Pencocokan rekening koran CSV 3-pass deterministik)
+- Parser Chat AI (Draf transaksi pasif semi-otomatis)
+- Kelola Anggota (Daftar warga, peran, dan kode akses komunitas)
+- Profil & Tema (Kustomisasi tema, detail akun, & fitur algoritma)
+Mobile: bottom navigation (7 tab responsif). Tombol toggle tema & avatar profil disembunyikan di header atas pada layar < 768px demi menjaga kerapian dan fokus informasi dompet kas.
+Desktop/Tablet: sidebar kiri permanen dan header atas lengkap dengan pemilih dompet, toggle tema, serta menu dropdown profil.
 Jangan menampilkan menu kosong atau tindakan yang tidak relevan bagi role pengguna.
 
 4. LAYAR BERANDA
@@ -96,3 +99,22 @@ Jika koneksi terputus saat aksi sensitif, tampilkan "Status belum terkonfirmasi"
 Boleh menyimpan draf lokal jika dirancang aman.
 Aksi sensitif seperti approval, perubahan role, perubahan policy, dan perubahan saldo harus online dan dikonfirmasi server.
 Jangan tampilkan tindakan offline sebagai berhasil sebelum server mengonfirmasi.
+
+14. LAYAR PAPAN IURAN KOMUNITAS (COMMUNITY BILLING BOARD)
+- Matriks visual pembayaran seluruh warga dengan kolom nama warga lengket (sticky).
+- Indikator status berkode warna: Hijau (Lunas), Kuning (Menunggu Verifikasi), Abu-abu (Belum Bayar).
+- 4 Kartu KPI: Tingkat Kepatuhan (Compliance Rate) dengan progress bar gradien, Total Kas Terkumpul vs Potensi Target, Jumlah Menunggu Verifikasi, dan Rasio Lunas vs Menunggak.
+- Fitur Salin Rekap Tunggakan ke clipboard & Buat Pesan Pengingat Siap Kirim ke WhatsApp.
+- Transparansi terbuka bagi seluruh anggota (Warga, Pengelola, Admin).
+
+15. MODAL FITUR ALGORITMA & TATA KELOLA
+- Mengonsolidasikan informasi teknis (Kuorum M-of-N, status Peran Pengguna, dan Audit Rantai SHA-256) ke dalam modal terdedikasi yang diakses via menu profil.
+- Tombol aksi langsung "Buka Simulator & Inspeksi Audit SHA-256" yang memicu AuditChainModal untuk pengujian integritas kriptografis.
+- Ringkasan algoritma inti: Double-Entry Ledger dan 3-Pass Bank Reconciliation.
+- Modal di-mount pada root layout aplikasi untuk mencegah bug stacking context CSS backdrop-filter, dan diposisikan presisi di tengah layar (centered) dengan scrolling vertikal mulus.
+
+16. HALAMAN AUTENTIKASI (LOGIN & DAFTAR)
+- Menggunakan latar belakang gambar tematik kas komunitas gotong royong 3D resolusi tinggi dengan animasi slow-zoom breathing 24s berdaya akselerasi hardware.
+- Lapisan ambient glow neon orbs dan radial vignette lembut berkanvas slate 950 dengan kontras 60%-70% seimbang.
+- Kartu formulir di tengah menggunakan gaya glassmorphism tebal (backdrop-blur-2xl) dengan bayangan mendalam, menghasilkan kontras tinggi yang jelas terbaca di mode terang maupun mode gelap.
+
