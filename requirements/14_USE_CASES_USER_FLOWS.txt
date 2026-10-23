@@ -1,0 +1,451 @@
+KASBARENG - USE CASES DAN ALUR INTERAKSI PENGGUNA (USER FLOWS)
+Versi: 1.0
+Tanggal: 23 Oktober 2026
+Tujuan: Mendefinisikan 10 alur use case interaksi antar pengguna (Admin, Pengelola/Bendahara, Warga/Anggota) pada KasBareng menggunakan diagram alur berbasis waktu (Mermaid Sequence Diagram) beserta aturan keamanan dan invariant finansial yang ditegakkan backend.
+
+================================================================================
+DAFTAR USE CASE
+================================================================================
+UC-01: Onboarding Komunitas & Akses Instan (Gated Community Access)
+UC-02: Lapor Pembayaran Iuran Mandiri & Verifikasi Pengurus (Single-Manager Approval)
+UC-03: Pengajuan Pengeluaran Kas & Kuorum Bertingkat M-of-N (Multi-Approval Governance)
+UC-04: Transparansi Papan Iuran & Pengingat Broadcast WhatsApp (Community Dues Board)
+UC-05: Rekonsiliasi Rekening Koran Bank & Penanganan Mutasi Ambigu (3-Pass Matcher)
+UC-06: Tiket Klarifikasi & Transparansi Keberatan Warga (Clarification Ticket)
+UC-07: Verifikasi Mandiri Rantai Audit SHA-256 & Simulasi Keamanan (Tamper Drill)
+UC-08: Ekstraksi Cerdas Catatan Kas dari Chat WhatsApp (AI Parser Human-in-the-Loop)
+UC-09: Manajemen Keanggotaan & Promosi Peran Komunitas (Member Role Governance)
+UC-10: Konfigurasi Aturan Kuorum Kas & Ambang Batas Pengeluaran (Policy Tuning)
+
+================================================================================
+UC-01: ONBOARDING KOMUNITAS & AKSES INSTAN (GATED COMMUNITY ACCESS)
+================================================================================
+Deskripsi: Warga baru bergabung ke dalam dompet kas komunitas tertutup secara cepat melalui kode undangan unik atau tautan WhatsApp 1-klik tanpa memerlukan proses approval manual yang memperlambat onboarding.
+Aktor Utama: Admin Komunitas, Calon Warga (Guest/User)
+Aktor Sistem: Auth & Wallet Membership Service
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Admin Komunitas (Ketua RT)
+    actor Warga as Calon Warga (Guest)
+    participant UI as Antarmuka Web (PWA)
+    participant API as Backend Wallet Service
+    participant DB as PostgreSQL Database
+
+    Admin->>UI: 1. Buat Dompet Kas Baru (Nama: "Kas RT 05 Asri")
+    UI->>API: POST /api/v1/wallets (customCode opsional: "RT05-ASRI")
+    API->>DB: Simpan dompet baru + jadikan pembuat sebagai ADMIN
+    API-->>UI: Dompet terbuat + Invite Code: RT05-ASRI
+    Admin->>Warga: 2. Bagikan link via grup WhatsApp (kasbareng.id/?join=RT05-ASRI)
+
+    Warga->>UI: 3. Klik tautan undangan / masukkan kode di halaman Gabung
+    UI->>API: GET /api/v1/wallets/preview-invite/RT05-ASRI
+    API->>DB: Cari dompet berdasarkan invite_code aktif
+    API-->>UI: Pratinjau aman (Nama dompet, deskripsi, inisial admin, jumlah warga)
+    Note over UI,Warga: Privasi Terjaga: Saldo kas aktual TIDAK dibocorkan sebelum bergabung!
+
+    Warga->>UI: 4. Klik tombol "Gabung Sekarang" (Instant Join)
+    UI->>API: POST /api/v1/wallets/join { inviteCode: "RT05-ASRI" }
+    API->>DB: Validasi idempotensi & simpan ke wallet_members (Role: WARGA)
+    API-->>UI: ✅ Berhasil bergabung (Status: ACTIVE, Role: WARGA)
+    UI-->>Warga: 5. Otomatis dialihkan ke Dashboard Kas Komunitas
+```
+
+Aturan Keamanan & Invariant:
+1. Endpoint preview tidak membocorkan saldo kas atau detail mutasi kepada publik yang belum terdaftar.
+2. Setiap anggota yang bergabung melalui kode undangan secara otomatis mendapatkan peran terkecil (`WARGA`).
+3. Percobaan bergabung ulang oleh anggota aktif bersifat idempoten (tidak menghasilkan keanggotaan ganda).
+
+================================================================================
+UC-02: LAPOR PEMBAYARAN IURAN MANDIRI & VERIFIKASI PENGURUS (SINGLE-MANAGER)
+================================================================================
+Deskripsi: Warga melaporkan setoran iuran kas mandiri dengan mencentang periode iuran (bisa borongan multi-periode) dan melampirkan foto struk transfer. Pengelola cukup 1 orang untuk memverifikasi dan membukukan dana ke kas resmi.
+Aktor Utama: Warga Komunitas, Pengelola/Bendahara
+Aktor Sistem: Attachment Storage (SHA-256), Ledger Engine, Audit Chain
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Warga as Warga (Bpk. Joko)
+    actor Pengurus as Pengelola (Ibu Ratna)
+    participant UI as Antarmuka Web (PWA)
+    participant API as Transaction & Dues API
+    participant Store as Storage Bukti Transfer
+    participant Ledger as Ledger Engine
+    participant Audit as SHA-256 Audit Chain
+
+    Warga->>UI: 1. Klik "Lapor Pembayaran" & Centang Periode (Jan, Feb, Mar 2026)
+    UI->>UI: Kalkulasi otomatis: 3 x Rp 50.000 = Rp 150.000
+    Warga->>UI: 2. Unggah foto bukti transfer dari kamera HP
+    UI->>API: POST /api/v1/wallets/:id/transactions (type: INCOME, periodKeys: [...])
+    API->>Store: Simpan berkas & hitung Checksum SHA-256
+    API->>Ledger: Buat draft transaksi (State: SUBMITTED)
+    API->>Audit: Rekam event: TX_SUBMITTED (INCOME)
+    Note over API,Ledger: Invariant Keamanan: Saldo kas aktif TIDAK bertambah sebelum diverifikasi!
+    API-->>UI: ✅ Laporan tersimpan (Label: "Menunggu Verifikasi Pengurus")
+
+    Pengurus->>UI: 3. Buka Menu Persetujuan -> Tab "Iuran Warga"
+    UI->>API: GET /api/v1/wallets/:id/transactions?type=INCOME&state=SUBMITTED
+    API-->>UI: Daftar setoran warga pending + foto struk transfer
+    Pengurus->>UI: 4. Klik "Verifikasi Masuk" (Single-Approver)
+    UI->>API: POST /api/v1/transactions/:id/verify-income { decision: "APPROVE" }
+    API->>Ledger: Posting CREDIT Rp 150.000 ke Saldo Aktif (Posted Balance)
+    API->>API: Update dues_records (Jan, Feb, Mar) menjadi PAID
+    API->>Audit: Rekam blok rantai hash baru: INCOME_VERIFIED
+    API-->>UI: ✅ Status transaksi COMPLETED & Saldo kas resmi bertambah
+    UI-->>Pengurus: Notifikasi sukses + tampilan Papan Iuran terupdate hijau
+```
+
+Aturan Keamanan & Invariant:
+1. Warga dilarang keras membuat transaksi tipe `EXPENSE` (pengeluaran kas) -> ditolak server dengan `403 Forbidden`.
+2. Selama transaksi pemasukan berstatus `SUBMITTED`, kredit kas tidak dibukukan ke ledger dan saldo kas aktif tidak bertambah.
+3. Cukup satu pengurus sah (`PENGELOLA` atau `ADMIN`) untuk memverifikasi pemasukan (tidak memerlukan kuorum multi-approval).
+4. Jika pengurus menolak (`REJECT`), alasan penolakan wajib dicatat, dues_records dibebaskan kembali, dan saldo kas tidak berubah.
+
+================================================================================
+UC-03: PENGAJUAN PENGELUARAN KAS & KUORUM BERTINGKAT M-OF-N (MULTI-APPROVAL)
+================================================================================
+Deskripsi: Pengeluaran dana kas komunitas diajukan oleh pengurus dan wajib disetujui oleh sejumlah minimal pengurus berwenang (kuorum M-of-N) sebelum dana dapat dibayarkan, dilengkapi pengaman anti-self approval.
+Aktor Utama: Pembuat Draf (Pengelola 1), Approver 1 (Pengelola 2), Approver 2 (Admin)
+Aktor Sistem: Quorum Evaluator, FSM State Machine, Ledger Engine, Audit Chain
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Maker as Pengelola 1 (Pembuat Draf)
+    actor Approver1 as Pengelola 2 (Approver 1)
+    actor Admin as Admin (Approver 2)
+    participant API as Transaction API & FSM
+    participant Quorum as Quorum Engine
+    participant Ledger as Ledger Balance Guard
+    participant Audit as SHA-256 Audit Chain
+
+    Maker->>API: 1. Input Draf Pengeluaran (Beli Cat Balai RW: Rp 450.000)
+    API-->>Maker: Status: DRAFT (Dapat diedit bebas)
+    Maker->>API: 2. Klik "Ajukan Persetujuan" (Submit)
+    API->>Ledger: Validasi saldo: Tersedia Rp 2.000.000 >= Rp 450.000? (LULUS)
+    API->>Ledger: Kunci dana: Reserved Balance bertambah Rp 450.000 (Available Balance berkurang)
+    API->>Quorum: Evaluasi Kebijakan (M-of-N: Butuh 2 suara dari 3 pengurus)
+    API->>Audit: Rekam event: TX_SUBMITTED (State: PENDING_APPROVAL)
+
+    Maker->>API: 3. Maker mencoba setujui pengajuannya sendiri
+    API-->>Maker: ❌ DITOLAK: Anti-Self Approval Guard (Pembuat dilarang menyetujui drafnya sendiri)
+
+    Approver1->>API: 4. Approver 1 beri suara SETUJU
+    API->>Quorum: Hitung suara valid: 1 dari 2 kuorum terpenuhi
+    API-->>Approver1: ✅ Suara tercatat (Menunggu 1 persetujuan lagi)
+
+    Admin->>API: 5. Admin beri suara SETUJU
+    API->>Quorum: Hitung suara valid: 2 dari 2 kuorum TERPENUHI!
+    API->>Audit: Rekam event: TX_APPROVED
+    API-->>Admin: ✅ Kuorum terpenuhi, transaksi berpindah ke APPROVED
+
+    Maker->>API: 6. Bayar fisik/transfer & upload foto kuitansi/nota toko
+    API->>Ledger: Lepas kunci reservasi & posting DEBIT resmi Rp 450.000
+    API->>Audit: Rekam event: TX_PAYMENT_COMPLETED (State: COMPLETED)
+    API-->>Maker: ✅ Transaksi selesai dan dibukukan resmi ke pembukuan kas
+```
+
+Aturan Keamanan & Invariant:
+1. Anti-Self Approval: Pembuat draf pengeluaran dilarang menyetujui transaksi buatannya sendiri.
+2. Reservasi Saldo: Pengeluaran yang diajukan mengunci saldo tersedia secara atomik untuk mencegah *double-spending* atau saldo negatif.
+3. Persetujuan unik: Satu orang pengurus hanya dihitung satu suara unik, meskipun me-retry API request.
+4. Perubahan material (revisi nominal/rekening tujuan) menginvalidasi seluruh approval lama dan menaikkan versi transaksi.
+
+================================================================================
+UC-04: TRANSPARANSI PAPAN IURAN & PENGINGAT BROADCAST WHATSAPP
+================================================================================
+Deskripsi: Seluruh warga dapat melihat matriks iuran kas bulanan/termin secara terbuka dan berkeadilan. Pengurus dapat membuat pesan penagihan/pengingat WhatsApp santun dalam 1-klik untuk warga yang menunggak.
+Aktor Utama: Warga / Pengurus Komunitas
+Aktor Sistem: Dues Board Aggregator, WhatsApp Reminder Formatter
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Warga as Seluruh Warga RT
+    actor Pengurus as Bendahara RT
+    participant UI as Halaman Papan Iuran (/dues-board)
+    participant API as Dues Board Service
+    participant DB as Database Dues Records
+    participant WA as WhatsApp Web / Mobile
+
+    Warga->>UI: 1. Buka menu "Papan Iuran"
+    UI->>API: GET /api/v1/wallets/:id/dues-board?year=2026
+    API->>DB: Agregasi matriks pembayaran per-anggota per-periode
+    API-->>UI: Matriks: Lunas (Hijau), Pending (Kuning), Belum Bayar (Abu-abu)
+    Note over Warga,UI: Transparansi Terbuka: Seluruh warga melihat rekap demi asas gotong royong!
+
+    Pengurus->>UI: 2. Tinjau Ringkasan: Tingkat kepatuhan warga (misal: 68%)
+    UI-->>Pengurus: Daftar 4 warga yang memiliki slot iuran belum terbayar
+    Pengurus->>UI: 3. Klik tombol "Salin / Kirim Pengingat WhatsApp"
+    UI->>API: Request draf reminder broadcast
+    API-->>UI: Teks santun otomatis berisi rincian nama warga, periode tertunggak & rek kas
+    UI->>WA: 4. Buka WhatsApp API: wa.me/?text=Halo%20Bapak%2FIbu...
+    Pengurus->>WA: 5. Kirim pesan pengingat ke grup warga atau chat pribadi
+```
+
+Aturan Keamanan & Invariant:
+1. Papan Iuran dapat diakses oleh seluruh anggota aktif dompet kas (`WARGA`, `PENGELOLA`, dan `ADMIN`).
+2. Format pesan WhatsApp tidak membeberkan kalimat bernada mempermalukan; mengedepankan asas kekeluargaan dan transparansi.
+3. Periode yang masih berstatus `PENDING` (dalam verifikasi) tidak ditandai sebagai menunggak pada broadcast pengingat.
+
+================================================================================
+UC-05: REKONSILIASI REKENING KORAN BANK & PENANGANAN MUTASI AMBIGU
+================================================================================
+Deskripsi: Pengelola mengunggah mutasi rekening koran bank format CSV (BCA, Mandiri, BRI, BNI). Sistem melakukan pencocokan 3-pass deterministik dan memandu penanganan mutasi ambigu dengan jejak audit ketat.
+Aktor Utama: Bendahara / Pengelola
+Aktor Sistem: Bank CSV Normalizer, 3-Pass Reconciliation Matcher, Audit Chain
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Pengurus as Bendahara
+    participant UI as Halaman Rekonsiliasi Bank
+    participant Parser as Bank Normalizer (BCA/Mandiri/BRI/BNI)
+    participant Matcher as 3-Pass Matcher Algorithm
+    participant DB as Reconciliation Match Table
+    participant Audit as SHA-256 Audit Chain
+
+    Pengurus->>UI: 1. Unggah berkas CSV mutasi bank (misal: mutasi_bca.csv)
+    UI->>Parser: POST /reconciliation/import (csvContent)
+    Parser->>Parser: Deteksi otomatis format bank, normalisasi tanggal & delimiter nominal
+    Parser->>Matcher: Jalankan Pencocokan 3-Pass Deterministik:
+    Note over Matcher: Pass 1: Nomor referensi unik sama persis? -> MATCHED<br/>Pass 2: Nominal & rentang tanggal ±3 hari cocok tunggal? -> MATCHED<br/>Pass 2 (Duplikat): Ada >=2 transaksi mirip? -> AMBIGUOUS<br/>Pass 3: Tidak ditemukan transaksi cocok? -> UNMATCHED
+    Matcher->>DB: Simpan hasil pencocokan & tandai transaksi kas
+    Matcher-->>UI: 2. Tampilkan Hasil: 12 Matched, 1 Ambiguous, 2 Unmatched
+
+    Pengurus->>UI: 3. Tinjau Baris Mutasi "AMBIGUOUS" (Kandidat transfer nominal sama)
+    Pengurus->>UI: Pilih transaksi internal yang benar & masukkan alasan verifikasi
+    UI->>Matcher: POST /reconciliation/manual-match { statementId, txId, reason: "Verifikasi slip ATM" }
+    Matcher->>Audit: Rekam event audit bergaransi jejak penanggung jawab
+    Matcher-->>UI: ✅ Status mutasi berubah MATCHED (Manual Match)
+
+    Pengurus->>UI: 4. Tinjau Baris Mutasi "UNMATCHED" (Pendapatan bunga bank tak terduga)
+    Pengurus->>UI: Klik "Buat Transaksi Kas dari Mutasi" (1-Klik)
+    UI->>Matcher: POST /reconciliation/create-from-mutation { category: "Bunga Kas Bank" }
+    Matcher-->>UI: ✅ Draf transaksi kas otomatis terbuat sesuai data bank
+```
+
+Aturan Keamanan & Invariant:
+1. Tidak ada auto-match spekulatif: jika terdapat 2 transaksi internal dengan nominal dan rentang tanggal serupa, sistem WAJIB mengkarantinanya ke status `AMBIGUOUS`.
+2. Pencocokan manual mutasi ambigu mewajibkan pencatatan identitas aktor (`reviewed_by`), timestamp, dan alasan tertulis (`review_reason`).
+3. Seluruh aktivitas rekonsiliasi terekam ke rantai audit SHA-256.
+
+================================================================================
+UC-06: TIKET KLARIFIKASI & TRANSPARANSI KEBERATAN WARGA (CLARIFICATION TICKET)
+================================================================================
+Deskripsi: Warga yang menemukan kejanggalan atau membutuhkan nota penjelasan rinci atas suatu transaksi pengeluaran dapat membuka tiket klarifikasi resmi di dalam aplikasi tanpa menimbulkan perselisihan di grup chat umum.
+Aktor Utama: Warga Komunitas, Pengelola / Admin Komunitas
+Aktor Sistem: Clarification Ticket Service, Notification Guard
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Warga as Warga Komunitas
+    actor Pengurus as Pengelola / Bendahara
+    participant UI as Antarmuka Web (Detail Transaksi)
+    participant API as Clarification API
+    participant DB as Clarification Tickets Table
+    participant Audit as SHA-256 Audit Chain
+
+    Warga->>UI: 1. Buka detail transaksi pengeluaran (misal: "Beli Alat Fogging Rp 800.000")
+    Warga->>UI: Klik "Minta Klarifikasi" & tulis alasan pertanyaan
+    UI->>API: POST /api/v1/transactions/:id/clarifications { reason: "Apakah include garansi & cairan disinfektan?" }
+    API->>DB: Simpan tiket (Status: OPEN, opened_by: WargaId)
+    API->>Audit: Rekam event: CLARIFICATION_REQUESTED
+    API-->>UI: ✅ Tiket klarifikasi resmi dibuka (Status: OPEN)
+
+    Pengurus->>UI: 2. Pengurus melihat lencana "Perlu Klarifikasi" pada transaksi
+    Pengurus->>UI: Buka dialog tiket, input catatan jawaban & lampirkan foto kartu garansi toko
+    UI->>API: PATCH /api/v1/transactions/:id/clarifications/:ticketId { resolutionNote: "Sudah include garansi 1 thn..." }
+    API->>DB: Update status tiket menjadi RESOLVED + simpan catatan resolusi
+    API->>Audit: Rekam event: CLARIFICATION_RESOLVED
+    API-->>UI: ✅ Tiket berhasil diselesaikan
+    UI-->>Warga: 3. Warga melihat status RESOLVED beserta penjelasan lengkap dan transparan
+```
+
+Aturan Keamanan & Invariant:
+1. Tiket klarifikasi tidak dapat dihapus (*no hard delete*); menjadi bagian permanen dari riwayat transparansi transaksi.
+2. Warga hanya dapat membuka tiket klarifikasi pada dompet kas di mana ia berstatus sebagai anggota aktif.
+3. Penyelesaian tiket klarifikasi membutuhkan catatan resolusi yang bermakna (minimal 5 karakter).
+
+================================================================================
+UC-07: VERIFIKASI MANDIRI RANTAI AUDIT SHA-256 & SIMULASI KEAMANAN (AUDIT DRILL)
+================================================================================
+Deskripsi: Warga atau auditor independen dapat memverifikasi keutuhan matematis catatan kas dari genesis hingga akhir. Admin dapat menjalankan simulasi manipulasi data ilegal untuk menguji deteksi tamper-evident sistem.
+Aktor Utama: Warga / Pengurus / Auditor Independen, Admin Komunitas
+Aktor Sistem: RFC 8785 Canonicalizer, SHA-256 Chain Verifier, Tamper Simulator Drill
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Warga / Auditor
+    actor Admin as Admin (Pelaku Drill Keamanan)
+    participant UI as Modal Fitur Algoritma
+    participant API as Audit Verification API
+    participant Engine as Hash Chain Verifier
+    participant DB as Transaction Events Table
+
+    User->>UI: 1. Klik menu Profil -> "Fitur Algoritma"
+    UI->>API: GET /api/v1/wallets/:id/audit/verify
+    API->>DB: Ambil seluruh transaction_events terurut sequence_no
+    API->>Engine: Hitung ulang SHA-256 berantai menggunakan Kanonisasi JSON RFC 8785
+    Engine-->>API: Status: VALID (Semua link H_{n-1} -> H_n cocok sempurna)
+    API-->>UI: ✅ Lencana Hijau: "Rantai Audit Utuh & Terverifikasi (Genesis s/d Event #142)"
+
+    Admin->>UI: 2. Buka Tab Simulasi Serangan Manipulasi (Security Drill - Admin Only)
+    Admin->>UI: Pilih Event #42 & ubah nominal menjadi Rp 99.999.999
+    UI->>API: POST /api/v1/wallets/:id/audit/simulate-tamper { sequenceNo: 42, payload: "..." }
+    API->>DB: Suntik payload manipulasi pada baris sequence #42
+    API-->>UI: Simulasi manipulasi aktif
+
+    User->>UI: 3. Pengguna menjalankan Verifikasi Ulang
+    UI->>API: GET /api/v1/wallets/:id/audit/verify
+    API->>Engine: Hitung ulang rantai hash
+    Engine-->>API: ❌ PELANGGARAN TERDETEKSI: Hash mismatch pada sequence #42!
+    API-->>UI: 🚨 Peringatan Merah: "Terdeteksi manipulasi data ilegal pada Event #42!"
+
+    Admin->>UI: 4. Admin memulihkan data asli (Repair)
+    UI->>API: POST /api/v1/wallets/:id/audit/repair { sequenceNo: 42, restoredPayload: "..." }
+    API->>DB: Pulihkan payload asli
+    API-->>UI: ✅ Payload dipulihkan & Rantai Audit kembali Hijau Utuh
+```
+
+Aturan Keamanan & Invariant:
+1. Verifikasi audit terbuka untuk seluruh anggota kas (asas transparansi kriptografi).
+2. Simulasi manipulasi (*tamper drill*) hanya dapat dieksekusi oleh peran `ADMIN` di lingkungan pengujian/demonstrasi akademik.
+3. Rantai hash menggunakan algoritma penyeragaman kanonikal RFC 8785 agar urutan kunci JSON tidak memicu false-positive hash mismatch.
+
+================================================================================
+UC-08: EKSTRAKSI CERDAS CATATAN KAS DARI CHAT WHATSAPP (AI PARSER HUMAN-IN-THE-LOOP)
+================================================================================
+Deskripsi: Pengurus menyalin pesan obrolan grup WhatsApp warga tentang pembayaran kas. Sistem mengekstraksi data secara terstruktur, namun dilarang membukukan transaksi tanpa persetujuan manual pengurus.
+Aktor Utama: Bendahara / Pengelola Komunitas
+Aktor Sistem: Regex/NLP Entity Extractor, Transaction Draft Form, Core Ledger
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Pengurus as Bendahara Komunitas
+    participant UI as Halaman AI Chat Parser (/ai-parser)
+    participant Parser as Deterministic Entity Extractor
+    participant Form as Form Transaksi Kas Resmi
+    participant Ledger as Ledger Engine
+
+    Pengurus->>UI: 1. Salin & tempel teks obrolan grup WA:<br/>"Malam bendahara, saya transfer 150rb iuran kas 3 bulan via BCA. - Budi"
+    UI->>Parser: Analisis struktur kalimat, nominal Rupiah, arah & tanggal
+    Parser-->>UI: Output JSON Terstruktur:<br/>- Tipe: INCOME<br/>- Nominal: Rp 150.000<br/>- Pihak: Budi<br/>- Kategori: Iuran Warga<br/>- Confidence: 95%
+    
+    Note over UI,Pengurus: Human-in-The-Loop Safety Gate: AI DILARANG membukukan saldo secara sepihak!
+    
+    Pengurus->>UI: 2. Periksa hasil ekstraksi & klik "Gunakan Data Ini"
+    UI->>Form: Buka Modal Pencatatan Kas resmi dengan formulir pra-terisi
+    Pengurus->>Form: 3. Verifikasi rekening, lampirkan bukti transfer, & klik Simpan
+    Form->>Ledger: Transaksi resmi dibukukan ke dalam sistem kas
+    Ledger-->>UI: ✅ Transaksi tercatat resmi & saldo kas bertambah
+```
+
+Aturan Keamanan & Invariant:
+1. Strict Human-in-the-Loop: Modul AI / Regex parser hanya berfungsi sebagai asisten input draf; tidak memiliki otorisasi melakukan mutasi database secara mandiri.
+2. Pengurus wajib memverifikasi hasil pembacaan sebelum menekan tombol simpan resmi.
+3. Data teks obrolan tidak disimpan permanen jika pengguna membatalkan proses ekstraksi.
+
+================================================================================
+UC-09: MANAJEMEN KEANGGOTAAN & PROMOSI PERAN KOMUNITAS (MEMBER ROLE GOVERNANCE)
+================================================================================
+Deskripsi: Admin komunitas mengangkat warga menjadi pengurus baru (misal bendahara/panitia kegiatan) atau menurunkan pengurus demisioner, dengan perlindungan agar dompet kas tidak kehilangan seluruh admin.
+Aktor Utama: Admin Komunitas, Anggota Komunitas
+Aktor Sistem: Membership RBAC Guard, Audit Chain
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Admin Komunitas (Ketua RW)
+    actor Target as Warga (Calon Pengurus)
+    participant UI as Halaman Kelola Anggota
+    participant API as Wallet Member API
+    participant Guard as Last-Admin Protection Guard
+    participant DB as Wallet Members Table
+    participant Audit as SHA-256 Audit Chain
+
+    Admin->>UI: 1. Buka Menu "Anggota Komunitas" pada dompet kas
+    UI->>API: GET /api/v1/wallets/:id/members
+    API-->>UI: Daftar seluruh anggota beserta peran aktif saat ini
+
+    Admin->>UI: 2. Pilih anggota target & klik "Ubah Peran" menjadi PENGELOLA
+    UI->>API: PATCH /api/v1/wallets/:id/members/:targetId { role: "PENGELOLA" }
+    API->>DB: Perbarui peran anggota dari WARGA -> PENGELOLA
+    API->>Audit: Rekam event audit: MEMBER_ROLE_UPDATED
+    API-->>UI: ✅ Berhasil mempromosikan anggota menjadi PENGELOLA
+    UI-->>Target: Target kini memiliki hak mencatat draf kas & verifikasi iuran
+
+    Admin->>UI: 3. Admin mencoba menurunkan perannya sendiri saat menjadi satu-satunya Admin
+    UI->>API: PATCH /api/v1/wallets/:id/members/:adminId { role: "WARGA" }
+    API->>Guard: Cek jumlah Admin aktif yang tersisa di dompet kas
+    Guard-->>API: ❌ PELANGGARAN: Dompet kas wajib memiliki minimal 1 ADMIN aktif!
+    API-->>UI: ❌ DITOLAK: Tidak dapat menurunkan Admin terakhir (Cegah dompet terlantar)
+```
+
+Aturan Keamanan & Invariant:
+1. Hanya peran `ADMIN` yang diizinkan mengubah peran anggota atau mengeluarkan anggota dari dompet kas.
+2. Invariant Dompet Terlantar (*Orphaned Wallet Guard*): Sistem menolak operasi penurunan peran atau penghapusan anggota jika anggota tersebut adalah satu-satunya Admin aktif dalam dompet kas.
+3. Setiap perubahan hak akses anggota dicatat ke rantai audit SHA-256.
+
+================================================================================
+UC-10: KONFIGURASI ATURAN KUORUM KAS & AMBANG BATAS PENGELUARAN (POLICY TUNING)
+================================================================================
+Deskripsi: Admin mengatur formula tata kelola persetujuan kas komunitas, menentukan berapa pengurus yang wajib menyetujui pengeluaran kas ($M$-dari-$N$) serta batas nominal yang mewajibkan kuorum.
+Aktor Utama: Admin Komunitas
+Aktor Sistem: Policy Versioning Service, Quorum Policy Engine, Audit Chain
+
+Diagram Alur Interaksi:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Admin Komunitas
+    participant UI as Modal Kebijakan Dompet (/policy)
+    participant API as Policy Management API
+    participant DB as Approval Policies Table
+    participant Audit as SHA-256 Audit Chain
+
+    Admin->>UI: 1. Buka Tab Pengaturan Kebijakan Dompet Kas
+    UI->>API: GET /api/v1/wallets/:id
+    API-->>UI: Aturan saat ini: M=1 (Single approval), Ambang Batas: Rp 0
+
+    Admin->>UI: 2. Ubah aturan: Wajib 2 Persetujuan (M=2) untuk nominal > Rp 200.000
+    Admin->>UI: Klik "Simpan Kebijakan Baru"
+    UI->>API: PATCH /api/v1/wallets/:id/policy { requiredApprovals: 2, thresholdAmount: 200000 }
+    API->>DB: Nonaktifkan kebijakan lama (policy_version = 1)
+    API->>DB: Buat kebijakan baru aktif (policy_version = 2, required_approvals: 2)
+    API->>Audit: Rekam event: POLICY_UPDATED (Metadata: { version: 2, M: 2, threshold: 200000 })
+    API-->>UI: ✅ Kebijakan tata kelola kas berhasil diperbarui ke Versi 2
+
+    Note over Admin,API: Dampak Versi: Transaksi pengeluaran baru otomatis tunduk pada Kebijakan Versi 2!
+```
+
+Aturan Keamanan & Invariant:
+1. Nilai $M$ (required approvals) tidak boleh melebihi jumlah total pengurus (`ADMIN` + `PENGELOLA`) yang ada di dompet kas.
+2. Setiap pembaruan aturan menaikkan nomor `policy_version` secara serial.
+3. Transaksi yang sedang berjalan terkunci pada `policy_version` saat transaksi diajukan, menjaga keadilan hukum tata kelola kas komunitas.
+
+================================================================================
+RINGKASAN INTEGRASI KESELURUHAN USE CASE
+================================================================================
+Kesepuluh use case di atas saling melengkapi untuk membentuk satu siklus hidup tata kelola kas komunitas yang tertutup, aman, transparan, dan tahan manipulasi:
+
+1. Onboarding & Akses: UC-01
+2. Siklus Pemasukan: UC-02, UC-04, UC-08
+3. Siklus Pengeluaran: UC-03, UC-10
+4. Verifikasi & Rekonsiliasi: UC-05, UC-07
+5. Resolusi Keberatan Warga: UC-06
+6. Tata Kelola Organisasi: UC-09
