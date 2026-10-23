@@ -127,7 +127,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="hidden md:flex p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title={`Mode saat ini: ${theme}. Klik untuk mengganti.`}
             aria-label="Toggle theme"
           >
@@ -140,7 +140,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* User Profile / Menu */}
           {user && (
-            <div className="relative">
+            <div className="relative hidden md:block">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-2 p-1 pl-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

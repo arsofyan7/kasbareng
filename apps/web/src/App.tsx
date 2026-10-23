@@ -98,7 +98,9 @@ function AppContent() {
           {currentTab === 'rekonsiliasi' && <ReconciliationPage />}
           {currentTab === 'ai-parser' && <AiParserPage />}
           {currentTab === 'anggota' && <MembersPage />}
-          {currentTab === 'profil' && <ProfilePage />}
+          {currentTab === 'profil' && (
+            <ProfilePage onOpenAlgorithmModal={() => setAlgorithmModalOpen(true)} />
+          )}
         </main>
       </div>
 
