@@ -1,5 +1,4 @@
 import React from 'react';
-import { useWallet } from '../../context/WalletContext';
 import {
   LayoutDashboard,
   WalletCards,
@@ -7,7 +6,6 @@ import {
   UserCircle,
   PlusCircle,
   KeyRound,
-  CheckCircle2,
   ShieldCheck,
   Scale,
   Sparkles,
@@ -29,10 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectTab,
   onOpenCreateWallet,
   onOpenJoinWallet,
-  onOpenAuditChain,
 }) => {
-  const { activeWallet } = useWallet();
-
   const navItems = [
     { id: 'beranda' as NavTab, label: 'Beranda Kas', icon: LayoutDashboard },
     { id: 'papan-iuran' as NavTab, label: 'Papan Iuran', icon: CalendarDays },
@@ -90,32 +85,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Active Wallet Info Card */}
-      {activeWallet && (
-        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-800/50 space-y-2">
-          <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
-            <span className="font-semibold uppercase tracking-wider">Aturan Komunitas</span>
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <p className="text-xs text-slate-600 dark:text-slate-300">
-            Persetujuan M-of-N: <span className="font-bold">{activeWallet.requiredApprovals} dari {activeWallet.memberCount} Anggota</span>
-          </p>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-            Peran Anda: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{activeWallet.myRole}</span>
-          </div>
-
-          {onOpenAuditChain && (
-            <button
-              onClick={onOpenAuditChain}
-              className="w-full mt-1.5 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 text-xs font-semibold transition-colors border border-indigo-200/50 dark:border-indigo-800/40"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Audit Rantai SHA-256</span>
-            </button>
-          )}
-        </div>
-      )}
     </aside>
   );
 };

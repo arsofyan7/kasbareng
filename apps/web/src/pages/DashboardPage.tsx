@@ -34,7 +34,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenCreateWallet,
   onOpenJoinWallet,
   onNavigateToTab,
-  onOpenAuditChain,
 }) => {
   const { token, user } = useAuth();
   const { activeWallet, wallets } = useWallet();
@@ -237,18 +236,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 Kuorum: <strong>{activeWallet.requiredApprovals} dari {activeWallet.memberCount} Suara</strong>
               </span>
             </div>
-
-            {onOpenAuditChain && (
-              <button
-                onClick={onOpenAuditChain}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition-colors shadow-sm cursor-pointer"
-                title="Periksa Keaslian Buku Kas & Rantai Hash Kriptografi SHA-256"
-              >
-                <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                <span>Audit SHA-256</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              </button>
-            )}
           </div>
         )}
       </div>

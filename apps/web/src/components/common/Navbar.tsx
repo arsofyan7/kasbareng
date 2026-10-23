@@ -13,7 +13,9 @@ import {
   LogOut,
   PlusCircle,
   KeyRound,
+  Cpu,
 } from 'lucide-react';
+import { AlgorithmRulesModal } from './AlgorithmRulesModal';
 
 interface NavbarProps {
   onOpenCreateWallet: () => void;
@@ -32,6 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { activeWallet } = useWallet();
   const { theme, toggleTheme } = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [algoModalOpen, setAlgoModalOpen] = useState(false);
 
   const getRoleBadge = (role?: string) => {
     switch (role) {
@@ -123,19 +126,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Audit Chain Verification Button */}
-          {activeWallet && onOpenAuditChain && (
-            <button
-              onClick={onOpenAuditChain}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/50 text-xs font-semibold transition-colors"
-              title="Periksa Integritas Rantai Hash Kriptografi SHA-256 (Audit Trail)"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-              <span className="hidden sm:inline">Audit SHA-256</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            </button>
-          )}
-
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -167,7 +157,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Profile Dropdown */}
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
                     <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                       {user.fullName}
@@ -178,13 +168,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
 
                   <div className="py-1">
+                    {/* Fitur Algoritma Menu Item */}
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        setAlgoModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Cpu className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">Fitur Algoritma</span>
+                      </div>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
+                        Aturan & Audit
+                      </span>
+                    </button>
+
                     {onOpenJoinWallet && (
                       <button
                         onClick={() => {
                           setProfileOpen(false);
                           onOpenJoinWallet();
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                       >
                         <KeyRound className="w-4 h-4 text-emerald-500" />
                         Gabung Komunitas (Kode)
@@ -195,7 +202,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setProfileOpen(false);
                         onOpenCreateWallet();
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
                       <PlusCircle className="w-4 h-4 text-emerald-500" />
                       Buat Dompet Baru
@@ -205,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setProfileOpen(false);
                         logout();
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                     >
                       <LogOut className="w-4 h-4" />
                       Keluar
@@ -217,6 +224,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       </div>
+
+      {/* Algorithm & Community Rules Modal */}
+      <AlgorithmRulesModal
+        isOpen={algoModalOpen}
+        onClose={() => setAlgoModalOpen(false)}
+        onOpenAuditChain={() => {
+          setAlgoModalOpen(false);
+          onOpenAuditChain?.();
+        }}
+      />
     </header>
   );
 };
