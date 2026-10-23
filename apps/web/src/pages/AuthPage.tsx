@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Wallet, Sun, Moon, ArrowRight, AlertCircle } from 'lucide-react';
+import { Wallet, Sun, Moon, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import communityBg from '../assets/community-fintech-bg.jpg';
 
 export const AuthPage: React.FC = () => {
   const { login, register } = useAuth();
@@ -49,9 +50,27 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="relative min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors overflow-hidden">
+      {/* Animated Semi-Transparent Background Layer */}
+      <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-0">
+        {/* Thematic Illustration with Smooth Breathing/Slow-Zoom Animation */}
+        <img
+          src={communityBg}
+          alt="Kas Komunitas Gotong Royong"
+          className="w-full h-full object-cover object-center opacity-15 dark:opacity-25 transition-opacity duration-700 animate-slow-zoom scale-105"
+        />
+
+        {/* Ambient Gradient Masks to Blend Seamlessly with Light & Dark Backgrounds */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-slate-50/70 to-slate-50/40 dark:from-slate-950 dark:via-slate-950/75 dark:to-slate-950/50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-50/80 via-transparent to-slate-50/80 dark:from-slate-950/80 dark:via-transparent dark:to-slate-950/80" />
+
+        {/* Glowing Neon Atmosphere Orbs */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/15 dark:bg-emerald-500/25 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-teal-500/15 dark:bg-teal-500/25 rounded-full blur-3xl animate-pulse [animation-delay:2s]" />
+      </div>
+
       {/* Top Bar with Brand & Theme Toggle */}
-      <header className="px-6 py-4 flex items-center justify-between max-w-5xl mx-auto w-full">
+      <header className="relative z-10 px-6 py-4 flex items-center justify-between max-w-5xl mx-auto w-full">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
             <Wallet className="w-5 h-5" />
@@ -63,7 +82,7 @@ export const AuthPage: React.FC = () => {
 
         <button
           onClick={toggleTheme}
-          className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-sm"
           title={`Ganti tema (${theme})`}
         >
           {theme === 'dark' ? (
@@ -75,10 +94,14 @@ export const AuthPage: React.FC = () => {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none p-6 sm:p-8 space-y-6">
+      <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-md w-full backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl shadow-emerald-950/10 dark:shadow-emerald-950/50 p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
           {/* Header & Tagline */}
-          <div className="text-center space-y-1.5">
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-500/20">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+              <span>Transparansi Kas Komunitas & Gotong Royong</span>
+            </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               {mode === 'login' ? 'Selamat Datang Kembali' : 'Bergabung Bersama Warga'}
             </h1>
@@ -209,7 +232,7 @@ export const AuthPage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-xs text-slate-400 dark:text-slate-600">
+      <footer className="relative z-10 py-4 text-center text-xs text-slate-500 dark:text-slate-400 font-medium">
         KASBARENG • Zero-Trust Community Financial Transparency Platform
       </footer>
     </div>
