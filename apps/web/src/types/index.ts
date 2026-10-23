@@ -36,6 +36,9 @@ export interface Wallet {
   requiredApprovals: number;
   joinedAt?: string;
   version?: number;
+  duesType?: DuesType;
+  duesAmount?: number | null;
+  targetInstallmentsCount?: number | null;
 }
 
 export interface WalletPreview {
@@ -246,4 +249,65 @@ export interface ReconciliationSummary {
   bankStatements: BankStatementItem[];
   unmatchedInternalTransactions: UnmatchedInternalTransaction[];
 }
+
+export type DuesType = 'MONTHLY' | 'TARGET_INSTALLMENTS' | 'FREEFORM';
+export type DuesPaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED';
+
+export interface DuesPeriod {
+  key: string;
+  label: string;
+  shortLabel: string;
+  monthNumber?: number;
+  year?: number;
+}
+
+export interface DuesBoardMemberRow {
+  userId: string;
+  fullName: string;
+  email: string;
+  role: string;
+  records: Record<
+    string,
+    {
+      id: string;
+      status: DuesPaymentStatus;
+      amount: number;
+      transactionId: string | null;
+      receiptAttachmentId: string | null;
+      updatedAt: string;
+    }
+  >;
+  totalPaidAmount: number;
+  paidCount: number;
+  pendingCount: number;
+  unpaidCount: number;
+  isFullyPaid: boolean;
+}
+
+export interface DuesBoardSummary {
+  walletId: string;
+  walletName: string;
+  duesType: DuesType;
+  duesAmount: number | null;
+  targetInstallmentsCount: number | null;
+  selectedYear: number;
+  totalMembers: number;
+  totalCollected: number;
+  totalPending: number;
+  totalTargetPotential: number;
+  complianceRatePercent: number;
+  unpaidMembers: {
+    userId: string;
+    fullName: string;
+    unpaidPeriods: string[];
+  }[];
+  whatsappReminderText: string;
+}
+
+export interface DuesBoardResult {
+  periods: DuesPeriod[];
+  members: DuesBoardMemberRow[];
+  summary: DuesBoardSummary;
+}
+
 

@@ -23,7 +23,6 @@ describe('Fase 6: Rekonsiliasi Bank CSV & Deterministic Matching', () => {
       fullName: 'Bendahara Kas Recon',
       email: `recon_admin_${timestamp}@kasbareng.test`,
       password: 'PasswordSuper123!',
-      phone: '081299998888',
     });
     admin = u1.user;
 

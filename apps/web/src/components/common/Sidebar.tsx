@@ -11,9 +11,10 @@ import {
   ShieldCheck,
   Scale,
   Sparkles,
+  CalendarDays,
 } from 'lucide-react';
 
-export type NavTab = 'beranda' | 'kantong' | 'persetujuan' | 'rekonsiliasi' | 'ai-parser' | 'anggota' | 'profil';
+export type NavTab = 'beranda' | 'papan-iuran' | 'kantong' | 'persetujuan' | 'rekonsiliasi' | 'ai-parser' | 'anggota' | 'profil';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -34,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems = [
     { id: 'beranda' as NavTab, label: 'Beranda Kas', icon: LayoutDashboard },
+    { id: 'papan-iuran' as NavTab, label: 'Papan Iuran', icon: CalendarDays },
     { id: 'kantong' as NavTab, label: 'Kantong Kas', icon: WalletCards },
     { id: 'persetujuan' as NavTab, label: 'Persetujuan Kas', icon: ShieldCheck },
     { id: 'rekonsiliasi' as NavTab, label: 'Rekonsiliasi Bank', icon: Scale },

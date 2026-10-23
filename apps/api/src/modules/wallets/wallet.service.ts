@@ -1,5 +1,5 @@
 import { prisma } from '../../common/prisma';
-import { Prisma, WalletRole, UserStatus, WalletStatus } from '@prisma/client';
+import { Prisma, WalletRole, UserStatus, WalletStatus, DuesType } from '@prisma/client';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { AuditService } from '../audit/audit.service';
@@ -9,6 +9,9 @@ export const CreateWalletSchema = z.object({
   description: z.string().max(500).optional(),
   currency: z.string().optional().default('IDR'),
   requiredApprovals: z.number().int().min(1, 'Minimal persetujuan adalah 1').default(2),
+  duesType: z.nativeEnum(DuesType).optional().default(DuesType.FREEFORM),
+  duesAmount: z.number().positive().optional().nullable(),
+  targetInstallmentsCount: z.number().int().positive().optional().nullable(),
   customInviteCode: z
     .string()
     .trim()
@@ -104,6 +107,9 @@ export class WalletService {
           description: validated.description,
           currency: validated.currency,
           inviteCode,
+          duesType: validated.duesType,
+          duesAmount: validated.duesAmount ? new Prisma.Decimal(validated.duesAmount) : null,
+          targetInstallmentsCount: validated.targetInstallmentsCount || null,
         },
       });
 
@@ -180,6 +186,9 @@ export class WalletService {
       description: m.wallet.description,
       currency: m.wallet.currency,
       inviteCode: m.wallet.inviteCode,
+      duesType: m.wallet.duesType,
+      duesAmount: m.wallet.duesAmount ? Number(m.wallet.duesAmount) : null,
+      targetInstallmentsCount: m.wallet.targetInstallmentsCount,
       status: m.wallet.status,
       myRole: m.role,
       joinedAt: m.joinedAt,
@@ -226,6 +235,9 @@ export class WalletService {
       description: wallet.description,
       currency: wallet.currency,
       inviteCode: wallet.inviteCode,
+      duesType: wallet.duesType,
+      duesAmount: wallet.duesAmount ? Number(wallet.duesAmount) : null,
+      targetInstallmentsCount: wallet.targetInstallmentsCount,
       status: wallet.status,
       version: wallet.version,
       createdAt: wallet.createdAt,

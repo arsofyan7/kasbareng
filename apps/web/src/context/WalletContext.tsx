@@ -12,7 +12,12 @@ interface WalletContextType {
     name: string,
     description?: string,
     requiredApprovals?: number,
-    customInviteCode?: string
+    customInviteCode?: string,
+    duesOptions?: {
+      duesType?: import('../types').DuesType;
+      duesAmount?: number;
+      targetInstallmentsCount?: number;
+    }
   ) => Promise<Wallet>;
   joinWallet: (inviteCode: string) => Promise<{ walletId: string; name: string }>;
   updateInviteCode: (walletId: string, customCode?: string) => Promise<{ id: string; inviteCode: string }>;
@@ -86,7 +91,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     name: string,
     description?: string,
     requiredApprovals = 2,
-    customInviteCode?: string
+    customInviteCode?: string,
+    duesOptions?: {
+      duesType?: import('../types').DuesType;
+      duesAmount?: number;
+      targetInstallmentsCount?: number;
+    }
   ) => {
     if (!token) throw new Error('Otentikasi diperlukan.');
 
@@ -101,6 +111,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         description,
         requiredApprovals,
         customInviteCode: customInviteCode || undefined,
+        duesType: duesOptions?.duesType,
+        duesAmount: duesOptions?.duesAmount,
+        targetInstallmentsCount: duesOptions?.targetInstallmentsCount,
       }),
     });
 

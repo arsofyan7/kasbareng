@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '../../context/WalletContext';
-import { ApiResponse } from '../../types';
-import { X, ShieldCheck, AlertCircle, KeyRound, Loader2, Sparkles, Dices } from 'lucide-react';
+import { ApiResponse, DuesType } from '../../types';
+import { X, ShieldCheck, AlertCircle, KeyRound, Loader2, Sparkles, Dices, Calendar, Layers, HeartHandshake, Banknote } from 'lucide-react';
 
 interface CreateWalletModalProps {
   isOpen: boolean;
@@ -13,6 +13,11 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [requiredApprovals, setRequiredApprovals] = useState(2);
+
+  // Dues configuration (Bulanan / Termin / Bebas)
+  const [duesType, setDuesType] = useState<DuesType>('MONTHLY');
+  const [duesAmountStr, setDuesAmountStr] = useState<string>('50000');
+  const [targetInstallmentsCount, setTargetInstallmentsCount] = useState<number>(10);
 
   // Invite code mode: 'AUTO' vs 'CUSTOM'
   const [codeMode, setCodeMode] = useState<'AUTO' | 'CUSTOM'>('AUTO');
@@ -79,17 +84,29 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
+      const parsedAmount = duesAmountStr.trim()
+        ? parseFloat(duesAmountStr.replace(/[^0-9]/g, ''))
+        : undefined;
+
       await createWallet(
         name.trim(),
         description.trim() || undefined,
         requiredApprovals,
-        codeMode === 'CUSTOM' ? customCode.trim() : undefined
+        codeMode === 'CUSTOM' ? customCode.trim() : undefined,
+        {
+          duesType,
+          duesAmount: !isNaN(parsedAmount as number) ? parsedAmount : undefined,
+          targetInstallmentsCount: duesType === 'TARGET_INSTALLMENTS' ? targetInstallmentsCount : undefined,
+        }
       );
       setName('');
       setDescription('');
       setRequiredApprovals(2);
       setCustomCode('');
       setCodeMode('AUTO');
+      setDuesType('MONTHLY');
+      setDuesAmountStr('50000');
+      setTargetInstallmentsCount(10);
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'Gagal membuat dompet kas.');
@@ -151,6 +168,108 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none"
             />
+          </div>
+
+          {/* Dues Configuration (Tipe Iuran Kas) */}
+          <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                Skema & Tipe Iuran Kas
+              </label>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                Papan Iuran
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 text-xs">
+              <button
+                type="button"
+                onClick={() => setDuesType('MONTHLY')}
+                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-center font-medium transition-all ${
+                  duesType === 'MONTHLY'
+                    ? 'border-emerald-500 bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
+                }`}
+              >
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span className="font-semibold text-[11px]">Bulanan</span>
+                <span className="text-[9px] text-slate-400">12 Bulan / Thn</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDuesType('TARGET_INSTALLMENTS')}
+                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-center font-medium transition-all ${
+                  duesType === 'TARGET_INSTALLMENTS'
+                    ? 'border-emerald-500 bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
+                }`}
+              >
+                <Layers className="w-4 h-4 text-indigo-600" />
+                <span className="font-semibold text-[11px]">Target Termin</span>
+                <span className="text-[9px] text-slate-400">N-Kali Setor</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDuesType('FREEFORM')}
+                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-center font-medium transition-all ${
+                  duesType === 'FREEFORM'
+                    ? 'border-emerald-500 bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
+                }`}
+              >
+                <HeartHandshake className="w-4 h-4 text-amber-600" />
+                <span className="font-semibold text-[11px]">Sukarela</span>
+                <span className="text-[9px] text-slate-400">Tanpa Tagihan</span>
+              </button>
+            </div>
+
+            {duesType === 'TARGET_INSTALLMENTS' && (
+              <div className="pt-1">
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Jumlah Termin Setoran (Target N-Kali)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={targetInstallmentsCount}
+                  onChange={(e) => setTargetInstallmentsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+                <span className="text-[10px] text-slate-400">Misal: 10 untuk tabungan qurban 10x setoran.</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                  Nominal Iuran per Periode
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">Boleh kosong (Opsional)</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                  Rp
+                </span>
+                <input
+                  type="text"
+                  placeholder="Contoh: 50.000 (Kosongkan jika sukarela / bebas)"
+                  value={duesAmountStr}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                    setDuesAmountStr(raw ? Number(raw).toLocaleString('id-ID') : '');
+                  }}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                Jika diisi, nominal ini menjadi acuan kalkulasi otomatis saat warga membayar atau lapor iuran.
+              </p>
+            </div>
           </div>
 
           {/* Private Community Invite Code Section */}

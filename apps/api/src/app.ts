@@ -8,6 +8,7 @@ import { transactionRouter } from './modules/transactions/transaction.routes';
 import { auditRouter } from './modules/audit/audit.routes';
 import { reconciliationRouter } from './modules/reconciliation/reconciliation.routes';
 import { attachmentRouter } from './modules/attachments/attachment.routes';
+import { duesRouter } from './modules/dues/dues.routes';
 
 export const app = express();
 
@@ -68,6 +69,7 @@ app.use('/api/v1', transactionRouter);
 app.use('/api/v1', auditRouter);
 app.use('/api/v1', reconciliationRouter);
 app.use('/api/v1', attachmentRouter);
+app.use('/api/v1', duesRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

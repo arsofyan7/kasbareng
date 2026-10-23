@@ -9,6 +9,7 @@ import { MembersPage } from './pages/MembersPage';
 import { ApprovalsPage } from './pages/ApprovalsPage';
 import { ReconciliationPage } from './pages/ReconciliationPage';
 import { AiParserPage } from './pages/AiParserPage';
+import { DuesBoardPage } from './pages/DuesBoardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { Navbar } from './components/common/Navbar';
 import { Sidebar, NavTab } from './components/common/Sidebar';
@@ -83,6 +84,7 @@ function AppContent() {
               onOpenAuditChain={() => setAuditModalOpen(true)}
             />
           )}
+          {currentTab === 'papan-iuran' && <DuesBoardPage />}
           {currentTab === 'kantong' && (
             <WalletsPage
               onOpenCreateWallet={() => setCreateWalletOpen(true)}

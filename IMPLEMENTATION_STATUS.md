@@ -243,3 +243,43 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
 - **Demo Dataset**:
   - 2 laporan iuran siap verifikasi dari `warga1` (Bpk. Joko Santoso) dan `warga2` (Ibu Siti Rahayu) dengan lampiran bukti transfer bawaan pada perintah `npm run db:seed`.
 
+---
+
+### Fase 7: Papan Rekap Iuran Komunitas (Community Billing Board) & Pembayaran Multi-Periode
+- **Status**: **COMPLETED**
+- **Tanggal Selesai**: 2026-10-23
+- **Hasil Pengujian**: 6 test integrasi di `apps/api/src/modules/dues.test.ts` (Total: **103/103 tests lulus 100%**).
+- **Latar Belakang & Masalah Komunitas**:
+  - Menggantikan papan tulis kapur/whiteboard rekap manual di pos ronda atau balai warga yang sering hilang atau lambat diperbarui.
+  - Seluruh anggota (`WARGA`, `PENGELOLA`, dan `ADMIN`) memiliki hak akses transparan untuk melihat visual matriks checklist pembayaran kas warga secara gotong royong.
+- **3 Skema Tipe Iuran Kas (Configurable Billing Schemes)**:
+  1. **`MONTHLY` (Bulanan / Rutin Kalender)**: Visualisasi 12 bulan (Januari - Desember) untuk tahun yang dipilih, dengan selector navigasi tahun.
+  2. **`TARGET_INSTALLMENTS` (Target $N$-Kali / Termin)**: Visualisasi $N$-kali setoran (misal: 10 termin untuk Tabungan Qurban, Iuran Pembangunan Gapura, atau Kegiatan 17-an).
+  3. **`FREEFORM` (Sukarela / Donasi)**: Untuk dompet kas insidental tanpa tagihan rutin.
+- **Nominal Iuran Bersifat Opsional (Flexible / Optional Dues Amount)**:
+  - Pada modal *"Buat Dompet Kas Baru"*, Admin dapat memilih tipe iuran dan opsional mengisi nominal acuan iuran per periode (misal: Rp 50.000). Jika dikosongkan, sistem tetap menyajikan matriks iuran dengan nominal bebas/sukarela.
+- **Pembayaran Multi-Periode Borongan (Multi-Period Checklist)**:
+  - Di modal *"Lapor Pembayaran"*, warga dapat mencentang beberapa bulan/termin sekaligus (misal: Januari, Februari, Maret).
+  - Sistem otomatis mengalkulasi nominal total (`jumlah_periode * nominal_iuran`), namun tetap memberikan kebebasan kustomisasi nominal jika ada penyesuaian.
+  - Setiap periode tersinkronisasi ke tabel `dues_records` dengan status `PENDING` saat diajukan, bertransisi otomatis ke `PAID` saat pengurus memverifikasi (`APPROVE`), atau dihapus/dibebaskan kembali jika ditolak (`REJECT`).
+- **Pencatatan Setoran Tunai oleh Pengurus**:
+  - Pengurus (`ADMIN` / `PENGELOLA`) dapat mencatat setoran uang tunai/cash yang diterima langsung dari warga via dropdown *"Setoran Atas Nama Anggota/Warga"*, sehingga pembayaran kas tunai langsung tercatat lunas atas nama warga tersebut.
+- **Rekap Tunggakan & Pengingat WhatsApp Otomatis (Follow-up Automation)**:
+  - **Tingkat Kepatuhan Komunitas (% Compliance Rate)**: Dihitung secara matematis dari `(total slot lunas / total slot iuran seluruh anggota) * 100`.
+  - **Tombol Salin Rekap**: Menyalin ringkasan data warga yang menunggak ke clipboard.
+  - **Tombol Kirim Pengingat WA**: Membuka draft broadcast WhatsApp siap kirim yang memuat persentase kepatuhan, total uang terkumpul, daftar nama warga penunggak berserta bulannya, dan tautan portal KasBareng.
+- **UI / Antarmuka Pengguna**:
+  - `DuesBoardPage.tsx`:
+    - 4 Kartu KPI: Tingkat Kepatuhan Iuran (dengan progress bar gradien), Total Kas Terkumpul (vs Potensi Target), Menunggu Verifikasi, dan Status Anggota Lunas vs Menunggak.
+    - Toolbar Pencarian & Filter Cepat: Filter *"Semua"*, *"Ada Tunggakan"*, dan *"Lunas 100%"*.
+    - Tabel Matriks Interaktif: Kolom nama warga lengket (*sticky*), badge status sel berkode warna (🟢 Lunas, 🟡 Menunggu Verifikasi, ⚪ Belum Bayar), dan modal detail per sel dengan tombol pratinjau foto struk.
+  - `CreateWalletModal.tsx`:
+    - Pilihan skema tipe iuran interaktif (Bulanan, Target Termin, Sukarela) dan isian nominal iuran opsional.
+  - `RecordTransactionModal.tsx`:
+    - Checklist multi-periode iuran otomatis dan pemilih anggota setoran tunai bagi pengurus.
+  - Navigasi:
+    - Tab *"Papan Iuran"* di `Sidebar.tsx` dan `BottomNav.tsx`, serta tombol shortcut langsung di Beranda `DashboardPage.tsx`.
+- **Demo Dataset**:
+  - Data dompet RT 05 ASRI dikonfigurasi bertipe `MONTHLY` dengan nominal Rp 50.000/bulan, lengkap dengan 6 anggota yang memiliki status lunas, pending verifikasi, dan tunggakan untuk demo visual instan.
+
+

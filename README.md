@@ -62,7 +62,7 @@ Pengelolaan kas pada komunitas non-profit (seperti **RT/RW**, **Paguyuban**, **A
 | **M-of-N Approval Quorum** | Mekanisme persetujuan pengeluaran kas dengan aturan kuorum dinamis, anti-self approval, dan penolakan otomatis. | ✅ Selesai |
 | **SHA-256 Audit Chain** | Rantai audit kriptografis tamper-evident dengan endpoint verifikasi integritas & simulator drill manipulasi data. | ✅ Selesai |
 | **Bank CSV Reconciliation** | Rekonsiliasi multi-format bank (BCA, Mandiri, BRI, BNI) dengan 3-pass matcher deterministik & manual audit trail. | ✅ Selesai |
-| **AI Chat Parser (UI Preview)** | Simulator pengubah chat WhatsApp/Telegram warga menjadi draf transaksi kas terstruktur berpagar *Human-in-the-Loop*. | 🟡 UI Preview |
+| **Papan Rekap Iuran Komunitas** | Visualisasi matriks pembayaran iuran warga (Bulanan, Target Termin, atau Sukarela) dengan checklist borongan multi-periode, pengingat WhatsApp broadcast otomatis, dan transparansi terbuka seluruh anggota. | ✅ Selesai |
 | **Mobile-First PWA** | Responsif penuh (Laptop, Tablet, HP), dukungan tema Gelap/Terang/Sistem Otomatis, dan instalasi PWA di homescreen. | ✅ Selesai |
 
 ---
@@ -115,7 +115,7 @@ graph TD
 - **Frontend**: React 18, TypeScript 5.6, Vite 5.4, Tailwind CSS 3.4, TanStack Query 5, Lucide Icons.
 - **Backend**: Node.js, Express 4.21, TypeScript 5.6, Prisma ORM 5.22, Zod 3.23 (Validasi Skema), Jose / JWT, Bcrypt.
 - **Kriptografi & Integritas**: Node.js `crypto` (SHA-256), RFC 8785 Canonical JSON Serialization.
-- **Testing**: Vitest 2.1 (97 tests unit & integrasi lulus 100%).
+- **Testing**: Vitest 2.1 (103 tests unit & integrasi lulus 100%).
 
 ---
 
@@ -326,6 +326,41 @@ sequenceDiagram
 
 ---
 
+### 8. Papan Rekap Iuran Komunitas (Community Billing Board) & Pembayaran Multi-Periode
+
+Fitur ini menggantikan papan tulis kapur/whiteboard manual di pos ronda atau balai pertemuan dengan matriks visual digital yang terbuka bagi seluruh warga:
+
+```mermaid
+flowchart TD
+    subgraph Config ["1. Pengaturan Skema Dompet Kas"]
+        C1["Admin Buat Dompet: Pilih Tipe Iuran (Bulanan, Target Termin, atau Sukarela)"]
+        C2["Nominal Iuran Opsional (misal: Rp 50.000 / periode)"]
+    end
+
+    subgraph Payment ["2. Pembayaran Multi-Periode (Borongan)"]
+        P1["Warga Buka Modal Bayar / Lapor Kas"]
+        P2["Centang Periode Sekaligus (misal: Jan, Feb, Mar)"]
+        P3["Otomatis Terkalkulasi: 3 x Rp 50.000 = Rp 150.000"]
+        P4["Simpan Status PENDING di Papan Iuran"]
+    end
+
+    subgraph Verify ["3. Verifikasi Pengurus (Single-Manager)"]
+        V1{"Pengurus Cek Transfer Bank"}
+        V1 -- APPROVE --> V2["Otomatis Berubah: 🟢 LUNAS (PAID) untuk Seluruh Bulan Terpilih"]
+        V1 -- REJECT --> V3["Slot Periode Dihapus & Dibebaskan Kembali untuk Dilaporkan Ulang"]
+    end
+
+    subgraph FollowUp ["4. Monitoring & Tindak Lanjut"]
+        F1["Tingkat Kepatuhan (% Compliance Rate) & Total Kas Terkumpul"]
+        F2["📋 Salin Rekap Tunggakan ke Clipboard"]
+        F3["💬 Kirim Pengingat WhatsApp Siap Broadcast ke Grup Warga"]
+    end
+
+    Config --> Payment --> Verify --> FollowUp
+```
+
+---
+
 ## 👥 Matriks Hak Akses (RBAC)
 
 Hak akses bersifat **spesifik per dompet kas** (*per-wallet scope*). Pengguna yang menjadi `WARGA` di kas RT dapat menjadi `ADMIN` di kas panitia 17-an.
@@ -334,6 +369,9 @@ Hak akses bersifat **spesifik per dompet kas** (*per-wallet scope*). Pengguna ya
 | :--- | :---: | :---: | :---: |
 | **Melihat Saldo Kas Komunitas** | ✅ Ya | ✅ Ya | ✅ Ya |
 | **Melihat Riwayat Transaksi Kas** | ✅ Semua Transaksi | ✅ Semua Transaksi | 🔒 Khusus Transaksi Sendiri (Tracking Pribadi) |
+| **Papan Rekap Iuran Komunitas (Visual Grid)** | ✅ Ya (Transparan Penuh) | ✅ Ya (Transparan Penuh) | ✅ Ya (Transparan Penuh Gotong Royong) |
+| **Salin Rekap & Broadcast Pengingat WhatsApp** | ✅ Ya | ✅ Ya | ✅ Ya |
+| **Mencatat Setoran Tunai atas Nama Warga** | ✅ Ya | ✅ Ya | ❌ Tidak |
 | **Melihat Rantai Audit Kriptografis** | ✅ Ya | ✅ Ya | ✅ Ya |
 | **Lapor Iuran Mandiri (+ Foto Struk / Kamera)** | ✅ Ya | ✅ Ya | ✅ Ya (Khusus Pemasukan Kas) |
 | **Membuat Pengeluaran Kas (Expense)** | ✅ Ya | ✅ Ya | ❌ Tidak (403 Forbidden) |
@@ -455,7 +493,7 @@ Setelah menjalankan `npm run db:seed`, Anda dapat langsung masuk menggunakan aku
 KasBareng memiliki cakupan test suite yang komprehensif menguji algoritma murni dan endpoint integrasi.
 
 ```bash
-# Menjalankan seluruh test suite integrasi backend (97 tests)
+# Menjalankan seluruh test suite integrasi backend (103 tests)
 npm run test:api
 
 # Menjalankan khusus test algoritma murni (FSM, Quorum, Hash Chain, Reconciliation)
@@ -464,21 +502,22 @@ npm run test:algorithms
 
 ### Hasil Uji:
 ```text
- ✓ src/modules/wallets.test.ts (13 tests)
- ✓ src/modules/auth.test.ts (13 tests)
+ ✓ src/modules/auth-wallets.test.ts (21 tests)
  ✓ src/modules/approvals.test.ts (11 tests)
- ✓ src/modules/income-reports.test.ts (7 tests)
- ✓ src/modules/audit.test.ts (6 tests)
  ✓ src/modules/reconciliation.test.ts (8 tests)
  ✓ src/modules/transactions.test.ts (8 tests)
- ✓ src/modules/wallets-gated.test.ts (8 tests)
- ✓ src/algorithms/hash-chain/hash-chain.test.ts (6 tests)
- ✓ src/algorithms/quorum/quorum.test.ts (6 tests)
- ✓ src/algorithms/fsm/fsm.test.ts (6 tests)
- ✓ src/algorithms/ledger/ledger.test.ts (6 tests)
+ ✓ src/modules/income-reports.test.ts (7 tests)
+ ✓ src/modules/dues.test.ts (6 tests)
+ ✓ src/modules/audit.test.ts (6 tests)
+ ✓ src/algorithms/reconciliation/matcher.test.ts (8 tests)
+ ✓ src/algorithms/quorum/quorum-evaluator.test.ts (7 tests)
+ ✓ src/algorithms/fsm/transition-validator.test.ts (7 tests)
+ ✓ src/algorithms/ledger/balance-calculator.test.ts (5 tests)
+ ✓ src/algorithms/hash-chain/hash-chain.test.ts (5 tests)
+ ✓ src/algorithms/canonicalization/canonical-json.test.ts (4 tests)
 
- Test Files  12 passed (12)
-      Tests  97 passed (97) - 100%
+ Test Files  13 passed (13)
+      Tests  103 passed (103) - 100%
 ```
 
 ---

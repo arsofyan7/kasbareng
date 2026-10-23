@@ -7,6 +7,7 @@ import {
   UserCircle,
   ShieldCheck,
   Scale,
+  CalendarDays,
 } from 'lucide-react';
 
 interface BottomNavProps {
@@ -17,8 +18,9 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab }) => {
   const tabs = [
     { id: 'beranda' as NavTab, label: 'Beranda', icon: LayoutDashboard },
-    { id: 'kantong' as NavTab, label: 'Kantong', icon: WalletCards },
+    { id: 'papan-iuran' as NavTab, label: 'Iuran', icon: CalendarDays },
     { id: 'persetujuan' as NavTab, label: 'Persetujuan', icon: ShieldCheck },
+    { id: 'kantong' as NavTab, label: 'Kantong', icon: WalletCards },
     { id: 'rekonsiliasi' as NavTab, label: 'Rekon', icon: Scale },
     { id: 'anggota' as NavTab, label: 'Anggota', icon: Users2 },
     { id: 'profil' as NavTab, label: 'Profil', icon: UserCircle },
@@ -26,7 +28,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-safe transition-colors">
-      <div className="grid grid-cols-6 h-16">
+      <div className="grid grid-cols-7 h-16">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;

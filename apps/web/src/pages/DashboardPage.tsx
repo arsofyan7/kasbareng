@@ -15,16 +15,18 @@ import {
   Check,
   Share2,
   Sparkles,
+  CalendarDays,
 } from 'lucide-react';
 import { Transaction, TransactionType, TransactionState, WalletSummary, ApiResponse } from '../types';
 import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
 import { TransactionDetailModal } from '../components/common/TransactionDetailModal';
 import { ManageInviteCodeModal } from '../components/common/ManageInviteCodeModal';
+import { NavTab } from '../components/common/Sidebar';
 
 interface DashboardPageProps {
   onOpenCreateWallet: () => void;
   onOpenJoinWallet?: () => void;
-  onNavigateToTab: (tab: 'kantong' | 'anggota') => void;
+  onNavigateToTab: (tab: NavTab) => void;
   onOpenAuditChain?: () => void;
 }
 
@@ -433,19 +435,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </button>
 
-        {/* Action 4: Kantong Kas */}
+        {/* Action 4: Papan Iuran */}
         <button
-          onClick={() => onNavigateToTab('kantong')}
-          className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-slate-800/80 text-left transition-all group"
+          onClick={() => onNavigateToTab('papan-iuran')}
+          className="p-4 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/80 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:bg-emerald-50/20 dark:hover:bg-slate-800/80 text-left transition-all group"
         >
-          <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-            <Wallet className="w-4 h-4" />
+          <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+            <CalendarDays className="w-4 h-4" />
           </div>
           <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-            Kantong Kas
+            Papan Iuran
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            {wallets.length} Dompet Diikuti
+          <div className="text-xs text-emerald-700 dark:text-emerald-400">
+            Rekap Warga & Status
           </div>
         </button>
       </div>

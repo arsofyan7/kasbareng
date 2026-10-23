@@ -84,6 +84,18 @@ enum TicketStatus {
   RESOLVED
 }
 
+enum DuesType {
+  MONTHLY
+  TARGET_INSTALLMENTS
+  FREEFORM
+}
+
+enum DuesPaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 model User {
   id           String       @id @default(uuid())
   fullName     String       @map("full_name")
@@ -99,20 +111,24 @@ model User {
   events            TransactionEvent[]
   clarifications    ClarificationTicket[] @relation("OpenedTickets")
   resolvedTickets   ClarificationTicket[] @relation("ResolvedTickets")
+  duesRecords       DuesRecord[]
 
   @@map("users")
 }
 
 model Wallet {
-  id          String       @id @default(uuid())
-  name        String
-  description String?
-  currency    String       @default("IDR")
-  inviteCode  String?      @unique @map("invite_code")
-  status      WalletStatus @default(ACTIVE)
-  version     Int          @default(1)
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  id                      String         @id @default(uuid())
+  name                    String
+  description             String?
+  currency                String         @default("IDR")
+  inviteCode              String?        @unique @map("invite_code")
+  duesType                DuesType       @default(FREEFORM) @map("dues_type")
+  duesAmount              Decimal?       @map("dues_amount") @db.Decimal(15, 2)
+  targetInstallmentsCount Int?           @map("target_installments_count")
+  status                  WalletStatus   @default(ACTIVE)
+  version                 Int            @default(1)
+  createdAt               DateTime       @default(now()) @map("created_at")
+  updatedAt               DateTime       @updatedAt @map("updated_at")
 
   members            WalletMember[]
   transactions       Transaction[]
@@ -122,6 +138,7 @@ model Wallet {
   bankStatements     BankStatement[]
   attachments        Attachment[]
   clarifications     ClarificationTicket[]
+  duesRecords        DuesRecord[]
 
   @@map("wallets")
 }
@@ -164,6 +181,7 @@ model Transaction {
   paymentRecords      PaymentRecord[]
   clarifications      ClarificationTicket[]
   reconciliationMatches ReconciliationMatch[]
+  duesRecords         DuesRecord[]
 
   @@map("transactions")
 }
@@ -333,4 +351,23 @@ model ClarificationTicket {
   resolver       User?        @relation("ResolvedTickets", fields: [resolvedBy], references: [id])
 
   @@map("clarification_tickets")
+}
+
+model DuesRecord {
+  id            String            @id @default(uuid())
+  walletId      String            @map("wallet_id")
+  userId        String            @map("user_id")
+  transactionId String?           @map("transaction_id")
+  periodKey     String            @map("period_key") // e.g. "2026-01", "2026-10" or "TERMIN-1", "TERMIN-10"
+  amount        Decimal?          @db.Decimal(15, 2)
+  status        DuesPaymentStatus @default(PENDING)
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  wallet        Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transaction   Transaction?      @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@unique([walletId, userId, periodKey])
+  @@map("dues_records")
 }

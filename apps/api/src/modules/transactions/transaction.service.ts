@@ -7,6 +7,7 @@ import {
   ApprovalDecision,
   PaymentStatus,
   UserStatus,
+  DuesPaymentStatus,
 } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../../common/prisma';
@@ -22,6 +23,8 @@ export const CreateTransactionSchema = z.object({
   category: z.string().min(2, 'Kategori minimal 2 karakter').max(50),
   notes: z.string().max(500).optional(),
   receiptAttachmentId: z.string().optional(),
+  periodKeys: z.array(z.string()).optional(),
+  targetUserId: z.string().optional(),
 });
 
 export const UpdateTransactionSchema = z.object({
@@ -170,6 +173,35 @@ export class TransactionService {
           },
         },
       });
+
+      if (validated.type === TransactionType.INCOME && validated.periodKeys && validated.periodKeys.length > 0) {
+        const duesUserId = validated.targetUserId || actorId;
+        const amountPerPeriod = validated.amount / validated.periodKeys.length;
+        for (const pKey of validated.periodKeys) {
+          await tx.duesRecord.upsert({
+            where: {
+              walletId_userId_periodKey: {
+                walletId,
+                userId: duesUserId,
+                periodKey: pKey,
+              },
+            },
+            create: {
+              walletId,
+              userId: duesUserId,
+              transactionId: transaction.id,
+              periodKey: pKey,
+              amount: new Prisma.Decimal(amountPerPeriod),
+              status: DuesPaymentStatus.PENDING,
+            },
+            update: {
+              transactionId: transaction.id,
+              amount: new Prisma.Decimal(amountPerPeriod),
+              status: DuesPaymentStatus.PENDING,
+            },
+          });
+        }
+      }
 
       await AuditService.recordAuditEvent(tx, {
         walletId,
@@ -490,6 +522,12 @@ export class TransactionService {
               currency: transaction.currency,
             },
           });
+
+          // If transaction has associated dues records, mark them PAID
+          await tx.duesRecord.updateMany({
+            where: { transactionId: transaction.id },
+            data: { status: DuesPaymentStatus.PAID },
+          });
         }
       }
 
@@ -578,6 +616,11 @@ export class TransactionService {
           state: TransactionState.CANCELLED,
           version: { increment: 1 },
         },
+      });
+
+      // Remove any pending dues records associated with this cancelled transaction
+      await tx.duesRecord.deleteMany({
+        where: { transactionId },
       });
 
       await tx.transactionEvent.create({
@@ -1226,7 +1269,13 @@ export class TransactionService {
           },
         });
 
-        // 4. Record Audit Log
+        // 4. Mark associated dues records as PAID
+        await tx.duesRecord.updateMany({
+          where: { transactionId },
+          data: { status: DuesPaymentStatus.PAID },
+        });
+
+        // 5. Record Audit Log
         await AuditService.recordAuditEvent(tx, {
           walletId: transaction.walletId,
           actorId,
@@ -1260,6 +1309,11 @@ export class TransactionService {
           include: {
             creator: { select: { id: true, fullName: true, email: true } },
           },
+        });
+
+        // Delete associated dues records so the periods become available again
+        await tx.duesRecord.deleteMany({
+          where: { transactionId },
         });
 
         // Record rejection event

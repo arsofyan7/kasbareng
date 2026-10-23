@@ -1,4 +1,4 @@
-import { PrismaClient, WalletRole, TransactionType, TransactionState, LedgerEntryType, ApprovalDecision, MovementDirection, ReconciliationStatus } from '@prisma/client';
+import { PrismaClient, WalletRole, TransactionType, TransactionState, LedgerEntryType, ApprovalDecision, MovementDirection, ReconciliationStatus, DuesType, DuesPaymentStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { GENESIS_PREVIOUS_HASH } from '../src/algorithms/hash-chain/hash-chain';
 import { canonicalizeJson } from '../src/algorithms/canonicalization/canonical-json';
@@ -86,6 +86,7 @@ async function main() {
 
   if (wallet) {
     // Clean old records for this wallet to ensure pristine seed state
+    await prisma.duesRecord.deleteMany({ where: { walletId: wallet.id } });
     await prisma.reconciliationMatch.deleteMany({ where: { bankStatement: { walletId: wallet.id } } });
     await prisma.bankStatement.deleteMany({ where: { walletId: wallet.id } });
     await prisma.auditLog.deleteMany({ where: { walletId: wallet.id } });
@@ -105,6 +106,8 @@ async function main() {
       description: 'Pencatatan kas terbuka, transparan, dan berkeadilan untuk warga RT 05 RW 08.',
       currency: 'IDR',
       inviteCode: 'RT05-ASRI',
+      duesType: DuesType.MONTHLY,
+      duesAmount: 50000,
     },
   });
 
@@ -509,6 +512,46 @@ async function main() {
         ruleCode: 'NO_CANDIDATE',
       },
     ],
+  });
+
+  // 10. Seed Papan Iuran (Dues Records) for 2026
+  console.log('📋 Seeding Papan Iuran (Dues Records)...');
+  const duesRecordsToCreate: Array<{
+    walletId: string;
+    userId: string;
+    periodKey: string;
+    amount: number;
+    status: DuesPaymentStatus;
+  }> = [];
+
+  const addDues = (userId: string, months: string[], status: DuesPaymentStatus) => {
+    for (const m of months) {
+      duesRecordsToCreate.push({
+        walletId: wallet.id,
+        userId,
+        periodKey: m,
+        amount: 50000,
+        status,
+      });
+    }
+  };
+
+  // 1. Admin: Jan - Okt Lunas
+  addDues(admin.id, ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10'], DuesPaymentStatus.PAID);
+  // 2. Bendahara: Jan - Okt Lunas
+  addDues(bendahara.id, ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10'], DuesPaymentStatus.PAID);
+  // 3. Sekretaris: Jan - Sep Lunas
+  addDues(sekretaris.id, ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'], DuesPaymentStatus.PAID);
+  // 4. Warga 1 (Pak Joko): Jan - Okt Lunas
+  addDues(warga1.id, ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10'], DuesPaymentStatus.PAID);
+  // 5. Warga 2 (Ibu Siti): Jan - Jun Lunas, Jul - Agu Menunggu Verifikasi
+  addDues(warga2.id, ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'], DuesPaymentStatus.PAID);
+  addDues(warga2.id, ['2026-07', '2026-08'], DuesPaymentStatus.PENDING);
+  // 6. Warga 3 (Pak Ahmad): Jan - Apr Lunas
+  addDues(warga3.id, ['2026-01', '2026-02', '2026-03', '2026-04'], DuesPaymentStatus.PAID);
+
+  await prisma.duesRecord.createMany({
+    data: duesRecordsToCreate,
   });
 
   console.log('\n========================================================');
