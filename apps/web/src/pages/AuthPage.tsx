@@ -50,23 +50,23 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors overflow-hidden">
+    <div className="relative min-h-screen flex flex-col justify-between bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors overflow-hidden">
       {/* Animated Semi-Transparent Background Layer */}
-      <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-0">
+      <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-0 bg-slate-950">
         {/* Thematic Illustration with Smooth Breathing/Slow-Zoom Animation */}
         <img
           src={communityBg}
           alt="Kas Komunitas Gotong Royong"
-          className="w-full h-full object-cover object-center opacity-15 dark:opacity-25 transition-opacity duration-700 animate-slow-zoom scale-105"
+          className="w-full h-full object-cover object-center opacity-60 sm:opacity-70 transition-opacity duration-700 animate-slow-zoom scale-105"
         />
 
-        {/* Ambient Gradient Masks to Blend Seamlessly with Light & Dark Backgrounds */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-slate-50/70 to-slate-50/40 dark:from-slate-950 dark:via-slate-950/75 dark:to-slate-950/50" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-50/80 via-transparent to-slate-50/80 dark:from-slate-950/80 dark:via-transparent dark:to-slate-950/80" />
+        {/* Soft Radial & Linear Vignette Overlay to ensure perfect contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-slate-950/60" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/60 via-transparent to-slate-950/60" />
 
         {/* Glowing Neon Atmosphere Orbs */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/15 dark:bg-emerald-500/25 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-teal-500/15 dark:bg-teal-500/25 rounded-full blur-3xl animate-pulse [animation-delay:2s]" />
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/25 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-teal-500/25 rounded-full blur-3xl animate-pulse [animation-delay:2s]" />
       </div>
 
       {/* Top Bar with Brand & Theme Toggle */}
@@ -75,14 +75,14 @@ export const AuthPage: React.FC = () => {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
             <Wallet className="w-5 h-5" />
           </div>
-          <span className="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white">
+          <span className="font-extrabold text-xl tracking-tight text-white drop-shadow-sm">
             KASBARENG
           </span>
         </div>
 
         <button
           onClick={toggleTheme}
-          className="p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-sm"
+          className="p-2.5 rounded-xl border border-slate-700/80 bg-slate-900/80 backdrop-blur-md text-slate-200 hover:bg-slate-800 transition-colors shadow-sm"
           title={`Ganti tema (${theme})`}
         >
           {theme === 'dark' ? (
@@ -95,7 +95,7 @@ export const AuthPage: React.FC = () => {
 
       {/* Main Container */}
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div className="max-w-md w-full backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl shadow-emerald-950/10 dark:shadow-emerald-950/50 p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+        <div className="max-w-md w-full backdrop-blur-2xl bg-white/95 dark:bg-slate-900/90 rounded-3xl border border-white/20 dark:border-slate-800 shadow-2xl shadow-emerald-950/50 p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
           {/* Header & Tagline */}
           <div className="text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-500/20">
@@ -106,7 +106,7 @@ export const AuthPage: React.FC = () => {
               {mode === 'login' ? 'Selamat Datang Kembali' : 'Bergabung Bersama Warga'}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Platform transparansi keuangan komunitas dengan M-of-N Quorum dan Audit Trail SHA-256.
+              Platform transparansi keuangan komunitas / perkumpulan
             </p>
           </div>
 
@@ -118,11 +118,10 @@ export const AuthPage: React.FC = () => {
                 setMode('login');
                 setErrorMsg(null);
               }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
-                mode === 'login'
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${mode === 'login'
                   ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+                }`}
             >
               Masuk Akun
             </button>
@@ -132,11 +131,10 @@ export const AuthPage: React.FC = () => {
                 setMode('register');
                 setErrorMsg(null);
               }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
-                mode === 'register'
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${mode === 'register'
                   ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+                }`}
             >
               Daftar Baru
             </button>
