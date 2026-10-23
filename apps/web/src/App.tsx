@@ -18,6 +18,7 @@ import { WalletSwitcherModal } from './components/common/WalletSwitcherModal';
 import { CreateWalletModal } from './components/common/CreateWalletModal';
 import { JoinWalletModal } from './components/common/JoinWalletModal';
 import { AuditChainModal } from './components/common/AuditChainModal';
+import { AlgorithmRulesModal } from './components/common/AlgorithmRulesModal';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -27,6 +28,7 @@ function AppContent() {
   const [joinWalletOpen, setJoinWalletOpen] = useState(false);
   const [joinInitialCode, setJoinInitialCode] = useState('');
   const [auditModalOpen, setAuditModalOpen] = useState(false);
+  const [algorithmModalOpen, setAlgorithmModalOpen] = useState(false);
 
   // Check URL query parameters or hash on mount (e.g. ?join=RT05-SEJAHTERA)
   useEffect(() => {
@@ -61,7 +63,7 @@ function AppContent() {
         onOpenCreateWallet={() => setCreateWalletOpen(true)}
         onOpenJoinWallet={() => setJoinWalletOpen(true)}
         onOpenWalletModal={() => setWalletModalOpen(true)}
-        onOpenAuditChain={() => setAuditModalOpen(true)}
+        onOpenAlgorithmModal={() => setAlgorithmModalOpen(true)}
       />
 
       <div className="flex-1 flex max-w-7xl mx-auto w-full">
@@ -132,6 +134,16 @@ function AppContent() {
       <AuditChainModal
         isOpen={auditModalOpen}
         onClose={() => setAuditModalOpen(false)}
+      />
+
+      {/* Fitur Algoritma & Tata Kelola Modal */}
+      <AlgorithmRulesModal
+        isOpen={algorithmModalOpen}
+        onClose={() => setAlgorithmModalOpen(false)}
+        onOpenAuditChain={() => {
+          setAlgorithmModalOpen(false);
+          setAuditModalOpen(true);
+        }}
       />
     </div>
   );

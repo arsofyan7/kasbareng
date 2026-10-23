@@ -15,26 +15,24 @@ import {
   KeyRound,
   Cpu,
 } from 'lucide-react';
-import { AlgorithmRulesModal } from './AlgorithmRulesModal';
 
 interface NavbarProps {
   onOpenCreateWallet: () => void;
   onOpenJoinWallet?: () => void;
   onOpenWalletModal: () => void;
-  onOpenAuditChain?: () => void;
+  onOpenAlgorithmModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreateWallet,
   onOpenJoinWallet,
   onOpenWalletModal,
-  onOpenAuditChain,
+  onOpenAlgorithmModal,
 }) => {
   const { user, logout } = useAuth();
   const { activeWallet } = useWallet();
   const { theme, toggleTheme } = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [algoModalOpen, setAlgoModalOpen] = useState(false);
 
   const getRoleBadge = (role?: string) => {
     switch (role) {
@@ -172,7 +170,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <button
                       onClick={() => {
                         setProfileOpen(false);
-                        setAlgoModalOpen(true);
+                        onOpenAlgorithmModal?.();
                       }}
                       className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
                     >
@@ -224,16 +222,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       </div>
-
-      {/* Algorithm & Community Rules Modal */}
-      <AlgorithmRulesModal
-        isOpen={algoModalOpen}
-        onClose={() => setAlgoModalOpen(false)}
-        onOpenAuditChain={() => {
-          setAlgoModalOpen(false);
-          onOpenAuditChain?.();
-        }}
-      />
     </header>
   );
 };
