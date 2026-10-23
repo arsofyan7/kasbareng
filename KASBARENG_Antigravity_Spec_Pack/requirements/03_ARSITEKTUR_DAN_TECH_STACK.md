@@ -1,7 +1,8 @@
-KASBARENG - ARSITEKTUR DAN TECH STACK
-Versi 1.0
+# 🏗️ KASBARENG - Arsitektur & Tech Stack
 
-1. STACK DEFAULT UNTUK MVP
+> **Versi**: 1.0
+
+## 1. STACK DEFAULT UNTUK MVP
 Frontend:
 - React
 - TypeScript
@@ -25,7 +26,7 @@ Testing:
 - Playwright untuk alur UI utama bila memungkinkan.
 Jangan memasang beberapa library yang melakukan fungsi sama tanpa alasan.
 
-2. ARSITEKTUR
+## 2. ARSITEKTUR
 PWA Frontend -> API -> Authentication/Authorization -> Application Services -> Database.
 Application modules:
 - Auth
@@ -41,7 +42,7 @@ Application modules:
 - Clarifications
 - AI Parser (opsional)
 
-3. PRINSIP
+## 3. PRINSIP
 - Modular monolith untuk MVP, bukan microservices.
 - Backend adalah sumber kebenaran untuk saldo, role, status, kuorum, dan audit.
 - UI tidak menyimpan business logic kritis.
@@ -52,10 +53,10 @@ Application modules:
 - PWA cache hanya data yang memang aman dicache.
 - Simpan file lampiran di penyimpanan privat; jangan membuat URL publik permanen.
 
-4. STRUKTUR REPOSITORY YANG DIHARAPKAN
+## 4. STRUKTUR REPOSITORY YANG DIHARAPKAN
 kasbareng/
   requirements/
-    *.txt
+    *.md
   apps/
     web/
       src/
@@ -89,7 +90,7 @@ kasbareng/
           clarifications/
           ai-parser/
         algorithms/
-          README.txt
+          README.md
           fsm/
           quorum/
           ledger/
@@ -111,7 +112,7 @@ kasbareng/
     backup/
   README.md
 
-5. PEMISAHAN ALGORITMA AKADEMIK
+## 5. PEMISAHAN ALGORITMA AKADEMIK
 Semua algoritma inti harus berada di folder khusus:
 apps/api/src/algorithms/
 Folder ini bukan tempat untuk controller HTTP, UI, atau query ORM langsung. Algoritma menerima input terdefinisi dan mengembalikan output terdefinisi.
@@ -127,19 +128,19 @@ Setiap algoritma memiliki:
 - Contoh kasus normal dan edge case.
 Ini membuat algoritma mudah dijelaskan saat evaluasi dosen.
 
-6. DATABASE
+## 6. DATABASE
 PostgreSQL menjadi default utama.
 Nominal gunakan NUMERIC/DECIMAL atau integer satuan terkecil yang konsisten, bukan float.
 Semua entitas keuangan harus memiliki referensi dompet.
 Gunakan migration versioned.
 Jangan menghapus transaksi keuangan yang sudah dibukukan; gunakan pembatalan atau entri koreksi.
 
-7. KONFIGURASI
+## 7. KONFIGURASI
 - Simpan secret dalam environment variables/secret manager.
 - Sertakan .env.example tanpa nilai secret sungguhan.
 - Jangan commit file .env.
 - Sediakan seed data demo yang tidak memuat data pribadi nyata.
 - Sediakan README dengan langkah install, migrate, seed, test, dan run.
 
-8. CATATAN PEMILIHAN STACK
+## 8. CATATAN PEMILIHAN STACK
 Jika repository yang sudah dibuat memakai stack lain, jangan mengganti stack secara otomatis. Periksa repository dahulu dan usulkan perubahan hanya jika ada alasan yang kuat. Jangan membuat dua backend atau dua frontend framework.

@@ -1,8 +1,9 @@
-KASBARENG - DATA MODEL
-Versi 1.0
+# 🗄️ KASBARENG - Data Model & Database Schema
 
-1. ENTITAS MINIMUM
-users:
+> **Versi**: 1.0
+
+## 1. ENTITAS MINIMUM
+### `users`
 - id
 - full_name
 - email
@@ -10,7 +11,7 @@ users:
 - created_at
 - updated_at
 
-wallets:
+### `wallets`
 - id
 - name
 - description
@@ -24,7 +25,7 @@ wallets:
 - created_at
 - updated_at
 
-wallet_members:
+### `wallet_members`
 - id
 - wallet_id
 - user_id
@@ -33,7 +34,7 @@ wallet_members:
 - joined_at
 Constraint: unique(wallet_id, user_id).
 
-transactions:
+### `transactions`
 - id
 - wallet_id
 - creator_id
@@ -48,7 +49,7 @@ transactions:
 - created_at
 - updated_at
 
-approval_policies:
+### `approval_policies`
 - id
 - wallet_id
 - required_approvals
@@ -58,7 +59,7 @@ approval_policies:
 - created_by
 - created_at
 
-transaction_approvals:
+### `transaction_approvals`
 - id
 - transaction_id
 - approver_id
@@ -69,7 +70,7 @@ transaction_approvals:
 - signed_at
 Constraint unik yang sesuai untuk mencegah approval ganda oleh approver yang sama pada versi transaksi yang sama.
 
-ledger_entries:
+### `ledger_entries`
 - id
 - wallet_id
 - transaction_id
@@ -79,7 +80,7 @@ ledger_entries:
 - effective_at
 - created_at
 
-transaction_events:
+### `transaction_events`
 - id
 - transaction_id
 - actor_id nullable untuk event sistem
@@ -90,7 +91,7 @@ transaction_events:
 - metadata JSON
 - created_at
 
-audit_logs:
+### `audit_logs`
 - id
 - wallet_id
 - sequence_no
@@ -101,7 +102,7 @@ audit_logs:
 - created_at
 Constraint unik: wallet_id + sequence_no.
 
-bank_statements:
+### `bank_statements`
 - id
 - wallet_id
 - import_batch_id
@@ -113,7 +114,7 @@ bank_statements:
 - source_row_number
 - created_at
 
-reconciliation_matches:
+### `reconciliation_matches`
 - id
 - bank_statement_id
 - transaction_id nullable
@@ -123,7 +124,7 @@ reconciliation_matches:
 - review_reason nullable
 - reviewed_at nullable
 
-payment_records:
+### `payment_records`
 - id
 - transaction_id
 - payment_status
@@ -133,7 +134,7 @@ payment_records:
 - verified_at nullable
 - created_at
 
-attachments:
+### `attachments`
 - id
 - wallet_id
 - uploaded_by
@@ -144,7 +145,7 @@ attachments:
 - checksum
 - created_at
 
-clarification_tickets:
+### `clarification_tickets`
 - id
 - wallet_id
 - transaction_id
@@ -156,7 +157,7 @@ clarification_tickets:
 - created_at
 - resolved_at nullable
 
-dues_records:
+### `dues_records`
 - id
 - wallet_id
 - user_id
@@ -168,7 +169,7 @@ dues_records:
 - updated_at
 - unique: [wallet_id, user_id, period_key]
 
-2. ATURAN DATA
+## 2. ATURAN DATA
 - Nominal gunakan NUMERIC/DECIMAL atau integer unit terkecil. Jangan gunakan floating point.
 - Semua tabel yang relevan memiliki foreign key.
 - Hindari hard delete untuk transaksi dan audit.
@@ -178,7 +179,7 @@ dues_records:
 - Jangan gunakan approvals_count sebagai satu-satunya sumber kebenaran kuorum; hitung dari approval valid.
 - Balance ringkasan, jika disimpan, harus dapat direkonsiliasi dengan ledger.
 
-3. MIGRATIONS
+## 3. MIGRATIONS
 Buat migration versioned.
 Sertakan seed data demo yang sintetis.
 Sertakan constraint database untuk nilai yang bisa divalidasi oleh database.

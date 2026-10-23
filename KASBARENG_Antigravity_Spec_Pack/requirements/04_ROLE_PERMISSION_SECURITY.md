@@ -1,7 +1,8 @@
-KASBARENG - ROLE, PERMISSION, DAN SECURITY RULES
-Versi 1.0
+# 🛡️ KASBARENG - Role, Permission, & Security Rules
 
-1. ROLE
+> **Versi**: 1.0
+
+## 1. ROLE
 WARGA:
 - Melihat ringkasan saldo kas dompet kas.
 - Riwayat Transaksi: WARGA HANYA DAPAT MELIHAT TRANSAKSI YANG DIBUAT/DILAPORKAN SENDIRI (untuk tracking iuran dan setoran pribadi). Akses detail transaksi pihak lain ditolak (403 Forbidden).
@@ -26,18 +27,18 @@ ADMIN:
 - Menyetujui/menolak transaksi pengeluaran hanya jika terdaftar sebagai approver yang memenuhi syarat.
 - Tidak boleh menyetujui transaksi pengeluaran sendiri jika kebijakan melarangnya (Anti-Self Approval Guard).
 
-2. ROLE PER WALLET
+## 2. ROLE PER WALLET
 Role disimpan pada wallet_members atau model membership sejenis.
 Satu user bisa punya role berbeda di wallet berbeda.
 Semua endpoint yang mengakses wallet harus memvalidasi membership untuk wallet_id tersebut.
 Jangan gunakan satu field global user.role sebagai satu-satunya sumber authorization.
 
-3. DEFAULT DENY
+## 3. DEFAULT DENY
 Jika permission tidak didefinisikan, tolak.
 Jangan menganggap user boleh melakukan tindakan karena tombolnya tampil.
 Frontend hanya membantu UX; backend menegakkan otorisasi.
 
-4. APPROVAL
+## 4. APPROVAL
 - Setiap approval punya approver_id, transaction_id, decision, transaction_version, policy_version, dan timestamp server.
 - Identitas approver harus unik untuk kuorum.
 - Approval tidak boleh dihitung jika approver tidak memenuhi syarat.
@@ -46,7 +47,7 @@ Frontend hanya membantu UX; backend menegakkan otorisasi.
 - Perubahan nominal, wallet, penerima, atau informasi material lain harus menginvalidasi approval lama sesuai policy.
 - Gunakan transaksi database agar dua approval bersamaan tidak menghasilkan state tidak konsisten.
 
-5. AUTHENTICATION
+## 5. AUTHENTICATION
 Gunakan framework/library autentikasi yang mapan.
 Jangan menyimpan password dalam plaintext.
 Gunakan HTTPS di lingkungan non-local.
@@ -54,14 +55,14 @@ Terapkan rate limiting pada login dan endpoint sensitif.
 Jangan mengirim token atau secret di log.
 Lindungi sesi/cookie sesuai arsitektur.
 
-6. FILE UPLOAD
+## 6. FILE UPLOAD
 Validasi ukuran, MIME, isi file, dan ekstensi.
 Simpan file secara privat.
 Periksa izin sebelum file diunduh.
 Jangan menerima file executable sebagai bukti transaksi.
 Hindari menyimpan data rekening yang tidak diperlukan.
 
-7. SECURITY TESTS
+## 7. SECURITY TESTS
 - Cross-wallet access/IDOR.
 - Privilege escalation.
 - Self-approval.

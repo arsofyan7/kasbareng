@@ -1,36 +1,37 @@
-KASBARENG - ALGORITHM MODULES (WAJIB TERPISAH)
-Versi 1.0
+# 🧮 KASBARENG - Algorithm Modules (Akademik Terpisah)
 
-TUJUAN AKADEMIK
+> **Versi**: 1.0
+
+## 🎓 Tujuan Akademik
 Agar algoritma inti dapat dipelajari, diuji, dan dijelaskan kepada dosen tanpa harus menelusuri UI atau controller, seluruh algoritma inti ditempatkan pada:
 apps/api/src/algorithms/
 
-STRUKTUR WAJIB
+## 📂 Struktur Wajib
 algorithms/
-  README.txt
+  README.md
   fsm/
-    README.txt
+    README.md
     transition-validator.ts
     transition-validator.test.ts
   quorum/
-    README.txt
+    README.md
     quorum-evaluator.ts
     quorum-evaluator.test.ts
   ledger/
-    README.txt
+    README.md
     balance-calculator.ts
     balance-calculator.test.ts
   hash-chain/
-    README.txt
+    README.md
     hash-chain.ts
     hash-chain.test.ts
   reconciliation/
-    README.txt
+    README.md
     normalizer.ts
     matcher.ts
     matcher.test.ts
   canonicalization/
-    README.txt
+    README.md
     canonical-json.ts
     canonical-json.test.ts
 
@@ -43,7 +44,7 @@ Aturan:
 6. Jangan menaruh secret atau private key dalam source code.
 7. Jangan mengklaim performa atau keamanan tanpa hasil pengujian.
 
-MODUL WAJIB
+## 📦 Rincian Modul Algoritma
 A. FSM Transition Validator
 Memvalidasi transisi status berdasarkan state sekarang, event, dan kondisi bisnis. Menghasilkan nextState atau error code.
 

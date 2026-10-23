@@ -1,7 +1,8 @@
-KASBARENG - TESTING DAN ACCEPTANCE CRITERIA
-Versi 1.0
+# 🧪 KASBARENG - Testing & Acceptance Criteria (103/103 Lulus)
 
-1. DEFINITION OF DONE
+> **Versi**: 1.0
+
+## 1. DEFINITION OF DONE
 Fitur dianggap selesai hanya jika:
 - Implementasi frontend dan backend sesuai requirement.
 - Validasi server ada.
@@ -14,7 +15,7 @@ Fitur dianggap selesai hanya jika:
 - Dokumentasi diperbarui.
 - Tidak ada klaim fitur yang belum diimplementasikan.
 
-2. FUNCTIONAL TEST MINIMUM
+## 2. FUNCTIONAL TEST MINIMUM
 F01 Warga dapat melihat saldo dan riwayat yang diizinkan.
 F02 Warga tidak dapat mengubah role atau policy melalui API.
 F03 Pengelola membuat draf transaksi valid.
@@ -32,7 +33,7 @@ F14 Retry request tidak menggandakan transaksi/approval.
 F15 Pengguna dari wallet lain tidak bisa mengakses data tanpa membership.
 F16 Saat koneksi putus, UI tidak mengklaim aksi sensitif berhasil sebelum server mengonfirmasi.
 
-3. SECURITY TEST MINIMUM
+## 3. SECURITY TEST MINIMUM
 - IDOR/cross-wallet.
 - Privilege escalation.
 - Self approval.
@@ -43,7 +44,7 @@ F16 Saat koneksi putus, UI tidak mengklaim aksi sensitif berhasil sebelum server
 - Sensitive data exposure.
 - Session and authorization checks.
 
-4. UI/UX TEST
+## 4. UI/UX TEST
 - Warga menemukan saldo dan transaksi tertentu.
 - Pengelola membuat pengeluaran.
 - Admin meninjau dan menyetujui pengajuan.
@@ -51,7 +52,7 @@ F16 Saat koneksi putus, UI tidak mengklaim aksi sensitif berhasil sebelum server
 - Pengguna memahami pesan error.
 Ukur task completion, waktu, dan error. SUS dapat digunakan sebagai instrumen tambahan jika ada partisipan.
 
-5. TESTING ALGORITHMS & INTEGRATION SUITES (103/103 LULUS)
+## 5. TESTING ALGORITHMS & INTEGRATION SUITES (103/103 LULUS)
 Status Terkini: 103 tes lulus 100% tanpa kegagalan (Vitest integration & algorithm unit tests).
 - Algorithm Unit Tests (33 tests):
   * FSM Engine: Valid & illegal state transitions, draft -> submitted -> approved -> paid -> cancelled.
@@ -67,7 +68,7 @@ Status Terkini: 103 tes lulus 100% tanpa kegagalan (Vitest integration & algorit
   * audit.test.ts (13 tests): Verifikasi rantai SHA-256, simulasi manipulasi (tamper drill), pemulihan log, filter pagination event audit.
   * reconciliation.test.ts (14 tests): Impor CSV BCA/Mandiri/BRI/BNI, auto-match, manual matching bersyarat audit, mutasi tak terduga ke draft.
 
-6. OUTPUT TEST & VERIFIKASI AKTUAL
+## 6. OUTPUT TEST & VERIFIKASI AKTUAL
 - Total Suites: 10 files
 - Total Tests: 103 passed (100%)
 - Frontend Build: TypeScript + Vite (0 error, build dist bersih)

@@ -1,7 +1,8 @@
-KASBARENG - BUSINESS RULES DAN FINITE STATE MACHINE
-Versi 1.0
+# ⚙️ KASBARENG - Business Rules & Finite State Machine (FSM)
 
-1. STATUS INTERNAL YANG DIREKOMENDASIKAN
+> **Versi**: 1.0
+
+## 1. STATUS INTERNAL YANG DIREKOMENDASIKAN
 DRAFT
 SUBMITTED
 PENDING_APPROVAL
@@ -27,7 +28,7 @@ COMPLETED = Selesai
 DISPUTED = Dalam Klarifikasi
 CANCELLED = Dibatalkan
 
-2. TRANSISI UTAMA
+## 2. TRANSISI UTAMA
 DRAFT -> SUBMITTED
 SUBMITTED -> PENDING_APPROVAL
 PENDING_APPROVAL -> APPROVED jika kuorum valid terpenuhi
@@ -39,7 +40,7 @@ PAYMENT_PENDING -> PAYMENT_VERIFICATION ketika bukti/rekam pembayaran masuk
 PAYMENT_VERIFICATION -> COMPLETED hanya setelah verifikasi dan pembukuan terpenuhi
 Status lain seperti DISPUTED/CANCELLED hanya melalui event dan aturan eksplisit.
 
-3. GUARD WAJIB
+## 3. GUARD WAJIB
 - Aktor terautentikasi.
 - Aktor punya permission pada wallet.
 - Status saat ini mengizinkan transisi.
@@ -50,27 +51,27 @@ Status lain seperti DISPUTED/CANCELLED hanya melalui event dan aturan eksplisit.
 - Semua perubahan yang penting memiliki audit event.
 - Aksi sensitif idempotent terhadap retry.
 
-4. BEDAKAN PERSETUJUAN DAN PEMBAYARAN
+## 4. BEDAKAN PERSETUJUAN DAN PEMBAYARAN
 APPROVED bukan COMPLETED.
 Persetujuan menyatakan pengeluaran diizinkan.
 Pelaksanaan pembayaran adalah peristiwa berbeda.
 Verifikasi pembayaran adalah proses berbeda.
 Sistem tidak boleh menyatakan transaksi selesai hanya karena approver menekan Setujui.
 
-5. PEMBUKUAN DAN SALDO
+## 5. PEMBUKUAN DAN SALDO
 - Gunakan ledger sebagai sumber kebenaran atau dasar rekonsiliasi saldo.
 - Pengeluaran yang dicadangkan harus dibedakan dari pengeluaran yang telah dibukukan.
 - Hindari saldo negatif jika kebijakan dompet melarangnya.
 - Koreksi transaksi dibukukan melalui entri koreksi, bukan menghapus histori.
 - Perubahan transaksi dan ledger harus atomik atau memakai pola konsistensi yang didefinisikan eksplisit.
 
-6. CONCURRENCY
+## 6. CONCURRENCY
 - Gunakan version/optimistic locking atau mekanisme locking database yang sesuai.
 - Approval dan update saldo harus dilakukan dalam transaksi database.
 - Gunakan idempotency key untuk mencegah duplikasi akibat retry.
 - Bila version konflik, minta klien memuat ulang detail.
 
-7. STATE MACHINE ADALAH ALGORITMA
+## 7. STATE MACHINE ADALAH ALGORITMA
 Jangan menaruh semua aturan transisi di komponen UI atau controller.
 Buat modul algoritma FSM murni yang memvalidasi:
 - state saat ini
@@ -79,7 +80,7 @@ Buat modul algoritma FSM murni yang memvalidasi:
 - kondisi bisnis yang diperlukan
 Kembalikan state berikutnya atau error code yang eksplisit.
 
-8. ALUR PEMASUKAN MANDIRI WARGA (MEMBER INCOME SELF-REPORT)
+## 8. ALUR PEMASUKAN MANDIRI WARGA (MEMBER INCOME SELF-REPORT)
 - Pemasukan oleh Pengurus (Admin / Pengelola): Langsung COMPLETED dan membukukan CREDIT ke ledger saat diajukan.
 - Pemasukan oleh Warga (Setoran Iuran Mandiri):
   * Warga menginput nominal, kategori, catatan, dan foto bukti transfer / kamera.
@@ -89,7 +90,7 @@ Kembalikan state berikutnya atau error code yang eksplisit.
     - APPROVE: Berpindah ke COMPLETED, membukukan entri CREDIT resmi ke LedgerEntry, saldo aktif bertambah, dan tercatat di rantai audit SHA-256.
     - REJECT: Berpindah ke REJECTED dengan mencatat alasan penolakan, saldo kas tidak berubah.
 
-9. PAPAN REKAP IURAN KOMUNITAS & PEMBAYARAN MULTI-PERIODE (DUES & BILLING BOARD)
+## 9. PAPAN REKAP IURAN KOMUNITAS & PEMBAYARAN MULTI-PERIODE (DUES & BILLING BOARD)
 - Skema Tipe Iuran Kas per Dompet:
   * MONTHLY: Rutin bulanan kalender (Januari - Desember).
   * TARGET_INSTALLMENTS: Target N-kali setoran / termin berjangka (misal: 10 termin Qurban / 17-an).

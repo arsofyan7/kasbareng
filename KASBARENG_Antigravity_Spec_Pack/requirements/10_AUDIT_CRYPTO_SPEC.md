@@ -1,11 +1,11 @@
 KASBARENG - AUDIT DAN KRIPTOGRAFI
-Versi 1.0
+> **Versi**: 1.0
 
-1. TERMINOLOGI
+## 1. TERMINOLOGI
 MVP menggunakan istilah "tamper-evident SHA-256 hash chain".
 Jangan menyebut mekanisme sebagai forward-secure kecuali ada desain key evolution, penghapusan kunci lama, threat model, dan pengujian yang mendukung klaim tersebut.
 
-2. PAYLOAD AUDIT
+## 2. PAYLOAD AUDIT
 Minimal berisi:
 - event_id
 - wallet_id
@@ -18,13 +18,13 @@ Minimal berisi:
 - server_timestamp
 - metadata yang sudah disaring dari secret/PII berlebih
 
-3. HASH
+## 3. HASH
 Gunakan canonical JSON yang deterministik.
 payload_hash = SHA256(canonical_payload)
 current_hash = SHA256(wallet_id || sequence_no || previous_hash || payload_hash || server_timestamp)
 Definisikan encoding dan separator/length-prefix dengan jelas agar concatenation tidak ambigu. Implementasi yang lebih aman dapat membuat canonical object yang memuat semua field, lalu hash satu representasi byte yang stabil.
 
-4. VERIFIKASI
+## 4. VERIFIKASI
 - Periksa sequence_no.
 - Periksa previous_hash.
 - Hitung ulang payload_hash.
@@ -33,12 +33,12 @@ Definisikan encoding dan separator/length-prefix dengan jelas agar concatenation
 - Verifikasi seluruh rentang yang dipilih.
 - Jangan menyatakan "100% aman"; gunakan "rantai valid pada rentang yang diperiksa".
 
-5. BATASAN
+## 5. BATASAN
 Jika penyerang menguasai database dan dapat menulis ulang semua record beserta rantai, hash chain tanpa anchoring terpisah mungkin tidak cukup mendeteksi rewrite total.
 Untuk penguatan berikutnya: signed checkpoint, anchoring ke storage terpisah, backup immutable, separation of duties, dan monitoring.
 Jangan menyimpan private key di database plaintext atau source code.
 
-6. APPROVAL CRYPTOGRAPHY
+## 6. APPROVAL CRYPTOGRAPHY
 HMAC menggunakan secret bersama; bukan tanda tangan digital asimetris.
 Jika menggunakan tanda tangan asimetris:
 - Pilih algoritma/library yang mapan.

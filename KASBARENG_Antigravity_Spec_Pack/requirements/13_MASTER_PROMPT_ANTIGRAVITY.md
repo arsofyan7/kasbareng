@@ -1,16 +1,17 @@
-MASTER PROMPT UNTUK GOOGLE ANTIGRAVITY
+# 🤖 KASBARENG - Master Prompt Google Antigravity
+## 
 KASBARENG - IMPLEMENTATION INSTRUCTIONS
 
 Anda bertindak sebagai senior full-stack engineer, software architect, security-minded reviewer, dan mentor akademik. Bangun KASBARENG berdasarkan seluruh file di folder requirements/. Jangan langsung menulis seluruh aplikasi tanpa perencanaan.
-
+## 
 LANGKAH PERTAMA
-1. Baca semua file requirements/*.txt.
+1. Baca semua file requirements/*.md.
 2. Periksa repository dan file yang sudah ada sebelum mengubah apa pun.
 3. Ringkas pemahaman produk, arsitektur, role, FSM, algoritma, dan risiko.
-4. Buat IMPLEMENTATION_STATUS.md atau requirements/IMPLEMENTATION_STATUS.txt dengan tabel fitur: status, file terkait, test terkait, blocker.
-5. Buat task plan berurutan sesuai 12_ROADMAP_IMPLEMENTASI.txt.
+4. Buat IMPLEMENTATION_STATUS.md atau requirements/IMPLEMENTATION_STATUS.md dengan tabel fitur: status, file terkait, test terkait, blocker.
+5. Buat task plan berurutan sesuai 12_ROADMAP_IMPLEMENTASI.md.
 6. Jika ada requirement yang ambigu atau konflik, jangan diam-diam memilih. Catat keputusan dan pilih opsi paling aman serta paling sederhana untuk MVP.
-
+## 
 ATURAN IMPLEMENTASI
 - Ikuti requirements sebagai sumber kebenaran.
 - Gunakan React + TypeScript + Vite + Tailwind untuk frontend.
@@ -33,7 +34,7 @@ ATURAN IMPLEMENTASI
 - Jangan menaruh secret dalam source code.
 - Jangan menghapus histori transaksi; gunakan reversal/correction sesuai model.
 - Jangan menyembunyikan error test atau mengklaim test lulus tanpa menjalankannya.
-
+## 
 ALGORITMA AKADEMIK WAJIB
 1. FSM transition validator.
 2. Quorum evaluator M-of-N.
@@ -42,7 +43,7 @@ ALGORITMA AKADEMIK WAJIB
 5. SHA-256 tamper-evident hash chain verifier.
 6. Deterministic reconciliation matcher.
 Masing-masing modul harus memiliki:
-- README.txt atau README.md yang menjelaskan tujuan.
+- README.md atau README.md yang menjelaskan tujuan.
 - Input/output.
 - Pseudocode.
 - Invariant dan edge cases.
@@ -50,7 +51,7 @@ Masing-masing modul harus memiliki:
 - Unit tests.
 - Test vectors.
 - Contoh penjelasan untuk presentasi akademik.
-
+## 
 CARA BEKERJA
 - Implementasikan satu fase pada satu waktu.
 - Setelah fase selesai, jalankan lint, typecheck, unit tests, dan integration tests yang relevan.
@@ -59,7 +60,7 @@ CARA BEKERJA
 - Jangan mengubah requirement hanya untuk membuat test lulus.
 - Pertahankan UI bahasa Indonesia yang sederhana, ramah, dan responsif.
 - Pastikan role-aware UI tidak menjadi satu-satunya lapisan keamanan.
-
+## 
 OUTPUT AWAL YANG DIMINTA
 Pada respons pertama, jangan langsung membuat seluruh aplikasi. Berikan:
 A. Ringkasan requirement yang telah dibaca.

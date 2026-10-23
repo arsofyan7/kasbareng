@@ -1,23 +1,24 @@
-KASBARENG - PRODUCT REQUIREMENTS
-Versi 1.0
+# 📋 KASBARENG - Product Requirements Document (PRD)
 
-1. VISI
+> **Versi**: 1.0
+
+## 1. VISI
 KASBARENG adalah Progressive Web App untuk tata kelola kas komunitas. Aplikasi membantu anggota memantau kas, membantu pengelola mencatat transaksi, dan membantu admin mengelola kebijakan serta persetujuan.
 
-2. TARGET PENGGUNA
+## 2. TARGET PENGGUNA
 - Warga atau anggota komunitas.
 - Pengelola/bendahara.
 - Admin/pengurus yang mengatur dompet kas dan kebijakan.
 Satu akun dapat memiliki role berbeda di dompet berbeda.
 
-3. MASALAH YANG DITANGANI
+## 3. MASALAH YANG DITANGANI
 - Catatan kas sulit ditelusuri.
 - Pengeluaran dapat diajukan tanpa alur persetujuan jelas.
 - Pengguna awam kesulitan menggunakan sistem keuangan yang rumit.
 - Catatan transaksi dapat diubah tanpa riwayat yang mudah diperiksa.
 - Mutasi eksternal sulit dicocokkan dengan transaksi internal.
 
-4. TUJUAN MVP
+## 4. TUJUAN MVP
 - PWA responsif dengan UI bahasa Indonesia yang sederhana.
 - Autentikasi dan akses berbasis role per dompet.
 - Dashboard, daftar dompet, aktivitas, detail transaksi.
@@ -31,7 +32,7 @@ Satu akun dapat memiliki role berbeda di dompet berbeda.
 - Klarifikasi/keberatan terhadap transaksi.
 - Pengujian unit, integrasi, keamanan dasar, dan usability.
 
-5. DI LUAR MVP
+## 5. DI LUAR MVP
 - Menahan atau menguasai dana bank secara aktual.
 - Menjadi bank, penyedia jasa pembayaran, atau kustodian.
 - Integrasi langsung ke seluruh bank/e-wallet.
@@ -40,10 +41,10 @@ Satu akun dapat memiliki role berbeda di dompet berbeda.
 - Klaim bahwa hash chain memberi forward security tanpa mekanisme tambahan.
 - Klaim keamanan absolut terhadap administrator yang menguasai seluruh sistem.
 
-6. KONSEP PRODUK
+## 6. KONSEP PRODUK
 Aplikasi harus terasa seperti aplikasi komunitas, bukan software akuntansi kompleks. Istilah teknis disembunyikan dari pengguna umum. UI menampilkan hanya tindakan yang relevan dengan role pada dompet aktif.
 
-7. KEBUTUHAN UMUM
+## 7. KEBUTUHAN UMUM
 - Semua transaksi dan saldo memiliki wallet_id.
 - Semua operasi mutasi harus diautentikasi dan diotorisasi.
 - Semua perubahan penting tercatat di audit log.

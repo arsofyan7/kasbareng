@@ -1,12 +1,13 @@
-KASBARENG - API CONTRACTS
-Versi 1.0
+# 🔌 KASBARENG - API Contracts & Endpoints
+
+> **Versi**: 1.0
 
 Semua endpoint menggunakan prefix /api/v1.
 Format JSON konsisten.
 Semua endpoint yang menyentuh wallet wajib memeriksa membership dan permission di backend.
 Gunakan pagination untuk daftar transaksi/aktivitas.
 
-ENDPOINT TERIMPLEMENTASI
+## 📌 Endpoint Terimplementasi
 1. Autentikasi & Pengguna:
 POST /api/v1/auth/login
 POST /api/v1/auth/register
@@ -58,7 +59,7 @@ POST /api/v1/wallets/:walletId/reconciliation/create-from-mutation (Buat draft t
 POST /api/v1/wallets/:walletId/attachments (Upload berkas bukti transfer / foto kuitansi)
 GET  /api/v1/attachments/:id
 
-RESPONS API
+## 📦 Format Respons API
 Sukses:
 {
   "data": {},
@@ -77,7 +78,7 @@ Error:
   }
 }
 
-ERROR CODE MINIMUM
+## ⚠️ Error Codes Minimum
 UNAUTHENTICATED
 FORBIDDEN
 NOT_FOUND
@@ -92,7 +93,7 @@ IMPORT_FORMAT_INVALID
 RECONCILIATION_AMBIGUOUS
 AUDIT_CHAIN_INVALID
 
-ATURAN
+## 🔒 Aturan Endpoint
 - Jangan bocorkan apakah email tertentu terdaftar dalam pesan login gagal.
 - Jangan mengembalikan stack trace atau query database.
 - Endpoint approval harus memvalidasi actor, permission, transaction version, policy version, dan status terkini.

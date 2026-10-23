@@ -1,18 +1,19 @@
-KASBARENG ANTIGRAVITY SPEC PACK
-Versi: 1.0
+# 📖 KASBARENG - Petunjuk Awal (Baca Dulu)
+
+> **Versi**: 1.0
 Tanggal: 17 Oktober 2026
 Tujuan: Menjadi sumber kebutuhan utama untuk Google Antigravity AI ketika membangun KASBARENG.
 
-CARA PAKAI
+## 📌 Cara Pakai
 1. Ekstrak paket ini ke folder kerja.
 2. Buka folder KASBARENG_Antigravity_Spec_Pack sebagai workspace di Antigravity.
-3. Baca requirements/13_MASTER_PROMPT_ANTIGRAVITY.txt terlebih dahulu.
+3. Baca requirements/13_MASTER_PROMPT_ANTIGRAVITY.md terlebih dahulu.
 4. Pastikan Antigravity membaca semua file di folder requirements/ sebelum membuat atau mengubah kode.
-5. Implementasikan bertahap sesuai requirements/12_ROADMAP_IMPLEMENTASI.txt.
-6. Simpan kode algoritma inti pada project/algorithms/ atau padanan folder source code yang ditentukan pada requirements/03_ARSITEKTUR_DAN_TECH_STACK.txt. Jangan mencampur algoritma inti ke komponen UI.
-7. Setelah setiap fase, jalankan test yang diminta dan perbarui requirements/IMPLEMENTATION_STATUS.txt.
+5. Implementasikan bertahap sesuai requirements/12_ROADMAP_IMPLEMENTASI.md.
+6. Simpan kode algoritma inti pada project/algorithms/ atau padanan folder source code yang ditentukan pada requirements/03_ARSITEKTUR_DAN_TECH_STACK.md. Jangan mencampur algoritma inti ke komponen UI.
+7. Setelah setiap fase, jalankan test yang diminta dan perbarui requirements/IMPLEMENTATION_STATUS.md.
 
-ATURAN PENTING
+## ⚠️ Aturan Penting
 - Jangan membuat semua fitur sekaligus tanpa pengujian bertahap.
 - Jangan mengarang fitur yang bertentangan dengan requirement.
 - Jika ada konflik, prioritaskan urutan: aturan keamanan dan integritas, aturan bisnis/FSM, model data/API, UI/UX, lalu detail implementasi.

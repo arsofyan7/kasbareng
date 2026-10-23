@@ -1,10 +1,11 @@
-KASBARENG - RECONCILIATION SPECIFICATION
-Versi 1.0
+# 🏦 KASBARENG - Spesifikasi Rekonsiliasi Bank 3-Pass
 
-1. TUJUAN
+> **Versi**: 1.0
+
+## 1. TUJUAN
 Mencocokkan mutasi bank/e-wallet yang diimpor dengan transaksi internal menggunakan aturan yang dapat dijelaskan dan diulang.
 
-2. NORMALISASI
+## 2. NORMALISASI
 - amount dinormalisasi ke tipe decimal/integer yang konsisten.
 - direction menjadi CREDIT atau DEBIT.
 - tanggal dinormalisasi ke format ISO yang disepakati.
@@ -13,7 +14,7 @@ Mencocokkan mutasi bank/e-wallet yang diimpor dengan transaksi internal mengguna
 - setiap baris CSV menyimpan nomor baris dan import batch.
 - file impor memiliki checksum/hash dan uploader.
 
-3. URUTAN RULE
+## 3. URUTAN RULE
 R1: exact unique external reference jika sumber menjamin referensi unik.
 R2: nominal dan direction harus cocok.
 R3: tanggal berada dalam jendela yang dikonfigurasi, default demo ±2 hari.
@@ -23,7 +24,7 @@ R6: bila lebih dari satu kandidat valid, tandai AMBIGUOUS.
 R7: bila tidak ada kandidat, tandai UNMATCHED.
 R8: bila terdapat indikasi pengulangan berdasarkan source reference/file/import, tandai DUPLICATE_POTENTIAL.
 
-4. PENTING
+## 4. PENTING
 - Jangan memakai "two-pointer" sebagai jaminan selalu benar jika data tidak punya urutan dan identitas unik.
 - Sorting dapat membantu performa, tetapi matching tetap harus menangani duplicate dan kandidat ambigu.
 - Jangan auto-match kasus ambigu.
@@ -31,7 +32,7 @@ R8: bila terdapat indikasi pengulangan berdasarkan source reference/file/import,
 - Simpan ruleset_version supaya hasil dapat direproduksi.
 - Pencocokan tidak membuktikan tujuan atau keabsahan bisnis transaksi. Ia hanya menunjukkan bahwa atribut memenuhi aturan.
 
-5. METRIK
+## 5. METRIK
 - Precision auto-match
 - Recall auto-match
 - Ambiguity rate
@@ -39,7 +40,7 @@ R8: bila terdapat indikasi pengulangan berdasarkan source reference/file/import,
 - Duplicate potential rate
 - Processing time per dataset size
 
-6. TEST CASE WAJIB
+## 6. TEST CASE WAJIB
 - Referensi unik cocok.
 - Nominal sama dan tanggal dalam jendela.
 - Nominal sama tetapi arah debit/kredit berbeda.

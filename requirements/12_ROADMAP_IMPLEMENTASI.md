@@ -1,59 +1,60 @@
-KASBARENG - IMPLEMENTATION ROADMAP
-Versi 1.0
+# 🗺️ KASBARENG - Roadmap Implementasi
+
+> **Versi**: 1.0
 
 PRINSIP
 Implementasi bertahap. Jangan membangun semua modul sekaligus. Setelah setiap fase, jalankan test dan dokumentasikan status.
 
-FASE 0 - INSPEKSI DAN BOOTSTRAP
+## FASE 0 - INSPEKSI DAN BOOTSTRAP
 - Baca seluruh requirement.
 - Periksa repository saat ini sebelum mengubah file.
 - Buat rencana file dan task list.
 - Siapkan frontend, backend, database, environment example, lint, dan test runner.
 Gate: frontend dan backend dapat dijalankan; migration dan test runner tersedia.
 
-FASE 1 - AUTH DAN WALLET
+## FASE 1 - AUTH DAN WALLET
 - Implementasi auth.
 - Users, wallets, wallet_members.
 - Daftar dompet dan role per dompet.
 - Backend guards.
 Gate: cross-wallet access tests lulus.
 
-FASE 2 - UI FOUNDATION
+## FASE 2 - UI FOUNDATION
 - Design tokens dan komponen dasar.
 - Responsive layout.
 - Beranda, Kantong Kas, Aktivitas, Profil.
 - Role-aware navigation.
 Gate: navigasi inti bekerja pada mobile/desktop.
 
-FASE 3 - TRANSACTION CORE
+## FASE 3 - TRANSACTION CORE
 - Transaction model.
 - FSM algorithm.
 - Create draft, submit, reject, clarification.
 - Versioning dan idempotency.
 Gate: transisi valid/invalid teruji.
 
-FASE 4 - APPROVAL DAN LEDGER
+## FASE 4 - APPROVAL DAN LEDGER
 - Approval policy.
 - Quorum evaluator algorithm.
 - Ledger entries dan balance calculation.
 - Approval API dan concurrency controls.
 Gate: self-approval, duplicate approval, race condition, dan saldo tests lulus.
 
-FASE 5 - AUDIT
+## FASE 5 - AUDIT
 - Canonicalization algorithm.
 - Hash chain algorithm.
 - Audit events.
 - Verifier.
 Gate: tamper test lulus.
 
-FASE 6 - CSV RECONCILIATION
+## FASE 6 - CSV RECONCILIATION
 - Import batch.
 - CSV validation/normalization.
 - Reconciliation algorithm.
 - UI untuk matched/ambiguous/unmatched.
 Gate: test cases rekonsiliasi lulus.
 
-FASE 7 - CHAT PARSER
+## FASE 7 - CHAT PARSER
 - Chat UI.
 - Provider abstraction.
 - Structured output schema.
@@ -61,7 +62,7 @@ FASE 7 - CHAT PARSER
 - Fallback manual.
 Gate: AI tidak bisa mengeksekusi transaksi langsung.
 
-FASE 8 - HARDENING DAN DEMO
+## FASE 8 - HARDENING DAN DEMO
 - Regression tests.
 - Security checks.
 - Accessibility check.
@@ -70,7 +71,7 @@ FASE 8 - HARDENING DAN DEMO
 - README dan laporan pengujian.
 Gate: semua acceptance criteria inti lulus.
 
-FASE 9 - PAPAN REKAP IURAN, PEMBAYARAN MULTI-PERIODE, DAN UI REFACTOR (SELESAI)
+## FASE 9 - PAPAN REKAP IURAN, PEMBAYARAN MULTI-PERIODE, DAN UI REFACTOR (SELESAI)
 - Papan Rekap Iuran Komunitas (Dues Board):
   * Matriks status interaktif: Lunas (Hijau), Pending (Kuning), Belum Bayar (Abu-abu).
   * 3 Skema Iuran: Bulanan (MONTHLY), Termin N-Kali (TARGET_INSTALLMENTS), Sukarela (FREEFORM).

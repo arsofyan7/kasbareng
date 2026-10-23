@@ -1,11 +1,9 @@
-KASBARENG - USE CASES DAN ALUR INTERAKSI PENGGUNA (USER FLOWS)
-Versi: 1.0
+# 👥 KASBARENG - Use Cases & Alur Interaksi Pengguna (User Flows)
+> **Versi**: 1.0
 Tanggal: 23 Oktober 2026
 Tujuan: Mendefinisikan 10 alur use case interaksi antar pengguna (Admin, Pengelola/Bendahara, Warga/Anggota) pada KasBareng menggunakan diagram alur berbasis waktu (Mermaid Sequence Diagram) beserta aturan keamanan dan invariant finansial yang ditegakkan backend.
 
-================================================================================
-DAFTAR USE CASE
-================================================================================
+## DAFTAR USE CASE
 UC-01: Onboarding Komunitas & Akses Instan (Gated Community Access)
 UC-02: Lapor Pembayaran Iuran Mandiri & Verifikasi Pengurus (Single-Manager Approval)
 UC-03: Pengajuan Pengeluaran Kas & Kuorum Bertingkat M-of-N (Multi-Approval Governance)
@@ -17,14 +15,12 @@ UC-08: Ekstraksi Cerdas Catatan Kas dari Chat WhatsApp (AI Parser Human-in-the-L
 UC-09: Manajemen Keanggotaan & Promosi Peran Komunitas (Member Role Governance)
 UC-10: Konfigurasi Aturan Kuorum Kas & Ambang Batas Pengeluaran (Policy Tuning)
 
-================================================================================
-UC-01: ONBOARDING KOMUNITAS & AKSES INSTAN (GATED COMMUNITY ACCESS)
-================================================================================
+## UC-01: ONBOARDING KOMUNITAS & AKSES INSTAN (GATED COMMUNITY ACCESS)
 Deskripsi: Warga baru bergabung ke dalam dompet kas komunitas tertutup secara cepat melalui kode undangan unik atau tautan WhatsApp 1-klik tanpa memerlukan proses approval manual yang memperlambat onboarding.
 Aktor Utama: Admin Komunitas, Calon Warga (Guest/User)
 Aktor Sistem: Auth & Wallet Membership Service
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -53,19 +49,17 @@ sequenceDiagram
     UI-->>Warga: 5. Otomatis dialihkan ke Dashboard Kas Komunitas
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Endpoint preview tidak membocorkan saldo kas atau detail mutasi kepada publik yang belum terdaftar.
 2. Setiap anggota yang bergabung melalui kode undangan secara otomatis mendapatkan peran terkecil (`WARGA`).
 3. Percobaan bergabung ulang oleh anggota aktif bersifat idempoten (tidak menghasilkan keanggotaan ganda).
 
-================================================================================
-UC-02: LAPOR PEMBAYARAN IURAN MANDIRI & VERIFIKASI PENGURUS (SINGLE-MANAGER)
-================================================================================
+## UC-02: LAPOR PEMBAYARAN IURAN MANDIRI & VERIFIKASI PENGURUS (SINGLE-MANAGER)
 Deskripsi: Warga melaporkan setoran iuran kas mandiri dengan mencentang periode iuran (bisa borongan multi-periode) dan melampirkan foto struk transfer. Pengelola cukup 1 orang untuk memverifikasi dan membukukan dana ke kas resmi.
 Aktor Utama: Warga Komunitas, Pengelola/Bendahara
 Aktor Sistem: Attachment Storage (SHA-256), Ledger Engine, Audit Chain
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -99,20 +93,18 @@ sequenceDiagram
     UI-->>Pengurus: Notifikasi sukses + tampilan Papan Iuran terupdate hijau
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Warga dilarang keras membuat transaksi tipe `EXPENSE` (pengeluaran kas) -> ditolak server dengan `403 Forbidden`.
 2. Selama transaksi pemasukan berstatus `SUBMITTED`, kredit kas tidak dibukukan ke ledger dan saldo kas aktif tidak bertambah.
 3. Cukup satu pengurus sah (`PENGELOLA` atau `ADMIN`) untuk memverifikasi pemasukan (tidak memerlukan kuorum multi-approval).
 4. Jika pengurus menolak (`REJECT`), alasan penolakan wajib dicatat, dues_records dibebaskan kembali, dan saldo kas tidak berubah.
 
-================================================================================
-UC-03: PENGAJUAN PENGELUARAN KAS & KUORUM BERTINGKAT M-OF-N (MULTI-APPROVAL)
-================================================================================
+## UC-03: PENGAJUAN PENGELUARAN KAS & KUORUM BERTINGKAT M-OF-N (MULTI-APPROVAL)
 Deskripsi: Pengeluaran dana kas komunitas diajukan oleh pengurus dan wajib disetujui oleh sejumlah minimal pengurus berwenang (kuorum M-of-N) sebelum dana dapat dibayarkan, dilengkapi pengaman anti-self approval.
 Aktor Utama: Pembuat Draf (Pengelola 1), Approver 1 (Pengelola 2), Approver 2 (Admin)
 Aktor Sistem: Quorum Evaluator, FSM State Machine, Ledger Engine, Audit Chain
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -150,20 +142,18 @@ sequenceDiagram
     API-->>Maker: ✅ Transaksi selesai dan dibukukan resmi ke pembukuan kas
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Anti-Self Approval: Pembuat draf pengeluaran dilarang menyetujui transaksi buatannya sendiri.
 2. Reservasi Saldo: Pengeluaran yang diajukan mengunci saldo tersedia secara atomik untuk mencegah *double-spending* atau saldo negatif.
 3. Persetujuan unik: Satu orang pengurus hanya dihitung satu suara unik, meskipun me-retry API request.
 4. Perubahan material (revisi nominal/rekening tujuan) menginvalidasi seluruh approval lama dan menaikkan versi transaksi.
 
-================================================================================
-UC-04: TRANSPARANSI PAPAN IURAN & PENGINGAT BROADCAST WHATSAPP
-================================================================================
+## UC-04: TRANSPARANSI PAPAN IURAN & PENGINGAT BROADCAST WHATSAPP
 Deskripsi: Seluruh warga dapat melihat matriks iuran kas bulanan/termin secara terbuka dan berkeadilan. Pengurus dapat membuat pesan penagihan/pengingat WhatsApp santun dalam 1-klik untuk warga yang menunggak.
 Aktor Utama: Warga / Pengurus Komunitas
 Aktor Sistem: Dues Board Aggregator, WhatsApp Reminder Formatter
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -189,19 +179,17 @@ sequenceDiagram
     Pengurus->>WA: 5. Kirim pesan pengingat ke grup warga atau chat pribadi
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Papan Iuran dapat diakses oleh seluruh anggota aktif dompet kas (`WARGA`, `PENGELOLA`, dan `ADMIN`).
 2. Format pesan WhatsApp tidak membeberkan kalimat bernada mempermalukan; mengedepankan asas kekeluargaan dan transparansi.
 3. Periode yang masih berstatus `PENDING` (dalam verifikasi) tidak ditandai sebagai menunggak pada broadcast pengingat.
 
-================================================================================
-UC-05: REKONSILIASI REKENING KORAN BANK & PENANGANAN MUTASI AMBIGU
-================================================================================
+## UC-05: REKONSILIASI REKENING KORAN BANK & PENANGANAN MUTASI AMBIGU
 Deskripsi: Pengelola mengunggah mutasi rekening koran bank format CSV (BCA, Mandiri, BRI, BNI). Sistem melakukan pencocokan 3-pass deterministik dan memandu penanganan mutasi ambigu dengan jejak audit ketat.
 Aktor Utama: Bendahara / Pengelola
 Aktor Sistem: Bank CSV Normalizer, 3-Pass Reconciliation Matcher, Audit Chain
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -232,19 +220,17 @@ sequenceDiagram
     Matcher-->>UI: ✅ Draf transaksi kas otomatis terbuat sesuai data bank
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Tidak ada auto-match spekulatif: jika terdapat 2 transaksi internal dengan nominal dan rentang tanggal serupa, sistem WAJIB mengkarantinanya ke status `AMBIGUOUS`.
 2. Pencocokan manual mutasi ambigu mewajibkan pencatatan identitas aktor (`reviewed_by`), timestamp, dan alasan tertulis (`review_reason`).
 3. Seluruh aktivitas rekonsiliasi terekam ke rantai audit SHA-256.
 
-================================================================================
-UC-06: TIKET KLARIFIKASI & TRANSPARANSI KEBERATAN WARGA (CLARIFICATION TICKET)
-================================================================================
+## UC-06: TIKET KLARIFIKASI & TRANSPARANSI KEBERATAN WARGA (CLARIFICATION TICKET)
 Deskripsi: Warga yang menemukan kejanggalan atau membutuhkan nota penjelasan rinci atas suatu transaksi pengeluaran dapat membuka tiket klarifikasi resmi di dalam aplikasi tanpa menimbulkan perselisihan di grup chat umum.
 Aktor Utama: Warga Komunitas, Pengelola / Admin Komunitas
 Aktor Sistem: Clarification Ticket Service, Notification Guard
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -271,19 +257,17 @@ sequenceDiagram
     UI-->>Warga: 3. Warga melihat status RESOLVED beserta penjelasan lengkap dan transparan
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Tiket klarifikasi tidak dapat dihapus (*no hard delete*); menjadi bagian permanen dari riwayat transparansi transaksi.
 2. Warga hanya dapat membuka tiket klarifikasi pada dompet kas di mana ia berstatus sebagai anggota aktif.
 3. Penyelesaian tiket klarifikasi membutuhkan catatan resolusi yang bermakna (minimal 5 karakter).
 
-================================================================================
-UC-07: VERIFIKASI MANDIRI RANTAI AUDIT SHA-256 & SIMULASI KEAMANAN (AUDIT DRILL)
-================================================================================
+## UC-07: VERIFIKASI MANDIRI RANTAI AUDIT SHA-256 & SIMULASI KEAMANAN (AUDIT DRILL)
 Deskripsi: Warga atau auditor independen dapat memverifikasi keutuhan matematis catatan kas dari genesis hingga akhir. Admin dapat menjalankan simulasi manipulasi data ilegal untuk menguji deteksi tamper-evident sistem.
 Aktor Utama: Warga / Pengurus / Auditor Independen, Admin Komunitas
 Aktor Sistem: RFC 8785 Canonicalizer, SHA-256 Chain Verifier, Tamper Simulator Drill
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -319,19 +303,17 @@ sequenceDiagram
     API-->>UI: ✅ Payload dipulihkan & Rantai Audit kembali Hijau Utuh
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Verifikasi audit terbuka untuk seluruh anggota kas (asas transparansi kriptografi).
 2. Simulasi manipulasi (*tamper drill*) hanya dapat dieksekusi oleh peran `ADMIN` di lingkungan pengujian/demonstrasi akademik.
 3. Rantai hash menggunakan algoritma penyeragaman kanonikal RFC 8785 agar urutan kunci JSON tidak memicu false-positive hash mismatch.
 
-================================================================================
-UC-08: EKSTRAKSI CERDAS CATATAN KAS DARI CHAT WHATSAPP (AI PARSER HUMAN-IN-THE-LOOP)
-================================================================================
+## UC-08: EKSTRAKSI CERDAS CATATAN KAS DARI CHAT WHATSAPP (AI PARSER HUMAN-IN-THE-LOOP)
 Deskripsi: Pengurus menyalin pesan obrolan grup WhatsApp warga tentang pembayaran kas. Sistem mengekstraksi data secara terstruktur, namun dilarang membukukan transaksi tanpa persetujuan manual pengurus.
 Aktor Utama: Bendahara / Pengelola Komunitas
 Aktor Sistem: Regex/NLP Entity Extractor, Transaction Draft Form, Core Ledger
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -354,19 +336,17 @@ sequenceDiagram
     Ledger-->>UI: ✅ Transaksi tercatat resmi & saldo kas bertambah
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Strict Human-in-the-Loop: Modul AI / Regex parser hanya berfungsi sebagai asisten input draf; tidak memiliki otorisasi melakukan mutasi database secara mandiri.
 2. Pengurus wajib memverifikasi hasil pembacaan sebelum menekan tombol simpan resmi.
 3. Data teks obrolan tidak disimpan permanen jika pengguna membatalkan proses ekstraksi.
 
-================================================================================
-UC-09: MANAJEMEN KEANGGOTAAN & PROMOSI PERAN KOMUNITAS (MEMBER ROLE GOVERNANCE)
-================================================================================
+## UC-09: MANAJEMEN KEANGGOTAAN & PROMOSI PERAN KOMUNITAS (MEMBER ROLE GOVERNANCE)
 Deskripsi: Admin komunitas mengangkat warga menjadi pengurus baru (misal bendahara/panitia kegiatan) atau menurunkan pengurus demisioner, dengan perlindungan agar dompet kas tidak kehilangan seluruh admin.
 Aktor Utama: Admin Komunitas, Anggota Komunitas
 Aktor Sistem: Membership RBAC Guard, Audit Chain
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -396,19 +376,17 @@ sequenceDiagram
     API-->>UI: ❌ DITOLAK: Tidak dapat menurunkan Admin terakhir (Cegah dompet terlantar)
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Hanya peran `ADMIN` yang diizinkan mengubah peran anggota atau mengeluarkan anggota dari dompet kas.
 2. Invariant Dompet Terlantar (*Orphaned Wallet Guard*): Sistem menolak operasi penurunan peran atau penghapusan anggota jika anggota tersebut adalah satu-satunya Admin aktif dalam dompet kas.
 3. Setiap perubahan hak akses anggota dicatat ke rantai audit SHA-256.
 
-================================================================================
-UC-10: KONFIGURASI ATURAN KUORUM KAS & AMBANG BATAS PENGELUARAN (POLICY TUNING)
-================================================================================
+## UC-10: KONFIGURASI ATURAN KUORUM KAS & AMBANG BATAS PENGELUARAN (POLICY TUNING)
 Deskripsi: Admin mengatur formula tata kelola persetujuan kas komunitas, menentukan berapa pengurus yang wajib menyetujui pengeluaran kas ($M$-dari-$N$) serta batas nominal yang mewajibkan kuorum.
 Aktor Utama: Admin Komunitas
 Aktor Sistem: Policy Versioning Service, Quorum Policy Engine, Audit Chain
 
-Diagram Alur Interaksi:
+### Diagram Alur Interaksi:
 ```mermaid
 sequenceDiagram
     autonumber
@@ -433,14 +411,12 @@ sequenceDiagram
     Note over Admin,API: Dampak Versi: Transaksi pengeluaran baru otomatis tunduk pada Kebijakan Versi 2!
 ```
 
-Aturan Keamanan & Invariant:
+### Aturan Keamanan & Invariant:
 1. Nilai $M$ (required approvals) tidak boleh melebihi jumlah total pengurus (`ADMIN` + `PENGELOLA`) yang ada di dompet kas.
 2. Setiap pembaruan aturan menaikkan nomor `policy_version` secara serial.
 3. Transaksi yang sedang berjalan terkunci pada `policy_version` saat transaksi diajukan, menjaga keadilan hukum tata kelola kas komunitas.
 
-================================================================================
-RINGKASAN INTEGRASI KESELURUHAN USE CASE
-================================================================================
+## RINGKASAN INTEGRASI KESELURUHAN USE CASE
 Kesepuluh use case di atas saling melengkapi untuk membentuk satu siklus hidup tata kelola kas komunitas yang tertutup, aman, transparan, dan tahan manipulasi:
 
 1. Onboarding & Akses: UC-01
