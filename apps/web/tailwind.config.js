@@ -8,6 +8,12 @@ export default {
   theme: {
     extend: {
       colors: {
+        mint: {
+          50: '#f5fbf6',
+          100: '#e6f6eb',
+          200: '#ceeed7',
+          300: '#a7e1b6',
+        },
         brand: {
           50: '#ecfdf5',
           100: '#d1fae5',
@@ -23,7 +29,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
     },
   },

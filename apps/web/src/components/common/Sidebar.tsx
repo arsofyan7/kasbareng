@@ -100,6 +100,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Bottom Community Trust Banner (Desktop Mockup Parity) */}
+      <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80">
+        <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-center space-y-1">
+          <div className="flex justify-center -space-x-1 mb-1">
+            <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
+              👥
+            </span>
+          </div>
+          <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-300">
+            Kas Komunitas Terbuka
+          </p>
+          <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/70 leading-snug">
+            Kelola keuangan bersama, lebih transparan.
+          </p>
+        </div>
+      </div>
     </aside>
   );
 };

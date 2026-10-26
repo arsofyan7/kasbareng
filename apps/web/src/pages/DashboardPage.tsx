@@ -7,11 +7,15 @@ import {
   TrendingUp,
   TrendingDown,
   Clock,
-  CheckCircle,
   Users,
   PlusCircle,
   KeyRound,
   CalendarDays,
+  Eye,
+  EyeOff,
+  ChevronRight,
+  ChevronDown,
+  Coins,
 } from 'lucide-react';
 import { Transaction, TransactionType, TransactionState, WalletSummary, ApiResponse } from '../types';
 import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
@@ -45,6 +49,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [recordModalOpen, setRecordModalOpen] = useState<boolean>(false);
   const [recordType, setRecordType] = useState<TransactionType>('INCOME');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+
+  // Financial Privacy: Show/Hide Balance State
+  const [showBalance, setShowBalance] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('kasbareng_show_balance') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleShowBalance = () => {
+    setShowBalance((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('kasbareng_show_balance', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const formatAmount = (amount: number) => {
+    if (!showBalance) return 'Rp ••••••••';
+    return `Rp ${amount.toLocaleString('id-ID')}`;
+  };
 
   const fetchDashboardData = useCallback(async () => {
     if (!token || !activeWallet) return;
@@ -195,14 +225,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Top Greeting & Community Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Halo, {user?.fullName.split(' ')[0]} ??
+      {/* Top Greeting & Community Header with Adaptive Ambient Banner */}
+      <div className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 border border-emerald-500/20 dark:border-emerald-800/40 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Subtle Community Skyline / Building Silhouette Vector Artwork */}
+        <div className="absolute right-0 bottom-0 pointer-events-none opacity-20 dark:opacity-10 translate-x-2 translate-y-1 select-none hidden sm:block">
+          <svg width="240" height="90" viewBox="0 0 240 90" fill="currentColor" className="text-emerald-700 dark:text-emerald-300">
+            {/* Tree left */}
+            <circle cx="20" cy="55" r="16" />
+            <rect x="18" y="65" width="4" height="20" fill="currentColor" />
+            {/* Small house */}
+            <path d="M40 85 L40 50 L60 35 L80 50 L80 85 Z" />
+            <rect x="52" y="62" width="16" height="23" className="text-white dark:text-slate-950" fill="currentColor" opacity="0.4" />
+            {/* Community Hall / School Building */}
+            <path d="M85 85 L85 40 L145 40 L145 85 Z" />
+            <polygon points="115,20 80,40 150,40" />
+            <circle cx="115" cy="30" r="4" className="text-white dark:text-slate-950" fill="currentColor" opacity="0.5" />
+            <rect x="92" y="48" width="10" height="12" rx="2" className="text-white dark:text-slate-950" fill="currentColor" opacity="0.4" />
+            <rect x="108" y="48" width="14" height="12" rx="2" className="text-white dark:text-slate-950" fill="currentColor" opacity="0.4" />
+            <rect x="128" y="48" width="10" height="12" rx="2" className="text-white dark:text-slate-950" fill="currentColor" opacity="0.4" />
+            <rect x="108" y="68" width="14" height="17" className="text-white dark:text-slate-950" fill="currentColor" opacity="0.6" />
+            {/* Tree right */}
+            <circle cx="170" cy="52" r="18" />
+            <rect x="168" y="65" width="5" height="20" fill="currentColor" />
+            <circle cx="205" cy="58" r="14" />
+            <rect x="203" y="68" width="4" height="17" fill="currentColor" />
+            {/* Ground line */}
+            <rect x="0" y="84" width="240" height="6" rx="2" opacity="0.3" />
+          </svg>
+        </div>
+
+        <div className="z-10 space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            Halo, {user?.fullName.split(' ')[0]} <span>👋</span>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Ringkasan kas komunitas untuk{' '}
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            Berikut ringkasan kas komunitas{' '}
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">
               {activeWallet?.name}
             </span>
@@ -211,63 +268,113 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         {/* Quorum Policy & Audit Badges */}
         {activeWallet && (
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300">
+          <div className="z-10 self-start sm:self-auto">
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-emerald-200/80 dark:border-emerald-800/60 shadow-sm text-xs font-semibold text-emerald-800 dark:text-emerald-300">
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>
                 Kuorum: <strong>{activeWallet.requiredApprovals} dari {activeWallet.memberCount} Suara</strong>
               </span>
+              <ChevronRight className="w-3.5 h-3.5 text-emerald-500 opacity-60" />
             </div>
           </div>
         )}
       </div>
 
-
       {/* Primary Financial Balance Cards (Live Calculated via Ledger Algorithm) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Card 1: Saldo Tercatat */}
-        <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xl shadow-emerald-600/15 relative overflow-hidden">
-          <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-100">
-              Saldo Tercatat (Posted)
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white">
+        <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-800 text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden flex flex-col justify-between min-h-[175px]">
+          {/* Decorative Coin Ring Stack Artwork (Bottom-Right, exactly like mockup) */}
+          <div className="absolute -right-3 -bottom-5 w-32 h-32 pointer-events-none select-none opacity-25">
+            <svg viewBox="0 0 100 100" fill="none" className="w-full h-full text-white">
+              <circle cx="65" cy="65" r="30" stroke="currentColor" strokeWidth="4" />
+              <circle cx="65" cy="65" r="22" stroke="currentColor" strokeWidth="3" />
+              <circle cx="45" cy="72" r="24" stroke="currentColor" strokeWidth="3" />
+              <circle cx="45" cy="72" r="16" stroke="currentColor" strokeWidth="2" />
+              <circle cx="75" cy="40" r="18" stroke="currentColor" strokeWidth="3" />
+            </svg>
+          </div>
+          <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none" />
+
+          {/* Top: Label + Eye Privacy Button + Currency Pill */}
+          <div className="flex items-center justify-between mb-2 z-10">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-100">
+                Saldo Tercatat (Posted)
+              </span>
+              <button
+                type="button"
+                onClick={toggleShowBalance}
+                className="p-1 rounded-lg hover:bg-white/15 text-emerald-100 transition-colors cursor-pointer"
+                title={showBalance ? 'Sembunyikan Saldo' : 'Tampilkan Saldo'}
+                aria-label="Toggle visibility saldo"
+              >
+                {showBalance ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white flex items-center gap-1">
               {activeWallet?.currency || 'IDR'}
+              <ChevronDown className="w-3 h-3 text-emerald-200" />
             </span>
           </div>
-          <div className="text-3xl font-extrabold tracking-tight mb-3">
-            Rp {(summary?.postedBalance || 0).toLocaleString('id-ID')}
+
+          {/* Balance Display */}
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2 z-10">
+            {formatAmount(summary?.postedBalance || 0)}
           </div>
-          <p className="text-xs text-emerald-100/90 leading-relaxed">
+
+          {/* Subtitle */}
+          <p className="text-xs text-emerald-100/90 leading-relaxed z-10 mt-auto">
             Total saldo yang telah diverifikasi dan dibukukan resmi dalam ledger.
           </p>
         </div>
 
         {/* Card 2: Saldo Tersedia */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative space-y-2">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
-            <span className="font-semibold uppercase tracking-wider">Saldo Tersedia</span>
-            <CheckCircle className="w-4 h-4 text-sky-500" />
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-emerald-500/40 dark:hover:border-emerald-500/30 transition-all flex flex-col justify-between min-h-[175px] group">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
+                <Wallet className="w-4 h-4" />
+              </div>
+              <span className="font-semibold uppercase tracking-wider text-xs text-slate-500 dark:text-slate-400">
+                Saldo Tersedia
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white">
-            Rp {(summary?.availableBalance || 0).toLocaleString('id-ID')}
+
+          <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white my-1">
+            {formatAmount(summary?.availableBalance || 0)}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-auto">
             Saldo riil yang dapat digunakan setelah dipotong reservasi pengeluaran.
           </p>
         </div>
 
         {/* Card 3: Reservasi Pengeluaran Aktif */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative space-y-2">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
-            <span className="font-semibold uppercase tracking-wider">Reservasi Aktif</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+        <div
+          onClick={() => onNavigateToTab('persetujuan')}
+          className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all flex flex-col justify-between min-h-[175px] group cursor-pointer"
+          title="Klik untuk melihat transaksi yang menunggu kuorum"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-105 transition-transform">
+                <Coins className="w-4 h-4" />
+              </div>
+              <span className="font-semibold uppercase tracking-wider text-xs text-slate-500 dark:text-slate-400">
+                Reservasi Aktif
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white">
-            Rp {(summary?.activeReservations || 0).toLocaleString('id-ID')}
+
+          <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white my-1">
+            {formatAmount(summary?.activeReservations || 0)}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-auto">
             Dana yang direservasi untuk transaksi yang sedang menunggu persetujuan.
           </p>
         </div>
