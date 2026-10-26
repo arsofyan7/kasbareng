@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WalletProvider } from './context/WalletContext';
+import { TransactionType } from './types';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { WalletsPage } from './pages/WalletsPage';
@@ -19,6 +20,8 @@ import { CreateWalletModal } from './components/common/CreateWalletModal';
 import { JoinWalletModal } from './components/common/JoinWalletModal';
 import { AuditChainModal } from './components/common/AuditChainModal';
 import { AlgorithmRulesModal } from './components/common/AlgorithmRulesModal';
+import { QuickActionSheet } from './components/common/QuickActionSheet';
+import { RecordTransactionModal } from './components/common/RecordTransactionModal';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -29,6 +32,12 @@ function AppContent() {
   const [joinInitialCode, setJoinInitialCode] = useState('');
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [algorithmModalOpen, setAlgorithmModalOpen] = useState(false);
+
+  // Quick Action Sheet & Global Transaction Modal
+  const [quickActionOpen, setQuickActionOpen] = useState(false);
+  const [recordModalOpen, setRecordModalOpen] = useState(false);
+  const [recordModalType, setRecordModalType] = useState<TransactionType>('INCOME');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Check URL query parameters or hash on mount (e.g. ?join=RT05-SEJAHTERA)
   useEffect(() => {
@@ -74,6 +83,7 @@ function AppContent() {
           onOpenCreateWallet={() => setCreateWalletOpen(true)}
           onOpenJoinWallet={() => setJoinWalletOpen(true)}
           onOpenAuditChain={() => setAuditModalOpen(true)}
+          onOpenQuickAction={() => setQuickActionOpen(true)}
         />
 
         {/* Main Workspace Area */}
@@ -83,7 +93,11 @@ function AppContent() {
               onOpenCreateWallet={() => setCreateWalletOpen(true)}
               onOpenJoinWallet={() => setJoinWalletOpen(true)}
               onNavigateToTab={setCurrentTab}
-              onOpenAuditChain={() => setAuditModalOpen(true)}
+              onOpenRecordModal={(type) => {
+                setRecordModalType(type);
+                setRecordModalOpen(true);
+              }}
+              refreshTrigger={refreshKey}
             />
           )}
           {currentTab === 'papan-iuran' && <DuesBoardPage />}
@@ -104,10 +118,49 @@ function AppContent() {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <BottomNav currentTab={currentTab} onSelectTab={setCurrentTab} />
+      {/* Mobile Bottom Navigation Bar with Center Protruding Action Button */}
+      <BottomNav
+        currentTab={currentTab}
+        onSelectTab={setCurrentTab}
+        onOpenQuickAction={() => setQuickActionOpen(true)}
+      />
 
-      {/* Modals */}
+      {/* Quick Action Bottom Sheet (Speed Dial Ala E-Wallet) */}
+      <QuickActionSheet
+        isOpen={quickActionOpen}
+        onClose={() => setQuickActionOpen(false)}
+        onSelectIncome={() => {
+          setQuickActionOpen(false);
+          setRecordModalType('INCOME');
+          setRecordModalOpen(true);
+        }}
+        onSelectExpense={() => {
+          setQuickActionOpen(false);
+          setRecordModalType('EXPENSE');
+          setRecordModalOpen(true);
+        }}
+        onSelectAiChat={() => {
+          setQuickActionOpen(false);
+          setCurrentTab('ai-parser');
+        }}
+        onNavigateTab={(tab) => {
+          setQuickActionOpen(false);
+          setCurrentTab(tab);
+        }}
+      />
+
+      {/* Global Record Transaction Modal */}
+      <RecordTransactionModal
+        isOpen={recordModalOpen}
+        initialType={recordModalType}
+        onClose={() => setRecordModalOpen(false)}
+        onSuccess={() => {
+          setRecordModalOpen(false);
+          setRefreshKey((k) => k + 1);
+        }}
+      />
+
+      {/* Wallet Modals */}
       <WalletSwitcherModal
         isOpen={walletModalOpen}
         onClose={() => setWalletModalOpen(false)}

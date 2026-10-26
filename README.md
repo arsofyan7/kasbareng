@@ -29,6 +29,7 @@
   - [7. Pelaporan Iuran Mandiri Warga & Verifikasi Pengurus (Single-Manager Approval)](#7-pelaporan-iuran-mandiri-warga--verifikasi-pengurus-single-manager-approval)
   - [8. Papan Rekap Iuran Komunitas (Community Billing Board) & Pembayaran Multi-Periode](#8-papan-rekap-iuran-komunitas-community-billing-board--pembayaran-multi-periode)
   - [9. Modal Fitur Algoritma, Tata Kelola Komunitas, & Desain Responsif Modern](#9-modal-fitur-algoritma-tata-kelola-komunitas--desain-responsif-modern)
+  - [10. Tombol Aksi Sentral (Center Action Button Ala E-Wallet) & Quick Action Sheet](#10-tombol-aksi-sentral-center-action-button-ala-e-wallet--quick-action-sheet)
 - [Matriks Hak Akses (RBAC)](#-matriks-hak-akses-rbac)
 - [Panduan Instalasi & Menjalankan Lokal](#-panduan-instalasi--menjalankan-lokal)
 - [Dataset Demo & Akun Siap Pakai](#-dataset-demo--akun-siap-pakai)
@@ -388,6 +389,38 @@ graph LR
 
 - **Latar Belakang Animasi Kas Komunitas Gotong Royong (`community-fintech-bg.jpg`)**:
   Halaman login dan pendaftaran akun dilengkapi dengan latar belakang ilustrasi 3D beranimasi halus (*breathing slow-zoom* 24s infinite) bernuansa rumah-rumah komunitas warga RT/RW terhubung dengan jalur sirkuit neon hijau toska & emerald, balok ledger (*DANA MASUK, DANA KELUAR, TRANSPARENCY*), dan perisai pengaman kriptografis. Kartu login di tengah menggunakan desain kaca tebal (*backdrop-blur-2xl bg-white/95 dark:bg-slate-900/90*) dengan bayangan mendalam yang menghasilkan kontras visual tinggi di mode terang maupun mode gelap.
+
+---
+
+### 10. Tombol Aksi Sentral (Center Action Button Ala E-Wallet) & Quick Action Sheet
+
+Untuk menyederhanakan antarmuka (*UI Minimization*) dan memberikan pengalaman jempol yang ergonomis (*thumb-zone friendly*), aksi pencatatan transaksi kas dan parser chat dipusatkan pada tombol sentral menonjol ala aplikasi fintech modern (Dana / Gojek):
+
+```mermaid
+graph TD
+    subgraph Mobile_Nav ["Navigasi Bawah Mobile (BottomNav 5 Kolom)"]
+        T1["[1] Beranda"]
+        T2["[2] Papan Iuran"]
+        C["( + ) Tombol Sentral Menonjol"]
+        T3["[3] Persetujuan"]
+        T4["[4] Profil"]
+    end
+
+    subgraph Quick_Sheet ["Quick Action Bottom Sheet (Aksi Cepat Kas)"]
+        C -->|Ketuk Tombol Sentral| QS[Panel Meluncur dari Bawah]
+        QS --> A1["🟢 Catat Pemasukan / Lapor Iuran<br/>(Warga: Setor mandiri + bukti transfer | Pengurus: Kas langsung)"]
+        QS --> A2["🔴 Ajukan Pengeluaran Kas<br/>(Khusus Pengurus via Kuorum M-of-N | Terkunci bagi Warga)"]
+        QS --> A3["🟣 Catat via Chat AI<br/>(Tempel obrolan WhatsApp untuk draf instan)"]
+        QS --> A4["Pintasan Cepat: Kantong Kas, Rekonsiliasi, & Anggota"]
+    end
+
+    subgraph Desktop_Nav ["Navigasi Desktop / Tablet (Sidebar)"]
+        CTA["Tombol Utama '+ Transaksi Baru' di Atas Sidebar"] -->|Klik| Dialog[Modal Aksi Cepat Terpusat]
+    end
+```
+
+- **Pengalaman Tanpa Hambatan**: Aksi kas dapat dipicu dari halaman mana pun secara instan tanpa perlu kembali ke Beranda terlebih dahulu.
+- **Transparansi Peran (RBAC Guard)**: Pengeluaran kas otomatis dinonaktifkan secara aman bagi akun berstatus `WARGA` dengan informasi ramah pengguna.
 
 ---
 

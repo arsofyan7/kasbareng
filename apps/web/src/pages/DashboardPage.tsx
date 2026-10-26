@@ -27,13 +27,16 @@ interface DashboardPageProps {
   onOpenCreateWallet: () => void;
   onOpenJoinWallet?: () => void;
   onNavigateToTab: (tab: NavTab) => void;
-  onOpenAuditChain?: () => void;
+  onOpenRecordModal?: (type: TransactionType) => void;
+  refreshTrigger?: number;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenCreateWallet,
   onOpenJoinWallet,
   onNavigateToTab,
+  onOpenRecordModal,
+  refreshTrigger,
 }) => {
   const { token, user } = useAuth();
   const { activeWallet, wallets } = useWallet();
@@ -81,7 +84,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   useEffect(() => {
     fetchDashboardData();
-  }, [fetchDashboardData]);
+  }, [fetchDashboardData, refreshTrigger]);
 
   const handleCopyCode = () => {
     if (!activeWallet?.inviteCode) return;
@@ -138,8 +141,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   }
 
   const openRecordModal = (t: TransactionType) => {
-    setRecordType(t);
-    setRecordModalOpen(true);
+    if (onOpenRecordModal) {
+      onOpenRecordModal(t);
+    } else {
+      setRecordType(t);
+      setRecordModalOpen(true);
+    }
   };
 
   const filteredTransactions = transactions.filter((tx) => {

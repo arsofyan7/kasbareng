@@ -315,5 +315,34 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
   - `npm --workspace=apps/web run build`: 100% clean production build.
   - `npm run test:api`: 103/103 tests passed (100% across 13 test suites).
 
+---
+
+### Fase Penyempurnaan UI/UX: Tombol Aksi Sentral (Center Action Button Ala E-Wallet) & Quick Action Sheet
+- **Status**: **COMPLETED**
+- **Tanggal Selesai**: 2026-10-26
+- **Latar Belakang & Kebutuhan Pengguna**:
+  - Menyederhanakan antarmuka (*UI Minimization*) agar lebih bersih, lapang, dan berfokus pada ringkasan kas tanpa tombol aksi besar yang memadati dashboard.
+  - Menyediakan akses cepat satu ketukan (*Thumb-Zone Friendly*) di layar mobile untuk pencatatan kas dan chat AI dari halaman mana pun.
+- **Rincian Implementasi**:
+  1. **Komponen Quick Action Bottom Sheet (`QuickActionSheet.tsx`)**:
+     - Panel meluncur dari bawah (*bottom-sheet*) di mobile dan dialog modal terpusat di desktop.
+     - Menyediakan 3 sub-menu utama:
+       * 🟢 **Catat Pemasukan / Lapor Pembayaran**: Warga melaporkan setoran mandiri dengan bukti transfer; Pengurus mencatat pemasukan kas langsung.
+       * 🔴 **Ajukan Pengeluaran Kas**: Pengurus mengajukan pengeluaran bertingkat; otomatis terkunci / disabled bagi Warga dengan label *"Khusus Pengurus"*.
+       * 🟣 **Catat via Chat AI**: Pengalihan langsung ke fitur *Parser Chat AI* untuk mengekstrak teks obrolan WhatsApp.
+     - Dilengkapi pintasan cepat (*quick shortcuts*) ke menu pendukung: *Kantong Kas*, *Rekonsiliasi Bank*, dan *Kelola Anggota*.
+  2. **Navigasi Mobile Formasi 5 Kolom (`BottomNav.tsx`)**:
+     - Merampingkan navigasi bawah dari 7 tab yang padat menjadi formasi seimbang: **2 Tab Kiri — 1 Tombol Aksi Sentral — 2 Tab Kanan**.
+     - Tombol tengah menonjol bulat keluar (`-top-3.5`, gradien Emerald to Teal dengan bayangan glow lembut dan ring cut-out) yang memicu `QuickActionSheet`.
+     - Tab kiri: *Beranda* dan *Papan Iuran*. Tab kanan: *Persetujuan* dan *Profil*.
+  3. **Tombol CTA Desktop (`Sidebar.tsx`)**:
+     - Menghadirkan tombol utama `+ Transaksi Baru` dengan gradien cerah di bagian atas sidebar desktop untuk konsistensi pengalaman lintas platform.
+  4. **Penyempurnaan Integrasi Root (`App.tsx` & `DashboardPage.tsx`)**:
+     - Modal transaksi kas diintegrasikan secara global di root `App.tsx` sehingga dapat dipicu dari tab navigasi mana saja.
+     - Menyediakan `refreshTrigger` agar data dashboard otomatis diperbarui secara reaktif begitu transaksi berhasil dibukukan.
+- **Hasil Verifikasi**:
+  - `npm --workspace=apps/web run build`: 100% lulus (dist bersih, 0 lint/type error).
+  - `npm run test:api`: 103/103 tests lulus (100% green).
+
 
 

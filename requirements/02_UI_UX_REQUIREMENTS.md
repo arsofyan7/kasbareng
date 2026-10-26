@@ -119,3 +119,13 @@ Jangan tampilkan tindakan offline sebagai berhasil sebelum server mengonfirmasi.
 - Lapisan ambient glow neon orbs dan radial vignette lembut berkanvas slate 950 dengan kontras 60%-70% seimbang.
 - Kartu formulir di tengah menggunakan gaya glassmorphism tebal (backdrop-blur-2xl) dengan bayangan mendalam, menghasilkan kontras tinggi yang jelas terbaca di mode terang maupun mode gelap.
 
+## 17. TOMBOL AKSI SENTRAL (CENTER ACTION BUTTON ALA E-WALLET) & QUICK ACTION SHEET
+- Navigasi bawah mobile dirampingkan menjadi formasi 5 kolom seimbang: 2 Tab Kiri (Beranda, Iuran), 1 Tombol Aksi Sentral Menonjol, dan 2 Tab Kanan (Persetujuan, Profil).
+- Tombol sentral menonjol bulat keluar (-top-3.5) dengan gradien Emerald to Teal, bayangan glow lembut, dan cut-out border yang memicu QuickActionSheet.
+- Panel QuickActionSheet meluncur mulus dari bawah (bottom-sheet) di mobile dan modal terpusat di desktop dengan 3 aksi cepat:
+  1. Catat Pemasukan / Lapor Pembayaran (Warga setor mandiri; Pengurus catat langsung).
+  2. Ajukan Pengeluaran Kas (Pengurus kuorum M-of-N; otomatis terkunci aman bagi Warga).
+  3. Catat via Chat AI (Ekstraksi obrolan WhatsApp instan).
+- Baris pintasan tambahan di bawah sheet memberikan akses 1-ketukan ke Kantong Kas, Rekonsiliasi Bank, dan Kelola Anggota.
+- Desktop menghadirkan tombol utama "+ Transaksi Baru" di bagian atas sidebar untuk konsistensi pengalaman lintas platform.
+
