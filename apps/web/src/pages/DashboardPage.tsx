@@ -350,98 +350,49 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* Quick Actions Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Action 1: Catat Pemasukan */}
-        {isManagerOrAdmin ? (
-          <button
-            onClick={() => openRecordModal('INCOME')}
-            className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 text-left transition-all group"
-          >
-            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center mb-2.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-              Catat Pemasukan
-            </div>
-            <div className="text-xs text-emerald-700 dark:text-emerald-400">
-              Iuran kas & donasi
-            </div>
-          </button>
-        ) : (
-          <button
-            onClick={() => openRecordModal('INCOME')}
-            className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 text-left transition-all group cursor-pointer"
-          >
-            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center mb-2.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-              Lapor Pembayaran
-            </div>
-            <div className="text-xs text-emerald-700 dark:text-emerald-400">
-              Setor iuran & bukti transfer
-            </div>
-          </button>
-        )}
-
-        {/* Action 2: Ajukan Pengeluaran */}
-        {isManagerOrAdmin ? (
-          <button
-            onClick={() => openRecordModal('EXPENSE')}
-            className="p-4 rounded-2xl border border-rose-200 dark:border-rose-800/80 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/60 text-left transition-all group"
-          >
-            <div className="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center mb-2.5 shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">
-              <TrendingDown className="w-4 h-4" />
-            </div>
-            <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-              Ajukan Pengeluaran
-            </div>
-            <div className="text-xs text-rose-700 dark:text-rose-400">
-              Perlu kuorum M-of-N
-            </div>
-          </button>
-        ) : (
-          <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 opacity-60 text-left">
-            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center mb-2.5">
-              <TrendingDown className="w-4 h-4" />
-            </div>
-            <div className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-              Pengeluaran Kas
-            </div>
-            <div className="text-[11px] text-slate-400">Khusus Pengelola/Admin</div>
-          </div>
-        )}
-
-        {/* Action 3: Kelola Anggota */}
+      {/* Quick Navigation Shortcuts */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Shortcut 1: Papan Iuran */}
         <button
-          onClick={() => onNavigateToTab('anggota')}
-          className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-slate-800/80 text-left transition-all group"
+          type="button"
+          onClick={() => onNavigateToTab('papan-iuran')}
+          className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/60 hover:bg-emerald-50/20 dark:hover:bg-slate-800/80 text-left transition-all group cursor-pointer shadow-sm"
         >
-          <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-            <Users className="w-4 h-4" />
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+              <CalendarDays className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+              Lihat Rekap
+            </span>
           </div>
-          <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-            Kelola Anggota
+          <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+            Papan Iuran Komunitas
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            {activeWallet?.memberCount || 1} Anggota Aktif
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Matriks transparansi iuran bulanan/termin seluruh warga
           </div>
         </button>
 
-        {/* Action 4: Papan Iuran */}
+        {/* Shortcut 2: Kelola Anggota */}
         <button
-          onClick={() => onNavigateToTab('papan-iuran')}
-          className="p-4 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/80 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:bg-emerald-50/20 dark:hover:bg-slate-800/80 text-left transition-all group"
+          type="button"
+          onClick={() => onNavigateToTab('anggota')}
+          className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-sky-500/60 hover:bg-sky-50/20 dark:hover:bg-slate-800/80 text-left transition-all group cursor-pointer shadow-sm"
         >
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-            <CalendarDays className="w-4 h-4" />
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+              <Users className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+              {activeWallet?.memberCount || 1} Anggota
+            </span>
           </div>
-          <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-            Papan Iuran
+          <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+            Kelola Anggota & Peran
           </div>
-          <div className="text-xs text-emerald-700 dark:text-emerald-400">
-            Rekap Warga & Status
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Daftar warga, hak akses, dan kode undangan komunitas
           </div>
         </button>
       </div>
