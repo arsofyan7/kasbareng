@@ -340,9 +340,35 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
   4. **Penyempurnaan Integrasi Root (`App.tsx` & `DashboardPage.tsx`)**:
      - Modal transaksi kas diintegrasikan secara global di root `App.tsx` sehingga dapat dipicu dari tab navigasi mana saja.
      - Menyediakan `refreshTrigger` agar data dashboard otomatis diperbarui secara reaktif begitu transaksi berhasil dibukukan.
+---
+
+### Fase Transformasi Visual Tahap 1: Palet Warna Mint White, Tipografi Plus Jakarta Sans, & Kartu Saldo Mockup Parity
+- **Status**: **COMPLETED**
+- **Tanggal Selesai**: 2026-10-26
+- **Tujuan & Filosofi**:
+  - Merealisasikan panduan *Design System* resmi KASBARENG yang elegan, bersih, dan berstandar fintech modern.
+  - Memastikan transisi mulus dan sempurna antara Mode Terang (*Light Mode*) dan Mode Gelap (*Dark Mode*), serta adaptif 100% di semua ukuran layar (HP / Ponsel 360-414px, Tablet 768-1024px, dan Desktop >1280px).
+- **Rincian Implementasi**:
+  1. **Palet Warna Mint White & Dark Obsidian (`index.css`, `tailwind.config.js`, `App.tsx`)**:
+     - Light Mode: Mengadopsi background utama `Mint White #F5FBF6` (`bg-mint-50`) menggantikan abu-abu netral, dipadukan dengan surface putih bersih `#FFFFFF` dan teks primer `#17203A`.
+     - Dark Mode: Mempertahankan background gelap elegan `Slate 950 #020617` / `#090D16` dengan surface `Slate 900 #0F172A` dan aksen emerald luminous.
+     - Tipografi: Menambahkan Google Font `Plus Jakarta Sans` berpadu dengan `Inter` untuk estetika heading dan angka saldo yang tegas dan berkelas.
+  2. **Banner Sambutan Adaptif & Ilustrasi Siluet Komunitas (`DashboardPage.tsx`)**:
+     - Menghadirkan banner sambutan *"Halo, [Nama]! 👋"* dengan gradien lembut dan siluet vektor komunitas/gedung sekolah transparan di latar belakang (`opacity-20` di light mode, `opacity-10` di dark mode).
+     - Menampilkan lencana kebijakan Kuorum resmi dengan ikon `ShieldCheck` dan chevron indikator.
+  3. **Privasi Finansial: Toggle Intip Saldo (Show/Hide Balance Eye Toggle)**:
+     - Menyediakan tombol mata (`Eye` / `EyeOff`) di Kartu Saldo Tercatat yang menyimpan preferensi pengguna di `localStorage`.
+     - Ketika disembunyikan, seluruh nominal pada 3 kartu saldo secara serempak berubah menjadi `Rp ••••••••` demi kenyamanan saat membuka aplikasi di ruang publik atau grup warga.
+  4. **Penyempurnaan 3 Kartu Saldo Utama (Fintech Mockup Parity)**:
+     - **Kartu 1 (Saldo Tercatat / Posted)**: Solid gradient Emerald `#059669` ke Teal `#0F766E` dengan aksen ilustrasi tumpukan koin vektor transparan di pojok kanan bawah, tombol intip mata, dan pill dropdown mata uang (`IDR ▾`).
+     - **Kartu 2 (Saldo Tersedia)**: Kartu putih bersih berbingkai halus dengan icon box rounded hijau mint (`Wallet`), nilai saldo adaptif, dan panah chevron kanan interaktif.
+     - **Kartu 3 (Reservasi Aktif)**: Kartu berbingkai halus dengan icon box rounded oranye/amber (`Coins`), nilai reservasi adaptif, dan kemampuan klik langsung untuk beralih ke halaman Persetujuan Kas.
+  5. **Banner Kepercayaan Komunitas di Sidebar Desktop (`Sidebar.tsx`)**:
+     - Menambahkan banner informatif di bagian bawah sidebar: *"Kas Komunitas Terbuka: Kelola keuangan bersama, lebih transparan."*
 - **Hasil Verifikasi**:
   - `npm --workspace=apps/web run build`: 100% lulus (dist bersih, 0 lint/type error).
-  - `npm run test:api`: 103/103 tests lulus (100% green).
+  - `npm run test:api`: 103/103 tests lulus (100% green across all 13 test suites).
+
 
 
 
