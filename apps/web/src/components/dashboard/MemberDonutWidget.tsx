@@ -28,11 +28,11 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
   const inactiveLength = totalCount > 0 ? (inactiveCount / totalCount) * circumference : 0;
 
   return (
-    <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
+    <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200/60 dark:border-sky-800/60 flex items-center justify-center text-sky-600 dark:text-sky-400">
+          <div className="w-9 h-9 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-300/80 dark:border-sky-700/80 flex items-center justify-center text-sky-600 dark:text-sky-400">
             <Users2 className="w-4 h-4" />
           </div>
           <div>
@@ -45,7 +45,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
           </div>
         </div>
 
-        <span className="text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-xl border border-sky-200/80 dark:border-sky-800/80">
+        <span className="text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-xl border border-sky-300 dark:border-sky-700 shadow-xs">
           {totalCount} Anggota
         </span>
       </div>

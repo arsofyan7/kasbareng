@@ -98,8 +98,8 @@ export const ApprovalPolicyModal: React.FC<ApprovalPolicyModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
               <ShieldCheck className="w-5 h-5" />
@@ -130,7 +130,7 @@ export const ApprovalPolicyModal: React.FC<ApprovalPolicyModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Info eligible count */}
-          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 flex items-center justify-between text-xs">
             <span className="text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
               <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               Total Pengelola & Admin Aktif:
@@ -152,7 +152,7 @@ export const ApprovalPolicyModal: React.FC<ApprovalPolicyModalProps> = ({
                 required
                 value={requiredApprovals}
                 onChange={(e) => setRequiredApprovals(parseInt(e.target.value, 10) || 1)}
-                className="w-24 px-3 py-2 text-sm font-bold text-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="w-24 px-3 py-2 text-sm font-bold text-center rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
               />
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 dari total <strong className="text-slate-800 dark:text-slate-200">{eligibleCount}</strong> pengelola/admin yang berwenang
@@ -176,16 +176,16 @@ export const ApprovalPolicyModal: React.FC<ApprovalPolicyModalProps> = ({
                 placeholder="Semua nominal (tanpa batas bawah)"
                 value={thresholdAmount}
                 onChange={(e) => setThresholdAmount(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="w-full pl-10 pr-3.5 py-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
           </div>
 
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-200 dark:border-slate-700">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               Batal
             </button>

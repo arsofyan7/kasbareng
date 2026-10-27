@@ -137,9 +137,9 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <KeyRound className="w-5 h-5" />
@@ -178,7 +178,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
         {mode === 'VIEW' ? (
           <div className="space-y-4">
             {/* Display Active Code */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center space-y-2">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-center space-y-2">
               <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Kode Aktif Saat Ini
               </span>
@@ -195,7 +195,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
               >
                 {copiedCode ? (
                   <>
@@ -213,7 +213,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
               >
                 {copiedLink ? (
                   <>
@@ -240,7 +240,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
             </button>
 
             {/* Admin Controls */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
               <button
                 type="button"
                 onClick={() => setMode('CUSTOM')}
@@ -273,7 +273,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
                   placeholder="Contoh: RT05-SEJAHTERA"
                   value={customCode}
                   onChange={(e) => handleCustomCodeChange(e.target.value)}
-                  className="w-full px-3.5 py-2.5 uppercase font-mono tracking-wider rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all pr-10"
+                  className="w-full px-3.5 py-2.5 uppercase font-mono tracking-wider rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all pr-10"
                 />
                 {checkStatus.loading && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -304,7 +304,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
                 type="button"
                 onClick={() => setMode('VIEW')}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Batal
               </button>
@@ -327,7 +327,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center space-y-2">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-center space-y-2">
               <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-600 mx-auto flex items-center justify-center">
                 <RefreshCw className="w-5 h-5" />
               </div>
@@ -344,7 +344,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
                 type="button"
                 onClick={() => setMode('VIEW')}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Batal
               </button>

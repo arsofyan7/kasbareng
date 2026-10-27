@@ -288,7 +288,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
           <button
             onClick={fetchSummary}
             disabled={isLoading}
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+            className="p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
             title="Muat Ulang Data"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -333,7 +333,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
 
       {/* CSV Import Panel (Accordion / Toggle) */}
       {showImportCard && isManagerOrAdmin && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-950 shadow-md space-y-4 animate-in slide-in-from-top-3 duration-200">
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-800 shadow-md space-y-4 animate-in slide-in-from-top-3 duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -370,13 +370,13 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
             onChange={(e) => setCsvText(e.target.value)}
             rows={6}
             placeholder="Tempel (paste) isi berkas CSV mutasi bank Anda di sini..."
-            className="w-full font-mono text-xs p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full font-mono text-xs p-3.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
 
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               onClick={() => setShowImportCard(false)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               Batal
             </button>
@@ -408,7 +408,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
 
         {/* Metric 2: Cocok (Matched) */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Cocok</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -422,7 +422,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
 
         {/* Metric 3: Ambiguitas (Perlu Ditinjau) */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Perlu Ditinjau</span>
             <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -436,7 +436,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
 
         {/* Metric 4: Mutasi Bank Belum Dicatat */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Bank Tanpa Kas</span>
             <ArrowDownLeft className="w-4 h-4 text-rose-500" />
@@ -450,7 +450,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
 
         {/* Metric 5: Kas Belum Masuk Rekening */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Kas Tanpa Bank</span>
             <ArrowUpRight className="w-4 h-4 text-purple-500" />
@@ -465,11 +465,11 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
       </div>
 
       {/* Main Tabs and Content Feed */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
         {/* Navigation Tabs and Search */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
           {/* Tab Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold">
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold">
             <button
               onClick={() => setActiveTab('ALL')}
               className={`px-3 py-1.5 rounded-lg transition-all ${
@@ -530,7 +530,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari deskripsi / nominal..."
-              className="w-full text-xs pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full text-xs pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -604,7 +604,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                 )}
               </div>
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+              <div className="divide-y divide-slate-200 dark:divide-slate-800">
                 {filteredBankStatements.map((b) => {
                   const isCredit = b.direction === 'CREDIT';
                   return (
@@ -657,7 +657,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
 
                       {/* Matched Transaction Card */}
                       {b.matchStatus === 'MATCHED' && b.transaction && (
-                        <div className="ml-12 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="ml-12 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                             <span className="text-slate-600 dark:text-slate-300">
@@ -674,7 +674,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
 
                       {/* Ambiguous Candidates Alert & Action */}
                       {(b.matchStatus === 'AMBIGUOUS' || b.matchStatus === 'DUPLICATE_POTENTIAL') && (
-                        <div className="ml-12 p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60 space-y-2">
+                        <div className="ml-12 p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/80 space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
                               <HelpCircle className="w-4 h-4" />
@@ -732,7 +732,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
       {/* Manual Match Modal */}
       {selectedBankItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800">
+          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 space-y-4 shadow-2xl border border-slate-300 dark:border-slate-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Scale className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -748,7 +748,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
               </button>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-600 text-xs space-y-1">
               <div className="text-slate-400">Mutasi Rekening Bank:</div>
               <div className="font-bold text-slate-900 dark:text-white text-sm">
                 {selectedBankItem.description}
@@ -830,7 +830,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
               </button>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-600 text-xs space-y-1">
               <div className="text-slate-400">Mutasi Rekening Bank:</div>
               <div className="font-bold text-slate-900 dark:text-white text-sm">
                 {createTxBankItem.description}
@@ -849,7 +849,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                 value={newTxCategory}
                 onChange={(e) => setNewTxCategory(e.target.value)}
                 placeholder="Contoh: Iuran Warga Blok C, Donasi Renovasi..."
-                className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -862,7 +862,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                 value={newTxNotes}
                 onChange={(e) => setNewTxNotes(e.target.value)}
                 placeholder="Keterangan tambahan untuk pembukuan kas..."
-                className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 

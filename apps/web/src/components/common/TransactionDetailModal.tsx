@@ -380,10 +380,10 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto cursor-default"
+        className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto cursor-default"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <span>Detail Transaksi Kas</span>
@@ -425,8 +425,8 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         <div
           className={`p-5 rounded-2xl border flex items-center justify-between ${
             isIncome
-              ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60'
-              : 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60'
+              ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700/80'
+              : 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-300 dark:border-rose-700/80'
           }`}
         >
           <div>
@@ -447,7 +447,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
         {/* Receipt Attachment Card */}
         {transaction.receiptAttachmentId && (
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
               <span className="flex items-center gap-1.5">
                 <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -474,7 +474,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
         {/* M-of-N Quorum Progress Card (For EXPENSE) */}
         {!isIncome && !isDraft && !isRejected && (
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -531,7 +531,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
         {/* Payment Verification Card (When COMPLETED or APPROVED) */}
         {(isCompleted || isApproved) && transaction.paymentRecords && transaction.paymentRecords.length > 0 && (
-          <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 space-y-1.5 text-xs">
+          <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-700/80 space-y-1.5 text-xs">
             <div className="flex items-center gap-1.5 font-semibold text-emerald-800 dark:text-emerald-300">
               <CreditCard className="w-4 h-4" />
               Bukti & Referensi Pembayaran Kas
@@ -544,7 +544,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
         {/* Approval Form (Modal inline) */}
         {showApprovalForm && (
-          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-3 animate-in fade-in">
+          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 space-y-3 animate-in fade-in">
             <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               {approvalDecision === 'APPROVE' ? 'Konfirmasi Persetujuan Pengeluaran' : 'Konfirmasi Penolakan Pengeluaran'}
             </h3>
@@ -558,13 +558,13 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               placeholder={approvalDecision === 'APPROVE' ? 'Catatan opsional (misal: Sesuai RAB pos ronda)...' : 'Alasan penolakan (misal: Anggaran belum disepakati)...'}
               value={approvalComment}
               onChange={(e) => setApprovalComment(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
             />
             <div className="flex items-center justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setShowApprovalForm(false)}
-                className="px-3 py-1.5 rounded-lg border text-xs text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
               >
                 Batal
               </button>
@@ -587,7 +587,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
         {/* Payment Form (Modal inline) */}
         {showPaymentForm && (
-          <div className="p-4 rounded-2xl bg-sky-50/70 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 space-y-3 animate-in fade-in">
+          <div className="p-4 rounded-2xl bg-sky-50/70 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-700/80 space-y-3 animate-in fade-in">
             <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
               <CreditCard className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               Eksekusi Pembayaran Kas (Posting Ledger DEBIT)
@@ -601,21 +601,21 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 placeholder="No. Referensi Transfer / Kwitansi (misal: TRF-BCA-10294)"
                 value={paymentRef}
                 onChange={(e) => setPaymentRef(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none"
               />
               <input
                 type="text"
                 placeholder="Catatan pembayaran opsional..."
                 value={paymentNotes}
                 onChange={(e) => setPaymentNotes(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none"
               />
             </div>
             <div className="flex items-center justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setShowPaymentForm(false)}
-                className="px-3 py-1.5 rounded-lg border text-xs text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
               >
                 Batal
               </button>
@@ -634,12 +634,12 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
         {/* Key Attributes */}
         <div className="space-y-3 text-xs">
-          <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400">Kategori</span>
             <span className="font-semibold text-slate-900 dark:text-white">{transaction.category}</span>
           </div>
 
-          <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
               Waktu Transaksi
@@ -652,7 +652,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </span>
           </div>
 
-          <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5" />
               Diajukan Oleh
@@ -664,7 +664,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
           <div>
             <span className="text-slate-500 dark:text-slate-400 block mb-1">Catatan / Keperluan:</span>
-            <p className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 text-xs leading-relaxed">
+            <p className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs leading-relaxed">
               {transaction.notes || 'Tidak ada catatan.'}
             </p>
           </div>
@@ -672,7 +672,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
         {/* Audit Timeline / Events */}
         {transaction.events && transaction.events.length > 0 && (
-          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <History className="w-3.5 h-3.5" />
               Kronologi Audit FSM:
@@ -706,11 +706,11 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         )}
 
         {/* Action Buttons Bar */}
-        <div className="pt-3 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="pt-3 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 dark:border-slate-700">
           <button
             type="button"
             onClick={handleClose}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
           >
             Tutup
           </button>

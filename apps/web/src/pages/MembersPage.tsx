@@ -243,7 +243,7 @@ export const MembersPage: React.FC = () => {
 
       {/* Community Invite Code Share Card (Khusus Pengurus & Admin) */}
       {activeWallet && isManagerOrAdmin && (
-        <div className="p-5 rounded-3xl bg-slate-900 text-white dark:bg-slate-900/90 dark:border dark:border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="p-5 rounded-3xl bg-slate-900 text-white dark:bg-slate-900/90 border border-slate-700/80 dark:border-slate-700 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
           <div className="space-y-1.5 z-10">
             <div className="flex items-center gap-2">
               <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
@@ -306,7 +306,7 @@ export const MembersPage: React.FC = () => {
       {/* Filter Tabs & Search Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Role Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl max-w-lg">
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700 max-w-lg">
           <button
             onClick={() => setRoleFilter('ALL')}
             className={`py-2 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
@@ -356,7 +356,7 @@ export const MembersPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari nama atau email..."
-            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs py-2 pl-8 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-sm placeholder:text-slate-400"
+            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs py-2 pl-8 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-sm placeholder:text-slate-400"
           />
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           {searchQuery && (
@@ -379,11 +379,11 @@ export const MembersPage: React.FC = () => {
 
       {/* Main Members Content */}
       {isLoading ? (
-        <div className="p-12 text-center text-sm text-slate-400 animate-pulse bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800">
+        <div className="p-12 text-center text-sm text-slate-400 animate-pulse bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700">
           Memuat daftar anggota kas...
         </div>
       ) : filteredMembers.length === 0 ? (
-        <div className="p-12 text-center rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-2">
+        <div className="p-12 text-center rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/40 space-y-2">
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             Tidak ada anggota ditemukan pada filter ini.
           </p>
@@ -394,9 +394,9 @@ export const MembersPage: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {/* Desktop Table */}
-          <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Anggota</th>
                   <th className="px-6 py-4">Peran (Role)</th>
@@ -405,7 +405,7 @@ export const MembersPage: React.FC = () => {
                   {isAdmin && <th className="px-6 py-4 text-right">Kelola Peran</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {filteredMembers.map((m) => {
                   const isCurrentUser = m.userId === user?.id;
                   const initial = m.fullName ? m.fullName.charAt(0).toUpperCase() : 'W';
@@ -468,7 +468,7 @@ export const MembersPage: React.FC = () => {
                           <select
                             value={m.role}
                             onChange={(e) => handleRoleChange(m.id, e.target.value as WalletRole)}
-                            className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-sm"
+                            className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-sm"
                           >
                             <option value="WARGA">Warga</option>
                             <option value="PENGELOLA">Pengelola</option>
@@ -491,7 +491,7 @@ export const MembersPage: React.FC = () => {
               return (
                 <div
                   key={m.id}
-                  className="p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col gap-3"
+                  className="p-5 rounded-3xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
@@ -516,7 +516,7 @@ export const MembersPage: React.FC = () => {
                     <div>{getRoleBadge(m.role)}</div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700 text-xs">
                     <span className="text-slate-400 flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5" />
                       {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }) : 'Aktif'}
@@ -526,7 +526,7 @@ export const MembersPage: React.FC = () => {
                       <select
                         value={m.role}
                         onChange={(e) => handleRoleChange(m.id, e.target.value as WalletRole)}
-                        className="px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-semibold"
+                        className="px-2.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-semibold"
                       >
                         <option value="WARGA">Warga</option>
                         <option value="PENGELOLA">Pengelola</option>
@@ -544,8 +544,8 @@ export const MembersPage: React.FC = () => {
       {/* Add Member Modal */}
       {addModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 Tambah Anggota ke Dompet
               </h2>
@@ -575,7 +575,7 @@ export const MembersPage: React.FC = () => {
                   placeholder="warga@email.com"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
               </div>
 
@@ -586,7 +586,7 @@ export const MembersPage: React.FC = () => {
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as WalletRole)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="WARGA">Warga (Melihat laporan & iuran)</option>
                   <option value="PENGELOLA">Pengelola (Mengajukan transaksi kas)</option>
@@ -599,7 +599,7 @@ export const MembersPage: React.FC = () => {
                   type="button"
                   onClick={() => setAddModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-sm cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm cursor-pointer"
                 >
                   Batal
                 </button>

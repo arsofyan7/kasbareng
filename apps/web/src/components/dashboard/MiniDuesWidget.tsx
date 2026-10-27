@@ -34,11 +34,11 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
   const compliancePercent = totalMembers > 0 ? Math.round((paidMembers / totalMembers) * 100) : 0;
 
   return (
-    <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
+    <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
       {/* Header with Title and Period Dropdown */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+          <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300/80 dark:border-emerald-700/80 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
             <CalendarDays className="w-4 h-4" />
           </div>
           <div>
@@ -57,7 +57,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
             <select
               value={activePeriod?.key || selectedPeriodKey}
               onChange={(e) => setSelectedPeriodKey(e.target.value)}
-              className="appearance-none bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 text-xs font-semibold py-1.5 pl-3 pr-7 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+              className="appearance-none bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-xs font-semibold py-1.5 pl-3 pr-7 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-sm"
             >
               {periods.map((p) => (
                 <option key={p.key} value={p.key}>
@@ -68,7 +68,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" />
           </div>
         ) : (
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
             {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
           </span>
         )}
@@ -95,7 +95,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
       {/* 2 Status Sub-Boxes */}
       <div className="grid grid-cols-2 gap-3 pt-1">
         {/* Box 1: Sudah Membayar */}
-        <div className="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-3">
+        <div className="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-700/80 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4 h-4" />
           </div>
@@ -110,7 +110,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
         </div>
 
         {/* Box 2: Belum Membayar */}
-        <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800/50 flex items-center gap-3">
+        <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/80 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
             <Clock className="w-4 h-4" />
           </div>

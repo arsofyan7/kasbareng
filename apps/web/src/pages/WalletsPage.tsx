@@ -104,7 +104,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
               className={`p-6 rounded-3xl border transition-all flex flex-col justify-between space-y-4 ${
                 isActive
                   ? 'border-emerald-500/80 bg-white dark:bg-slate-900 shadow-lg shadow-emerald-500/5 ring-2 ring-emerald-500/20'
-                  : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
+                  : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-600 shadow-sm'
               }`}
             >
               <div className="space-y-3">
@@ -121,7 +121,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
 
                 {/* Invite Code Pill (Khusus Pengurus & Admin) */}
                 {wallet.inviteCode && (wallet.myRole === 'ADMIN' || wallet.myRole === 'PENGELOLA') && (
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/80 text-[11px]">
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-[11px]">
                     <div className="flex items-center gap-1.5 text-slate-500">
                       <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Kode:</span>
@@ -144,7 +144,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                   </div>
                 )}
 
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 gap-2 text-xs">
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-slate-400 block text-[11px]">Anggota</span>
                     <span className="font-semibold text-slate-700 dark:text-slate-300">
@@ -165,7 +165,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                 {isActive ? (
                   <button
                     onClick={onNavigateHome}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-xs font-bold transition-colors"
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     Sedang Aktif (Buka Beranda)
@@ -176,7 +176,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                       selectWallet(wallet.id);
                       onNavigateHome();
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
                   >
                     Pilih Dompet Ini
                     <ArrowRight className="w-3.5 h-3.5" />

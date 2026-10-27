@@ -117,8 +117,8 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Buat Dompet Kas Baru
@@ -153,7 +153,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               placeholder="Contoh: Kas RT 05 RW 02, Kas Masjid Al-Ikhlas"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             />
           </div>
 
@@ -166,12 +166,12 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               placeholder="Untuk pencatatan iuran warga dan kegiatan lingkungan..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none"
             />
           </div>
 
           {/* Dues Configuration (Tipe Iuran Kas) */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 space-y-3">
+          <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-700/80 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -189,7 +189,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                 className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-center font-medium transition-all ${
                   duesType === 'MONTHLY'
                     ? 'border-emerald-500 bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
+                    : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
                 }`}
               >
                 <Calendar className="w-4 h-4 text-emerald-600" />
@@ -203,7 +203,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                 className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-center font-medium transition-all ${
                   duesType === 'TARGET_INSTALLMENTS'
                     ? 'border-emerald-500 bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
+                    : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
                 }`}
               >
                 <Layers className="w-4 h-4 text-indigo-600" />
@@ -217,7 +217,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                 className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-center font-medium transition-all ${
                   duesType === 'FREEFORM'
                     ? 'border-emerald-500 bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
+                    : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900'
                 }`}
               >
                 <HeartHandshake className="w-4 h-4 text-amber-600" />
@@ -237,7 +237,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                   max={50}
                   value={targetInstallmentsCount}
                   onChange={(e) => setTargetInstallmentsCount(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
                 <span className="text-[10px] text-slate-400">Misal: 10 untuk tabungan qurban 10x setoran.</span>
               </div>
@@ -263,7 +263,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                     const raw = e.target.value.replace(/[^0-9]/g, '');
                     setDuesAmountStr(raw ? Number(raw).toLocaleString('id-ID') : '');
                   }}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
               </div>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
@@ -273,7 +273,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
           </div>
 
           {/* Private Community Invite Code Section */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 space-y-2.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -288,7 +288,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                 className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-medium transition-all ${
                   codeMode === 'AUTO'
                     ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
+                    : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                 }`}
               >
                 <Dices className="w-3.5 h-3.5" />
@@ -301,7 +301,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                 className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-medium transition-all ${
                   codeMode === 'CUSTOM'
                     ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
+                    : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -322,7 +322,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                     placeholder="Misal: RT05-SEJAHTERA"
                     value={customCode}
                     onChange={(e) => handleCustomCodeChange(e.target.value)}
-                    className="w-full px-3 py-2 uppercase font-mono tracking-wider rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 pr-8"
+                    className="w-full px-3 py-2 uppercase font-mono tracking-wider rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 pr-8"
                   />
                   {checkStatus.loading && (
                     <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -357,7 +357,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                   className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
                     requiredApprovals === num
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   {num} Persetujuan
@@ -374,7 +374,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               Batal
             </button>

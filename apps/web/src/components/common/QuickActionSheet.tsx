@@ -57,14 +57,14 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
       />
 
       {/* Sheet / Modal Container */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 z-10 overflow-hidden transform transition-all duration-300 animate-in slide-in-from-bottom sm:zoom-in-95">
+      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl border border-slate-300 dark:border-slate-700 z-10 overflow-hidden transform transition-all duration-300 animate-in slide-in-from-bottom sm:zoom-in-95">
         {/* Mobile Drag Handle */}
         <div className="flex sm:hidden justify-center pt-3 pb-1">
           <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
         </div>
 
         {/* Header */}
-        <div className="p-5 pb-3 sm:p-6 sm:pb-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80">
+        <div className="p-5 pb-3 sm:p-6 sm:pb-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -95,7 +95,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
           <button
             type="button"
             onClick={onSelectIncome}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/30 text-left transition-all group cursor-pointer"
+            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-emerald-300 dark:border-emerald-700/80 bg-emerald-50/40 dark:bg-emerald-950/20 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/30 text-left transition-all group cursor-pointer"
           >
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/25 group-hover:scale-105 transition-transform">
               <TrendingUp className="w-6 h-6 stroke-[2.5]" />
@@ -123,7 +123,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
             <button
               type="button"
               onClick={onSelectExpense}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl border border-rose-200 dark:border-rose-800/60 bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-100/60 dark:hover:bg-rose-900/30 text-left transition-all group cursor-pointer"
+              className="w-full flex items-center gap-4 p-4 rounded-2xl border border-rose-300 dark:border-rose-700/80 bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-100/60 dark:hover:bg-rose-900/30 text-left transition-all group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-500/25 group-hover:scale-105 transition-transform">
                 <TrendingDown className="w-6 h-6 stroke-[2.5]" />
@@ -144,7 +144,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
               <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all shrink-0" />
             </button>
           ) : (
-            <div className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 opacity-60 text-left cursor-not-allowed">
+            <div className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 opacity-60 text-left cursor-not-allowed">
               <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-400 flex items-center justify-center shrink-0">
                 <Lock className="w-5 h-5" />
               </div>
@@ -168,7 +168,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
           <button
             type="button"
             onClick={onSelectAiChat}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/40 dark:bg-purple-950/20 hover:bg-purple-100/60 dark:hover:bg-purple-900/30 text-left transition-all group cursor-pointer"
+            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-purple-300 dark:border-purple-700/80 bg-purple-50/40 dark:bg-purple-950/20 hover:bg-purple-100/60 dark:hover:bg-purple-900/30 text-left transition-all group cursor-pointer"
           >
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-500/25 group-hover:scale-105 transition-transform">
               <Sparkles className="w-6 h-6 stroke-[2.5]" />
@@ -192,7 +192,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
 
         {/* Extra Shortcuts Navigation Row */}
         {onNavigateTab && (
-          <div className="px-5 py-3 sm:px-6 sm:py-3.5 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-around gap-2">
+          <div className="px-5 py-3 sm:px-6 sm:py-3.5 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-around gap-2">
             <button
               type="button"
               onClick={() => onNavigateTab('kantong')}

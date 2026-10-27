@@ -170,9 +170,9 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
+      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
               <ShieldCheck className="w-5 h-5" />
@@ -205,8 +205,8 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
           <div
             className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 ${
               verification.valid
-                ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
-                : 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
+                ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700/80 text-emerald-900 dark:text-emerald-200'
+                : 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-300 dark:border-rose-700/80 text-rose-900 dark:text-rose-200'
             }`}
           >
             <div className="flex items-start gap-3">
@@ -232,7 +232,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
             <button
               onClick={handleManualVerify}
               disabled={isVerifying}
-              className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-sm hover:bg-slate-50 transition-colors"
+              className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-sm hover:bg-slate-50 transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isVerifying ? 'animate-spin' : ''}`} />
               {isVerifying ? 'Menguji...' : 'Uji Sekarang'}
@@ -242,7 +242,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
 
         {/* Drill Controls (Academic / Demo Testing) */}
         {isAdmin && (
-          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-xs shrink-0">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 text-xs shrink-0">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Bug className="w-4 h-4 text-amber-500" />
@@ -258,7 +258,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
             </div>
 
             {showDrillPanel && (
-              <div className="pt-2.5 mt-2 border-t border-slate-200 dark:border-slate-700/60 space-y-2 text-slate-600 dark:text-slate-300">
+              <div className="pt-2.5 mt-2 border-t border-slate-300 dark:border-slate-700 space-y-2 text-slate-600 dark:text-slate-300">
                 <p className="text-[11px] leading-relaxed">
                   Tombol ini mendemonstrasikan kemampuan <em>tamper-evidence</em>: mengubah data transaksi di database secara paksa tanpa memperbarui hash, lalu memicu verifier untuk membuktikan pelanggaran terdeteksi seketika.
                 </p>
@@ -317,7 +317,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
                   className={`p-3.5 rounded-2xl border transition-all ${
                     isCorrupted
                       ? 'border-rose-400 bg-rose-50/50 dark:bg-rose-950/20'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-emerald-300 dark:hover:border-emerald-800/80'
+                      : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/80 hover:border-emerald-400 dark:hover:border-emerald-600'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -345,7 +345,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
                   </div>
 
                   {/* Hashes */}
-                  <div className="mt-2.5 space-y-1 font-mono text-[11px] bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/60">
+                  <div className="mt-2.5 space-y-1 font-mono text-[11px] bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
                       <span>Prev Hash (H<sub>n-1</sub>):</span>
                       <span className="text-slate-700 dark:text-slate-300 font-semibold truncate max-w-[200px] sm:max-w-[280px]">

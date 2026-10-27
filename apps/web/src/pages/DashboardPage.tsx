@@ -291,10 +291,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Card 2: Saldo Tersedia */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-emerald-500/40 dark:hover:border-emerald-500/30 transition-all flex flex-col justify-between min-h-[175px] group">
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-500/50 dark:hover:border-emerald-500/40 transition-all flex flex-col justify-between min-h-[175px] group">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300/80 dark:border-emerald-700/80 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
                 <Wallet className="w-4 h-4" />
               </div>
               <span className="font-semibold uppercase tracking-wider text-xs text-slate-500 dark:text-slate-400">
@@ -316,12 +316,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Card 3: Reservasi Pengeluaran Aktif */}
         <div
           onClick={() => onNavigateToTab('persetujuan')}
-          className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all flex flex-col justify-between min-h-[175px] group cursor-pointer"
+          className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-amber-500/50 dark:hover:border-amber-500/40 transition-all flex flex-col justify-between min-h-[175px] group cursor-pointer"
           title="Klik untuk melihat transaksi yang menunggu kuorum"
         >
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300/80 dark:border-amber-700/80 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-105 transition-transform">
                 <Coins className="w-4 h-4" />
               </div>
               <span className="font-semibold uppercase tracking-wider text-xs text-slate-500 dark:text-slate-400">

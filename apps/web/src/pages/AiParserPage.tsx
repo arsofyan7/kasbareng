@@ -168,14 +168,14 @@ export const AiParserPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300">
           <Bot className="w-4 h-4 text-emerald-500" />
           <span>Dompet: <strong>{activeWallet?.name || 'Kas Komunitas'}</strong></span>
         </div>
       </div>
 
       {/* Human-in-The-Loop Safety Gate Banner */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-900/60 flex items-start gap-3.5">
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-700/80 flex items-start gap-3.5">
         <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
         <div className="space-y-1">
           <h4 className="font-bold text-sm text-amber-900 dark:text-amber-200">
@@ -189,7 +189,7 @@ export const AiParserPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Chat Input Simulator */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -214,7 +214,7 @@ export const AiParserPage: React.FC = () => {
                   setInputChatText(p.text);
                   analyzeTextMessage(p.text);
                 }}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
               >
                 <Sparkles className="w-3 h-3 text-amber-500" />
                 <span>{p.label}</span>
@@ -229,7 +229,7 @@ export const AiParserPage: React.FC = () => {
               onChange={(e) => setInputChatText(e.target.value)}
               rows={5}
               placeholder="Ketik atau tempel teks pesan warga di sini... Contoh: 'Sudah transfer kas 150rb dari Bpk Joko Blok B2'"
-              className="w-full text-xs p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full text-xs p-3.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             />
 
             <button
@@ -253,7 +253,7 @@ export const AiParserPage: React.FC = () => {
         </div>
 
         {/* Right Column: Structured Output & Draft Preview */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileCode className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -280,7 +280,7 @@ export const AiParserPage: React.FC = () => {
           ) : (
             <div className="space-y-4 animate-in fade-in duration-200">
               {/* Draft Visual Card */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-600 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                     parsedResult.type === 'INCOME'
@@ -305,7 +305,7 @@ export const AiParserPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-2.5">
+                <div className="flex items-center justify-between border-t border-slate-300 dark:border-slate-600 pt-2.5">
                   <div>
                     <div className="text-[11px] text-slate-400">Pengirim Terdeteksi:</div>
                     <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
@@ -334,7 +334,7 @@ export const AiParserPage: React.FC = () => {
                     <span>{copiedJson ? 'Tersalin' : 'Salin JSON'}</span>
                   </button>
                 </div>
-                <pre className="p-3.5 rounded-2xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto leading-relaxed max-h-48 border border-slate-800">
+                <pre className="p-3.5 rounded-2xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto leading-relaxed max-h-48 border border-slate-700">
                   {JSON.stringify(
                     {
                       type: parsedResult.type,
@@ -370,7 +370,7 @@ export const AiParserPage: React.FC = () => {
       </div>
 
       {/* Developer / Specification Footnote */}
-      <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex items-start gap-2.5">
+      <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 flex items-start gap-2.5">
         <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
           <strong>Catatan Pengembang (Fase 7 - Half Feature):</strong> Antarmuka ini mengimplementasikan lapisan UI, ekstraksi teks deterministik berbasis aturan, dan skema output terstruktur. Integrasi LLM pihak ketiga / webhook Telegram/WhatsApp penuh direncanakan pada tahap pematangan pasca-demo.

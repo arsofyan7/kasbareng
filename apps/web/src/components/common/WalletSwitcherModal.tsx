@@ -21,8 +21,8 @@ export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Pilih Dompet Kas Komunitas
@@ -58,7 +58,7 @@ export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
                   className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all ${
                     isSelected
                       ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 dark:border-emerald-500/60 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      : 'border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <div className="space-y-1">
@@ -73,7 +73,7 @@ export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
                       )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {wallet.memberCount} Anggota • Kuorum {wallet.requiredApprovals} Suara
+                      {wallet.memberCount} Anggota â€¢ Kuorum {wallet.requiredApprovals} Suara
                     </p>
                   </div>
                   {isSelected && (

@@ -127,7 +127,7 @@ export const DuesBoardPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-200">
       {/* Header & Main Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
@@ -153,7 +153,7 @@ export const DuesBoardPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Year Navigator (only for MONTHLY dues) */}
           {data?.summary?.duesType !== 'TARGET_INSTALLMENTS' && (
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-2xl p-1 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-2xl p-1 border border-slate-300 dark:border-slate-600">
               <button
                 type="button"
                 onClick={() => setSelectedYear((y) => y - 1)}
@@ -181,7 +181,7 @@ export const DuesBoardPage: React.FC = () => {
             type="button"
             onClick={fetchDuesBoard}
             disabled={isLoading}
-            className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 transition-colors"
+            className="p-2.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 transition-colors"
             title="Muat Ulang Data"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -191,7 +191,7 @@ export const DuesBoardPage: React.FC = () => {
           <button
             type="button"
             onClick={handleCopyReminder}
-            className="px-3.5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+            className="px-3.5 py-2.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
           >
             {copiedReminder ? (
               <>
@@ -210,7 +210,7 @@ export const DuesBoardPage: React.FC = () => {
           <button
             type="button"
             onClick={handleSendWhatsApp}
-            className="px-3.5 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+            className="px-3.5 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
           >
             <MessageCircle className="w-4 h-4" />
             <span>Kirim Pengingat WA</span>
@@ -239,7 +239,7 @@ export const DuesBoardPage: React.FC = () => {
       {data?.summary && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Kepatuhan Iuran */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-3">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span>Tingkat Kepatuhan</span>
               <TrendingUp className="w-4 h-4 text-emerald-600" />
@@ -260,7 +260,7 @@ export const DuesBoardPage: React.FC = () => {
           </div>
 
           {/* Card 2: Total Kas Terkumpul */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span>Total Kas Terkumpul</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
@@ -278,7 +278,7 @@ export const DuesBoardPage: React.FC = () => {
           </div>
 
           {/* Card 3: Menunggu Verifikasi */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span>Menunggu Verifikasi</span>
               <Clock className="w-4 h-4 text-amber-500" />
@@ -292,7 +292,7 @@ export const DuesBoardPage: React.FC = () => {
           </div>
 
           {/* Card 4: Warga Belum Melunasi */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span>Status Anggota</span>
               <Users className="w-4 h-4 text-indigo-500" />
@@ -313,7 +313,7 @@ export const DuesBoardPage: React.FC = () => {
       )}
 
       {/* Transparency Note */}
-      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
+      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-700 flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
         <div className="flex items-center gap-2">
           <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>
@@ -342,7 +342,7 @@ export const DuesBoardPage: React.FC = () => {
             placeholder="Cari nama warga / anggota..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3.5 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full pl-9 pr-3.5 py-2 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
           />
         </div>
 
@@ -353,7 +353,7 @@ export const DuesBoardPage: React.FC = () => {
             className={`px-3 py-1.5 rounded-xl border transition-all ${
               statusFilter === 'ALL'
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold'
-                : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             Semua ({data?.members.length || 0})
@@ -364,7 +364,7 @@ export const DuesBoardPage: React.FC = () => {
             className={`px-3 py-1.5 rounded-xl border transition-all ${
               statusFilter === 'UNPAID_ONLY'
                 ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-semibold'
-                : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             Ada Tunggakan ({data?.summary?.unpaidMembers.length || 0})
@@ -375,7 +375,7 @@ export const DuesBoardPage: React.FC = () => {
             className={`px-3 py-1.5 rounded-xl border transition-all ${
               statusFilter === 'FULLY_PAID'
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold'
-                : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             Lunas 100%
@@ -384,11 +384,11 @@ export const DuesBoardPage: React.FC = () => {
       </div>
 
       {/* Matrix Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
+              <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold">
                 <th className="py-3.5 px-4 sticky left-0 z-20 bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur-sm min-w-[180px] shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
                   Anggota Komunitas
                 </th>
@@ -405,7 +405,7 @@ export const DuesBoardPage: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {filteredMembers.length === 0 ? (
                 <tr>
                   <td
@@ -532,8 +532,8 @@ export const DuesBoardPage: React.FC = () => {
       {/* Selected Cell Modal */}
       {selectedCell && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700">
               <h3 className="font-bold text-slate-900 dark:text-white text-sm">
                 Detail Pembayaran Iuran
               </h3>

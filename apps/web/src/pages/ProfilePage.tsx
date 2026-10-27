@@ -54,7 +54,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
       </div>
 
       {/* User Info Card */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-emerald-600 text-white font-bold text-2xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
             {user?.fullName.charAt(0).toUpperCase()}
@@ -75,7 +75,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
       </div>
 
       {/* Theme Customizer Card */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
         <div>
           <h3 className="font-bold text-base text-slate-900 dark:text-white">
             Tema Tampilan Antarmuka
@@ -96,7 +96,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
                 className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-3 ${
                   isSelected
                     ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 ring-2 ring-emerald-500/20'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
+                    : 'border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -121,7 +121,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
 
       {/* Fitur Algoritma & Tata Kelola Komunitas */}
       {onOpenAlgorithmModal && (
-        <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/70 to-slate-50 dark:from-indigo-950/30 dark:to-slate-900 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm space-y-3">
+        <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/70 to-slate-50 dark:from-indigo-950/30 dark:to-slate-900 border border-indigo-300 dark:border-indigo-700/80 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
@@ -149,7 +149,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
       )}
 
       {/* System Integrity & Academic Rigor */}
-      <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-3">
+      <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-700 space-y-3">
         <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
           <Code2 className="w-4 h-4" />
           6 Algoritma Inti Terverifikasi (Vitest 100%)
@@ -168,7 +168,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
       <div className="pt-2">
         <button
           onClick={logout}
-          className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 font-semibold text-sm transition-colors flex items-center justify-center gap-2"
         >
           <LogOut className="w-4 h-4" />
           Keluar dari Akun

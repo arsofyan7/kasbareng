@@ -86,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {onOpenJoinWallet && (
             <button
               onClick={onOpenJoinWallet}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors cursor-pointer"
             >
               <KeyRound className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               + Gabung Kode
@@ -95,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             onClick={onOpenCreateWallet}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-sm font-medium transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-emerald-400 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-sm font-medium transition-colors cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             + Buat Dompet Baru
@@ -105,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Bottom Community Trust Banner (Desktop Mockup Parity) */}
       <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80">
-        <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-center space-y-1">
+        <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700/80 text-center space-y-1">
           <div className="flex justify-center -space-x-1 mb-1">
             <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
               👥

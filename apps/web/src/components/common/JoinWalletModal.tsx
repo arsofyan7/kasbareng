@@ -102,9 +102,9 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <KeyRound className="w-5 h-5" />
@@ -152,7 +152,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
                 placeholder="Contoh: RT05-SEJAHTERA atau KAS-8X92"
                 value={code}
                 onChange={(e) => handleCodeChange(e.target.value)}
-                className="w-full px-3.5 py-2.5 uppercase font-mono tracking-wider rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all pr-10"
+                className="w-full px-3.5 py-2.5 uppercase font-mono tracking-wider rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all pr-10"
               />
               {isLoadingPreview && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -167,7 +167,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
 
           {/* Live Community Preview Card */}
           {preview && (
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 animate-in fade-in duration-200">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 space-y-3 animate-in fade-in duration-200">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
@@ -188,7 +188,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
                 </p>
               )}
 
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200/80 dark:border-slate-800 text-xs">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700 text-xs">
                 <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                   <Users className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{preview.memberCount} Warga Terdaftar</span>
@@ -206,7 +206,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               Batal
             </button>

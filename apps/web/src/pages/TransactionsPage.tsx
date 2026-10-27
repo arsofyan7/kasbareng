@@ -297,7 +297,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
       </div>
 
       {/* Filter Bar Controls (Month, Category, Status, Search) */}
-      <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Month Selector */}
         <div className="relative">
           <select
@@ -306,7 +306,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
               setSelectedMonth(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 pl-3.5 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+            className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 pl-3.5 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-xs"
           >
             <option value="ALL">Semua Periode</option>
             {months.map((m) => {
@@ -330,7 +330,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
               setCategoryFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 pl-3.5 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+            className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 pl-3.5 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-xs"
           >
             <option value="ALL">Semua Kategori</option>
             {categories.map((c) => (
@@ -350,7 +350,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 pl-3.5 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+            className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 pl-3.5 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-xs"
           >
             <option value="ALL">Semua Status</option>
             <option value="COMPLETED">Selesai</option>
@@ -373,7 +373,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
               setCurrentPage(1);
             }}
             placeholder="Cari transaksi..."
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs py-2.5 pl-9 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 placeholder:text-slate-400"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 text-xs py-2.5 pl-9 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 placeholder:text-slate-400 shadow-xs"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           {searchQuery && (
@@ -389,13 +389,13 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
       {/* Error Banner */}
       {errorMsg && (
-        <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300">
+        <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 shadow-xs">
           {errorMsg}
         </div>
       )}
 
       {/* Table & Feed Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center text-xs text-slate-400 animate-pulse">
             Memuat daftar transaksi kas...
@@ -414,7 +414,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
             {/* Desktop / Tablet Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   <tr>
                     <th className="px-6 py-4">Tanggal</th>
                     <th className="px-6 py-4">Deskripsi & Pelapor</th>
@@ -424,7 +424,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     <th className="px-6 py-4 text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {paginatedList.map((tx) => {
                     const isIncome = tx.type === 'INCOME';
                     return (
@@ -505,7 +505,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
             </div>
 
             {/* Mobile Cards View */}
-            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+            <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
               {paginatedList.map((tx) => {
                 const isIncome = tx.type === 'INCOME';
                 return (
@@ -562,7 +562,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
         {/* Pagination Footer */}
         {filteredList.length > pageSize && (
-          <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>
               Menampilkan {(currentPage - 1) * pageSize + 1} -{' '}
               {Math.min(currentPage * pageSize, filteredList.length)} dari {filteredList.length} transaksi
@@ -571,7 +571,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-1.5 rounded-xl border border-slate-300 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shadow-xs"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -581,7 +581,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-1.5 rounded-xl border border-slate-300 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shadow-xs"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

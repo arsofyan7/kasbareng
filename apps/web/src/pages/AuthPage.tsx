@@ -95,7 +95,7 @@ export const AuthPage: React.FC = () => {
 
       {/* Main Container */}
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div className="max-w-md w-full backdrop-blur-2xl bg-white/95 dark:bg-slate-900/90 rounded-3xl border border-white/20 dark:border-slate-800 shadow-2xl shadow-emerald-950/50 p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+        <div className="max-w-md w-full backdrop-blur-2xl bg-white/95 dark:bg-slate-900/90 rounded-3xl border border-white/30 dark:border-slate-700 shadow-2xl shadow-emerald-950/50 p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
           {/* Header & Tagline */}
           <div className="text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-500/20">
@@ -161,7 +161,7 @@ export const AuthPage: React.FC = () => {
                   placeholder="Contoh: Budi Santoso"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
             )}
@@ -176,7 +176,7 @@ export const AuthPage: React.FC = () => {
                 placeholder="nama@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               />
             </div>
 
@@ -190,7 +190,7 @@ export const AuthPage: React.FC = () => {
                 placeholder="Minimal 8 karakter"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               />
             </div>
 
@@ -205,7 +205,7 @@ export const AuthPage: React.FC = () => {
           </form>
 
           {/* Quick Demo Fill Helper */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
             <span className="text-[11px] font-medium text-slate-400 block text-center">
               Akses Cepat Pengujian Demo:
             </span>
@@ -213,14 +213,14 @@ export const AuthPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleDemoFill('admin')}
-                className="flex-1 py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition-colors"
+                className="flex-1 py-1.5 px-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition-colors"
               >
                 Isi Akun Admin
               </button>
               <button
                 type="button"
                 onClick={() => handleDemoFill('warga')}
-                className="flex-1 py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition-colors"
+                className="flex-1 py-1.5 px-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition-colors"
               >
                 Isi Akun Warga
               </button>
