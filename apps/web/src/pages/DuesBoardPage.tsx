@@ -507,7 +507,14 @@ export const DuesBoardPage: React.FC = () => {
                                 type="button"
                                 onClick={() => {
                                   if (rec.transactionId) {
-                                    setSelectedTx({ id: rec.transactionId } as Transaction);
+                                    setSelectedTx({
+                                      id: rec.transactionId,
+                                      amount: rec.amount,
+                                      type: 'INCOME',
+                                      state: 'SUBMITTED',
+                                      currency: activeWallet.currency,
+                                      category: 'Iuran / Setoran Bulanan',
+                                    } as Transaction);
                                   } else {
                                     setSelectedCell({
                                       memberName: member.fullName,
@@ -651,8 +658,17 @@ export const DuesBoardPage: React.FC = () => {
                 type="button"
                 onClick={() => {
                   const txId = selectedCell.transactionId!;
+                  const txAmount = selectedCell.amount;
+                  const isPaid = selectedCell.status === 'Lunas';
                   setSelectedCell(null);
-                  setSelectedTx({ id: txId } as Transaction);
+                  setSelectedTx({
+                    id: txId,
+                    amount: txAmount,
+                    type: 'INCOME',
+                    state: isPaid ? 'COMPLETED' : 'SUBMITTED',
+                    currency: activeWallet.currency,
+                    category: 'Iuran / Setoran Bulanan',
+                  } as Transaction);
                 }}
                 className="w-full py-2 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-emerald-200 dark:border-emerald-800"
               >

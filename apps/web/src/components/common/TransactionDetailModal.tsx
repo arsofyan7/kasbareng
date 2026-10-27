@@ -96,7 +96,24 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     onClose();
   };
 
-  if (!initialTransaction || !transaction) return null;
+  if (!initialTransaction) return null;
+
+  if (isLoadingDetails && (!transaction || transaction.amount === undefined || !transaction.type)) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 text-center space-y-4 animate-in zoom-in-95 duration-150">
+          <div className="py-8 flex flex-col items-center justify-center gap-3">
+            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Memuat rincian transaksi...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!transaction) return null;
 
   const isIncome = transaction.type === 'INCOME';
   const isDraft = transaction.state === 'DRAFT';
@@ -439,7 +456,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               }`}
             >
               {isIncome ? '+ ' : '- '}
-              Rp {transaction.amount.toLocaleString('id-ID')}
+              Rp {Number(transaction.amount || 0).toLocaleString('id-ID')}
             </div>
           </div>
           <div>{getStateBadge(transaction.state)}</div>
@@ -550,7 +567,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-300">
               {approvalDecision === 'APPROVE'
-                ? `Anda akan menyetujui pengeluaran Rp ${transaction.amount.toLocaleString('id-ID')} untuk "${transaction.category}".`
+                ? `Anda akan menyetujui pengeluaran Rp ${Number(transaction.amount || 0).toLocaleString('id-ID')} untuk "${transaction.category || ''}".`
                 : 'Pengeluaran yang ditolak akan menghentikan transaksi dan mengembalikan saldo yang dicadangkan.'}
             </p>
             <input
@@ -645,10 +662,12 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               Waktu Transaksi
             </span>
             <span className="text-slate-700 dark:text-slate-300">
-              {new Date(transaction.createdAt).toLocaleString('id-ID', {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              })}
+              {transaction.createdAt
+                ? new Date(transaction.createdAt).toLocaleString('id-ID', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })
+                : '-'}
             </span>
           </div>
 
