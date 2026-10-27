@@ -19,6 +19,7 @@ import {
   Info,
   ExternalLink,
   Sliders,
+  Plus,
 } from 'lucide-react';
 import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
 import { ManageDuesConfigModal } from '../components/common/ManageDuesConfigModal';
@@ -40,8 +41,10 @@ export const DuesBoardPage: React.FC = () => {
   // Copy notification toast
   const [copiedReminder, setCopiedReminder] = useState<boolean>(false);
 
-  // Record/Pay modal
+  // Record/Pay modal with prefilled member & period
   const [recordModalOpen, setRecordModalOpen] = useState<boolean>(false);
+  const [prefillUserId, setPrefillUserId] = useState<string | undefined>(undefined);
+  const [prefillPeriods, setPrefillPeriods] = useState<string[] | undefined>(undefined);
 
   // Manage dues config modal (Admin / Pengelola)
   const [duesConfigOpen, setDuesConfigOpen] = useState<boolean>(false);
@@ -237,7 +240,11 @@ export const DuesBoardPage: React.FC = () => {
           {/* Pay / Report Dues Modal */}
           <button
             type="button"
-            onClick={() => setRecordModalOpen(true)}
+            onClick={() => {
+              setPrefillUserId(undefined);
+              setPrefillPeriods(undefined);
+              setRecordModalOpen(true);
+            }}
             className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all"
           >
             <PlusCircle className="w-4 h-4" />
@@ -509,6 +516,20 @@ export const DuesBoardPage: React.FC = () => {
                               >
                                 <Clock className="w-3.5 h-3.5" />
                               </button>
+                            ) : isManagerOrAdmin ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPrefillUserId(member.userId);
+                                  setPrefillPeriods([p.key]);
+                                  setRecordModalOpen(true);
+                                }}
+                                className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 hover:border hover:border-emerald-300 dark:hover:bg-emerald-950/40 dark:hover:border-emerald-700 inline-flex items-center justify-center text-xs transition-all cursor-pointer group"
+                                title={`Klik untuk catat setoran ${member.fullName} (${p.label})`}
+                              >
+                                <span className="group-hover:hidden">—</span>
+                                <Plus className="w-3.5 h-3.5 hidden group-hover:block text-emerald-600 dark:text-emerald-400 stroke-[3]" />
+                              </button>
                             ) : (
                               <span
                                 className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600 inline-flex items-center justify-center text-xs"
@@ -633,7 +654,13 @@ export const DuesBoardPage: React.FC = () => {
         <RecordTransactionModal
           isOpen={recordModalOpen}
           initialType="INCOME"
-          onClose={() => setRecordModalOpen(false)}
+          initialTargetUserId={prefillUserId}
+          initialPeriods={prefillPeriods}
+          onClose={() => {
+            setRecordModalOpen(false);
+            setPrefillUserId(undefined);
+            setPrefillPeriods(undefined);
+          }}
           onSuccess={() => {
             fetchDuesBoard();
           }}

@@ -21,6 +21,8 @@ interface RecordTransactionModalProps {
   isOpen: boolean;
   initialType?: TransactionType;
   availableBalance?: number;
+  initialTargetUserId?: string;
+  initialPeriods?: string[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -29,6 +31,8 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   isOpen,
   initialType = 'INCOME',
   availableBalance = 0,
+  initialTargetUserId,
+  initialPeriods,
   onClose,
   onSuccess,
 }) => {
@@ -47,16 +51,32 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Multi-period dues payment state
-  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>(initialPeriods || []);
   // Target member state (for Admin/Pengelola recording cash on behalf of a warga)
   const [members, setMembers] = useState<Array<{ userId: string; fullName: string; role: string }>>([]);
-  const [targetUserId, setTargetUserId] = useState<string>('');
+  const [targetUserId, setTargetUserId] = useState<string>(initialTargetUserId || '');
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const currentYear = new Date().getFullYear();
   const duesType = activeWallet?.duesType || 'MONTHLY';
   const duesAmount = activeWallet?.duesAmount ? Number(activeWallet.duesAmount) : null;
+
+  // Sync initial prefill props whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (initialTargetUserId !== undefined) {
+        setTargetUserId(initialTargetUserId);
+      }
+      if (initialPeriods && initialPeriods.length > 0) {
+        setSelectedPeriods(initialPeriods);
+        if (duesAmount) {
+          setAmountStr((initialPeriods.length * duesAmount).toLocaleString('id-ID'));
+        }
+        setCategory('Iuran / Setoran Bulanan');
+      }
+    }
+  }, [isOpen, initialTargetUserId, initialPeriods, duesAmount]);
 
   useEffect(() => {
     if (!isOpen || !activeWallet || !token) return;
