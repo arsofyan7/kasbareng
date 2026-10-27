@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
 import { WalletMember, WalletRole, ApiResponse } from '../types';
@@ -15,6 +15,8 @@ import {
   Check,
   Share2,
   Sparkles,
+  Search,
+  Calendar,
 } from 'lucide-react';
 import { ManageInviteCodeModal } from '../components/common/ManageInviteCodeModal';
 
@@ -25,6 +27,8 @@ export const MembersPage: React.FC = () => {
   const [members, setMembers] = useState<WalletMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'PENGELOLA' | 'WARGA'>('ALL');
 
   // Invite code modal & copy states
   const [manageCodeModalOpen, setManageCodeModalOpen] = useState(false);
@@ -65,6 +69,29 @@ export const MembersPage: React.FC = () => {
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
+
+  // Counts
+  const counts = useMemo(() => {
+    const all = members.length;
+    const admin = members.filter((m) => m.role === 'ADMIN').length;
+    const pengelola = members.filter((m) => m.role === 'PENGELOLA').length;
+    const warga = members.filter((m) => m.role === 'WARGA').length;
+    return { all, admin, pengelola, warga };
+  }, [members]);
+
+  // Filtered members
+  const filteredMembers = useMemo(() => {
+    return members.filter((m) => {
+      if (roleFilter !== 'ALL' && m.role !== roleFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchName = m.fullName.toLowerCase().includes(q);
+        const matchEmail = m.email.toLowerCase().includes(q);
+        return matchName || matchEmail;
+      }
+      return true;
+    });
+  }, [members, roleFilter, searchQuery]);
 
   const handleCopyCode = () => {
     if (!activeWallet?.inviteCode) return;
@@ -153,25 +180,36 @@ export const MembersPage: React.FC = () => {
     switch (role) {
       case 'ADMIN':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
             <ShieldCheck className="w-3.5 h-3.5" />
             Admin
           </span>
         );
       case 'PENGELOLA':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/20">
             <UserCheck className="w-3.5 h-3.5" />
             Pengelola
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/20">
             <Users className="w-3.5 h-3.5" />
             Warga
           </span>
         );
+    }
+  };
+
+  const getAvatarBg = (role: WalletRole) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'bg-emerald-600 text-white';
+      case 'PENGELOLA':
+        return 'bg-sky-600 text-white';
+      default:
+        return 'bg-slate-700 text-slate-100';
     }
   };
 
@@ -195,9 +233,9 @@ export const MembersPage: React.FC = () => {
         {isAdmin && (
           <button
             onClick={() => setAddModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all self-start sm:self-auto cursor-pointer"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-4 h-4 stroke-[2.5]" />
             + Tambah Anggota Manual
           </button>
         )}
@@ -230,7 +268,7 @@ export const MembersPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2 z-10">
             <button
               onClick={handleCopyCode}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all flex items-center gap-1.5 cursor-pointer"
             >
               {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
               {copiedCode ? 'Tersalin!' : 'Salin Kode'}
@@ -238,7 +276,7 @@ export const MembersPage: React.FC = () => {
 
             <button
               onClick={handleCopyLink}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all flex items-center gap-1.5 cursor-pointer"
             >
               {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-slate-300" />}
               {copiedLink ? 'Link Tersalin!' : 'Salin Link'}
@@ -246,7 +284,7 @@ export const MembersPage: React.FC = () => {
 
             <button
               onClick={handleShareWhatsApp}
-              className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold text-white shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Share2 className="w-3.5 h-3.5" />
               Bagikan WA
@@ -255,7 +293,7 @@ export const MembersPage: React.FC = () => {
             {isAdmin && (
               <button
                 onClick={() => setManageCodeModalOpen(true)}
-                className="px-3.5 py-2 rounded-xl border border-white/20 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-all flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl border border-white/20 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 Atur Kode
@@ -265,6 +303,73 @@ export const MembersPage: React.FC = () => {
         </div>
       )}
 
+      {/* Filter Tabs & Search Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Role Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl max-w-lg">
+          <button
+            onClick={() => setRoleFilter('ALL')}
+            className={`py-2 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              roleFilter === 'ALL'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Semua ({counts.all})
+          </button>
+          <button
+            onClick={() => setRoleFilter('ADMIN')}
+            className={`py-2 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              roleFilter === 'ADMIN'
+                ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Admin ({counts.admin})
+          </button>
+          <button
+            onClick={() => setRoleFilter('PENGELOLA')}
+            className={`py-2 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              roleFilter === 'PENGELOLA'
+                ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Pengelola ({counts.pengelola})
+          </button>
+          <button
+            onClick={() => setRoleFilter('WARGA')}
+            className={`py-2 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              roleFilter === 'WARGA'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Warga ({counts.warga})
+          </button>
+        </div>
+
+        {/* Search Input */}
+        <div className="relative w-full sm:w-64">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari nama atau email..."
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs py-2 pl-8 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-sm placeholder:text-slate-400"
+          />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {errorMsg && (
         <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center gap-2 text-xs text-rose-700 dark:text-rose-300">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -272,56 +377,98 @@ export const MembersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Members Table Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center text-sm text-slate-400 animate-pulse">
-            Memuat daftar anggota kas...
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
+      {/* Main Members Content */}
+      {isLoading ? (
+        <div className="p-12 text-center text-sm text-slate-400 animate-pulse bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800">
+          Memuat daftar anggota kas...
+        </div>
+      ) : filteredMembers.length === 0 ? (
+        <div className="p-12 text-center rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-2">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Tidak ada anggota ditemukan pada filter ini.
+          </p>
+          <p className="text-xs text-slate-400">
+            Coba bersihkan pencarian atau ubah tab peranan.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Desktop Table */}
+          <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Nama Lengkap & Email</th>
+                  <th className="px-6 py-4">Anggota</th>
                   <th className="px-6 py-4">Peran (Role)</th>
                   <th className="px-6 py-4">Status</th>
-                  {isAdmin && <th className="px-6 py-4 text-right">Ubah Peran</th>}
+                  <th className="px-6 py-4">Bergabung</th>
+                  {isAdmin && <th className="px-6 py-4 text-right">Kelola Peran</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {members.map((m) => {
+                {filteredMembers.map((m) => {
                   const isCurrentUser = m.userId === user?.id;
+                  const initial = m.fullName ? m.fullName.charAt(0).toUpperCase() : 'W';
                   return (
                     <tr key={m.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                      {/* Name & Avatar */}
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                          {m.fullName}
-                          {isCurrentUser && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                              Anda
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          {m.email}
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full ${getAvatarBg(m.role)} flex items-center justify-center font-bold text-xs shrink-0 shadow-sm`}>
+                            {initial}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                              <span className="truncate">{m.fullName}</span>
+                              {isCurrentUser && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                  Anda
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                              {m.email}
+                            </div>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+
+                      {/* Role Badge */}
+                      <td className="px-6 py-4 whitespace-nowrap">
                         {getRoleBadge(m.role)}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+
+                      {/* Status */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 font-medium">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                          </span>
                           Aktif
                         </span>
                       </td>
+
+                      {/* Joined Date */}
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
+                        {m.joinedAt ? (
+                          new Date(m.joinedAt).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+
+                      {/* Admin Role Selector */}
                       {isAdmin && (
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
                           <select
                             value={m.role}
                             onChange={(e) => handleRoleChange(m.id, e.target.value as WalletRole)}
-                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-sm"
                           >
                             <option value="WARGA">Warga</option>
                             <option value="PENGELOLA">Pengelola</option>
@@ -335,8 +482,64 @@ export const MembersPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {filteredMembers.map((m) => {
+              const isCurrentUser = m.userId === user?.id;
+              const initial = m.fullName ? m.fullName.charAt(0).toUpperCase() : 'W';
+              return (
+                <div
+                  key={m.id}
+                  className="p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-full ${getAvatarBg(m.role)} flex items-center justify-center font-bold text-sm shrink-0`}>
+                        {initial}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <span className="truncate">{m.fullName}</span>
+                          {isCurrentUser && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                              Anda
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          {m.email}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>{getRoleBadge(m.role)}</div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }) : 'Aktif'}
+                    </span>
+
+                    {isAdmin && (
+                      <select
+                        value={m.role}
+                        onChange={(e) => handleRoleChange(m.id, e.target.value as WalletRole)}
+                        className="px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-semibold"
+                      >
+                        <option value="WARGA">Warga</option>
+                        <option value="PENGELOLA">Pengelola</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Add Member Modal */}
       {addModalOpen && (
@@ -348,7 +551,7 @@ export const MembersPage: React.FC = () => {
               </h2>
               <button
                 onClick={() => setAddModalOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -383,7 +586,7 @@ export const MembersPage: React.FC = () => {
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as WalletRole)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="WARGA">Warga (Melihat laporan & iuran)</option>
                   <option value="PENGELOLA">Pengelola (Mengajukan transaksi kas)</option>
@@ -396,14 +599,14 @@ export const MembersPage: React.FC = () => {
                   type="button"
                   onClick={() => setAddModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-sm"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-sm cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-md shadow-emerald-600/20 disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? 'Menambahkan...' : 'Tambah Anggota'}
                 </button>

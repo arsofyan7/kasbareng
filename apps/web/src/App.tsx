@@ -5,6 +5,7 @@ import { WalletProvider } from './context/WalletContext';
 import { TransactionType } from './types';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { TransactionsPage } from './pages/TransactionsPage';
 import { WalletsPage } from './pages/WalletsPage';
 import { MembersPage } from './pages/MembersPage';
 import { ApprovalsPage } from './pages/ApprovalsPage';
@@ -93,6 +94,15 @@ function AppContent() {
               onOpenCreateWallet={() => setCreateWalletOpen(true)}
               onOpenJoinWallet={() => setJoinWalletOpen(true)}
               onNavigateToTab={setCurrentTab}
+              onOpenRecordModal={(type) => {
+                setRecordModalType(type);
+                setRecordModalOpen(true);
+              }}
+              refreshTrigger={refreshKey}
+            />
+          )}
+          {currentTab === 'transaksi' && (
+            <TransactionsPage
               onOpenRecordModal={(type) => {
                 setRecordModalType(type);
                 setRecordModalOpen(true);

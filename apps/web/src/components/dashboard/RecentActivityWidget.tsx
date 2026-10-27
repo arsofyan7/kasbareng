@@ -16,6 +16,7 @@ interface RecentActivityWidgetProps {
   onOpenRecordModal: (type: TransactionType) => void;
   activeFilter: 'ALL' | 'INCOME' | 'EXPENSE';
   onChangeFilter: (filter: 'ALL' | 'INCOME' | 'EXPENSE') => void;
+  onNavigateToTransactions?: () => void;
 }
 
 export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
@@ -26,6 +27,7 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
   onOpenRecordModal,
   activeFilter,
   onChangeFilter,
+  onNavigateToTransactions,
 }) => {
   const filteredTransactions = transactions.filter((tx) => {
     if (activeFilter === 'INCOME') return tx.type === 'INCOME';
@@ -227,10 +229,21 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
         <span className="text-slate-500 dark:text-slate-400">
           Total {filteredTransactions.length} transaksi
         </span>
-        <span className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center gap-0.5 group">
-          Ketuk baris untuk detail
-          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </span>
+        {onNavigateToTransactions ? (
+          <button
+            type="button"
+            onClick={onNavigateToTransactions}
+            className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center gap-0.5 group hover:underline cursor-pointer"
+          >
+            Lihat Semua Transaksi
+            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        ) : (
+          <span className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center gap-0.5 group">
+            Ketuk baris untuk detail
+            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </span>
+        )}
       </div>
     </div>
   );

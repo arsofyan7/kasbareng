@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard,
+  ArrowLeftRight,
   WalletCards,
   Users2,
   UserCircle,
@@ -13,7 +14,7 @@ import {
   Plus,
 } from 'lucide-react';
 
-export type NavTab = 'beranda' | 'papan-iuran' | 'kantong' | 'persetujuan' | 'rekonsiliasi' | 'ai-parser' | 'anggota' | 'profil';
+export type NavTab = 'beranda' | 'transaksi' | 'papan-iuran' | 'kantong' | 'persetujuan' | 'rekonsiliasi' | 'ai-parser' | 'anggota' | 'profil';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'beranda' as NavTab, label: 'Beranda Kas', icon: LayoutDashboard },
+    { id: 'transaksi' as NavTab, label: 'Transaksi Kas', icon: ArrowLeftRight },
     { id: 'papan-iuran' as NavTab, label: 'Papan Iuran', icon: CalendarDays },
     { id: 'kantong' as NavTab, label: 'Kantong Kas', icon: WalletCards },
     { id: 'persetujuan' as NavTab, label: 'Persetujuan Kas', icon: ShieldCheck },

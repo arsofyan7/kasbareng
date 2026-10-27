@@ -370,6 +370,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           onOpenRecordModal={openRecordModal}
           activeFilter={activeFilter}
           onChangeFilter={setActiveFilter}
+          onNavigateToTransactions={() => onNavigateToTab('transaksi')}
         />
       </div>
 

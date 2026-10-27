@@ -403,6 +403,44 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
   - `npm --workspace=apps/web run build`: 100% lulus (dist bersih, 0 lint/type error).
   - `npm run test:api`: 103/103 tests lulus (100% green across all 13 test suites).
 
+---
+
+### Fase Transformasi Visual Tahap 3: Penyempurnaan Filter & Desain Tabel di Halaman Transaksi Kas, Persetujuan M-of-N, dan Anggota
+- **Status**: **COMPLETED**
+- **Tanggal Selesai**: 2026-10-27
+- **Tujuan & Filosofi**:
+  - Menyempurnakan antarmuka data tabular pada seluruh sub-halaman operasional kas (**Transaksi Kas**, **Persetujuan M-of-N**, dan **Keanggotaan**) agar memiliki standar estetika fintech kelas atas (*Fintech Grade UI*).
+  - Menghadirkan adaptasi responsif ganda: **Tabel Data Komprehensif** untuk Desktop & Tablet, serta **Kartu Feed Terstruktur** untuk Layar Ponsel/Mobile tanpa horizontal scroll yang melelahkan.
+  - Mempertahankan integritas FSM, Anti-Self Approval, dan validasi ledger 100%.
+- **Rincian Implementasi**:
+  1. **Halaman Transaksi Kas Baru (`TransactionsPage.tsx`)**:
+     - Ditambahkan ke Sidebar (`NavTab: 'transaksi'`) dengan ikon `ArrowLeftRight` bersanding langsung di bawah Beranda Kas.
+     - Terkoneksi mulus dengan tombol *"Lihat Semua Transaksi"* pada `RecentActivityWidget` di Beranda Kas.
+     - **Tab Filter Cepat**: `Semua (X)`, `Pemasukan (Y)`, `Pengeluaran (Z)`, dan `Reservasi (W)`.
+     - **Bar Kontrol Filter**: Pemilih Periode Bulan, Filter Kategori Dinamis, Filter Status FSM, serta Input Pencarian teks instan dengan tombol hapus (`X`).
+     - **Tampilan Data Desktop & Mobile**:
+       * Desktop/Tablet (`hidden md:block`): Tabel 6 kolom lengkap (`Tanggal`, `Deskripsi & Pelapor`, `Kategori`, `Jumlah`, `Status`, `Aksi`).
+       * Mobile (`md:hidden`): Tampilan kartu transaksi dengan tata letak rapi, status badge FSM, dan indikator detail.
+     - **Paginasi Cerdas**: Menampilkan `X-Y dari Z transaksi` dengan navigasi halaman sebelumnya/selanjutnya.
+  2. **Penyempurnaan Tabel & Filter Persetujuan M-of-N (`ApprovalsPage.tsx`)**:
+     - **Tab Filter Selaras Mockup**: `Iuran Warga (${incomingReports.length})`, `Menunggu (${pendingTxs.length})`, `Disetujui (${approvedTxs.length})`, dan `Riwayat (${historyTxs.length})`.
+     - **Metrik Kuorum & Reservasi**: 3 Kartu metrik di atas untuk memantau laporan iuran masuk, total dana yang dicadangkan (*active reservations*), dan aturan kuorum komunitas.
+     - **Tabel Data Kuorum Pengeluaran**:
+       * Kolom Kuorum M-of-N dengan badge visual `${approvalsCount}/${requiredCount} Suara`, indikator warna status, dan lencana peringatan aturan `Anti-Self Approval` jika pengguna aktif adalah pembuat pengeluaran.
+       * Tombol Aksi Cepat (*Inline Actions*): Pengelola dapat langsung menolak atau menyetujui pengeluaran dari tabel dengan prompt konfirmasi, serta membuka modal rincian audit lengkap.
+     - **Tabel Verifikasi Iuran Warga**:
+       * Kolom pelapor dengan inisial avatar, email, nominal setoran, tombol pratinjau bukti transfer (*lightbox modal*), dan tombol verifikasi langsung `Terima` / `Tolak`.
+  3. **Penyempurnaan Tabel & Filter Keanggotaan (`MembersPage.tsx`)**:
+     - **Tab Filter Peran**: `Semua (${members.length})`, `Admin (${counts.admin})`, `Pengelola (${counts.pengelola})`, dan `Warga (${counts.warga})`.
+     - **Pencarian Anggota**: Input pencarian cepat nama atau email warga.
+     - **Avatar Inisial Bergradien**: Lingkaran avatar dengan warna terarah sesuai peran (Emerald untuk Admin, Sky untuk Pengelola, Slate/Teal untuk Warga).
+     - **Lencana Peran & Status Berdenyut**: Lencana peran bersanding dengan pill status `Aktif` yang dilengkapi lampu hijau berdenyut (*animated ping indicator*).
+     - **Tanggal Bergabung & Pengubah Peran**: Tanggal bergabung warga dan dropdown pengubah peran khusus Admin.
+     - **Banner Akses Komunitas Tertutup**: Tetap dipertahankan di bagian atas dengan salin kode undangan, salin tautan bergabung, bagikan WhatsApp, dan konfigurasi kode.
+- **Hasil Verifikasi**:
+  - `npm --workspace=apps/web run build`: 100% lulus (dist bersih, 0 lint/type error).
+  - `npm run test:api`: 103/103 tests lulus (100% green across all 13 test suites).
+
 
 
 
