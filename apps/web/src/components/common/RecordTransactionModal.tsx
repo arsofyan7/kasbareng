@@ -110,7 +110,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
 
     if (duesAmount && next.length > 0) {
       setAmountStr((next.length * duesAmount).toLocaleString('id-ID'));
-      if (!category) setCategory('Iuran Warga Bulanan');
+      if (!category) setCategory('Iuran / Setoran Bulanan');
     }
   };
 
@@ -119,8 +119,8 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const numericAmount = parseFloat(amountStr.replace(/[^0-9]/g, '')) || 0;
 
   const quickCategories = type === 'INCOME'
-    ? ['Iuran Warga Bulanan', 'Sumbangan Sukarela', 'Uang Sampah', 'Dana Donasi Lingkungan']
-    : ['Kebersihan Lingkungan', 'Keamanan / Ronda', 'Konsumsi Musyawarah', 'Listrik & Air Pos', 'Perbaikan Sarana'];
+    ? ['Iuran / Setoran Bulanan', 'Tabungan Bersama', 'Sumbangan Sukarela', 'Donasi']
+    : ['Operasional & Perlengkapan', 'Konsumsi & Pertemuan', 'Listrik & Kebersihan', 'Pemeliharaan Sarana', 'Sosial / Donasi'];
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -333,10 +333,10 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
           <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="font-semibold">Jenis: Setoran Iuran / Pemasukan Warga</span>
+              <span className="font-semibold">Jenis: Setoran Iuran / Pemasukan Anggota</span>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-emerald-200/60 dark:bg-emerald-900/60 text-[10px] font-bold">
-              Akun Warga
+              Akun Anggota
             </span>
           </div>
         )}
@@ -404,7 +404,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-emerald-600" />
-                Setoran Atas Nama Anggota / Warga (Opsional)
+                Setoran Atas Nama Anggota (Opsional)
               </label>
               <select
                 value={targetUserId}
@@ -489,8 +489,8 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               rows={2}
               placeholder={
                 isWarga
-                  ? 'Contoh: Iuran Kas Bulan Oktober 2026 - Rumah Blok B No. 12 (Arief)'
-                  : 'Contoh: Pembelian 3 kaleng cat untuk renovasi pos ronda...'
+                  ? 'Contoh: Iuran Kas Bulan Oktober 2026 - Arief'
+                  : 'Contoh: Pembelian perlengkapan untuk kegiatan bersama...'
               }
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

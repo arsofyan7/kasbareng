@@ -75,7 +75,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Pilih transaksi atau bantuan pencatatan untuk{' '}
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                {activeWallet?.name || 'Dompet Komunitas'}
+                {activeWallet?.name || 'Dompet Kas Bersama'}
               </span>
             </p>
           </div>
@@ -103,7 +103,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
-                  {isWarga ? 'Lapor Pembayaran Iuran' : 'Catat Pemasukan Kas'}
+                  {isWarga ? 'Lapor Setoran / Iuran Mandiri' : 'Catat Pemasukan Kas'}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
                   + Kas
@@ -111,8 +111,8 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed truncate">
                 {isWarga
-                  ? 'Setor iuran mandiri & lampirkan bukti transfer bank'
-                  : 'Pemasukan kas langsung, iuran warga, atau donasi'}
+                  ? 'Setor mandiri & lampirkan bukti transfer bank'
+                  : 'Pemasukan kas langsung, setoran anggota, atau donasi'}
               </p>
             </div>
             <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -138,7 +138,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed truncate">
-                  Pengeluaran kas komunitas dengan persetujuan bertingkat
+                  Pengeluaran kas bersama dengan persetujuan bertingkat
                 </p>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -158,7 +158,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                  Warga hanya dapat melapor pemasukan kas mandiri
+                  Anggota dapat melapor setoran atau pemasukan mandiri
                 </p>
               </div>
             </div>

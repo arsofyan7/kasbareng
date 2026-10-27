@@ -78,7 +78,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
-      setErrorMsg('Masukkan kode undangan komunitas.');
+      setErrorMsg('Masukkan kode akses atau undangan.');
       return;
     }
 
@@ -111,10 +111,10 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Gabung Komunitas Kas
+                Gabung Kas Bersama
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Akses tertutup khusus anggota komunitas
+                Akses tertutup dengan kode undangan
               </p>
             </div>
           </div>
@@ -143,13 +143,13 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
         <form onSubmit={handleJoin} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Kode Undangan atau Tautan Komunitas
+              Kode Undangan atau Kode Akses
             </label>
             <div className="relative">
               <input
                 type="text"
                 autoFocus
-                placeholder="Contoh: RT05-SEJAHTERA atau KAS-8X92"
+                placeholder="Contoh: KELUARGA-KITA atau KAS-8X92"
                 value={code}
                 onChange={(e) => handleCodeChange(e.target.value)}
                 className="w-full px-3.5 py-2.5 uppercase font-mono tracking-wider rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all pr-10"
@@ -161,7 +161,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
               )}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
-              Dapatkan kode ini dari Ketua RT/RW atau Admin pengelola kas Anda.
+              Dapatkan kode ini dari Admin atau pembuat dompet kas Anda.
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Komunitas Ditemukan
+                    Dompet Kas Ditemukan
                   </span>
                   <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug">
                     {preview.name}

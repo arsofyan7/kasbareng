@@ -112,7 +112,7 @@ export const MembersPage: React.FC = () => {
     if (!activeWallet?.inviteCode) return;
     const shareLink = `${window.location.origin}/?join=${activeWallet.inviteCode}`;
     const text = encodeURIComponent(
-      `Halo warga! Mari bergabung ke pencatatan kas transparan "${activeWallet.name}" di KasBareng.\n\n` +
+      `Halo! Mari bergabung ke pencatatan kas transparan "${activeWallet.name}" di KasBareng.\n\n` +
       `Gunakan Kode Undangan: *${activeWallet.inviteCode}*\n` +
       `Atau klik langsung tautan ini untuk bergabung:\n${shareLink}`
     );
@@ -196,7 +196,7 @@ export const MembersPage: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/20">
             <Users className="w-3.5 h-3.5" />
-            Warga
+            Anggota
           </span>
         );
     }
@@ -220,10 +220,10 @@ export const MembersPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
             <Users2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            Keanggotaan & Peran Komunitas
+            Keanggotaan & Peran Kas Bersama
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Daftar warga dan pengelola kas di{' '}
+            Daftar anggota dan pengelola kas di{' '}
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">
               {activeWallet?.name}
             </span>
@@ -248,20 +248,20 @@ export const MembersPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
-                Akses Warga (Gated Komunitas)
+                Akses Anggota (Private Gated)
               </span>
               <span className="text-xs text-slate-400">
-                Join Otomatis: <strong>WARGA</strong>
+                Join Otomatis: <strong>ANGGOTA</strong>
               </span>
             </div>
             <div className="flex items-center gap-2 pt-0.5">
               <span className="text-xs text-slate-300">Kode Undangan:</span>
               <span className="font-mono text-base font-extrabold tracking-wider text-emerald-400 bg-black/40 px-2.5 py-1 rounded-lg border border-emerald-500/30">
-                {activeWallet.inviteCode || 'KAS-KOMUNITAS'}
+                {activeWallet.inviteCode || 'KAS-BERSAMA'}
               </span>
             </div>
             <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
-              Warga yang memasukkan kode ini otomatis langsung terdaftar sebagai role WARGA tanpa perlu di-acc manual satu per satu.
+              Anggota yang memasukkan kode ini otomatis langsung terdaftar sebagai Anggota tanpa perlu di-acc manual satu per satu.
             </p>
           </div>
 
@@ -345,7 +345,7 @@ export const MembersPage: React.FC = () => {
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            Warga ({counts.warga})
+            Anggota ({counts.warga})
           </button>
         </div>
 
@@ -470,7 +470,7 @@ export const MembersPage: React.FC = () => {
                             onChange={(e) => handleRoleChange(m.id, e.target.value as WalletRole)}
                             className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-sm"
                           >
-                            <option value="WARGA">Warga</option>
+                            <option value="WARGA">Anggota</option>
                             <option value="PENGELOLA">Pengelola</option>
                             <option value="ADMIN">Admin</option>
                           </select>
@@ -528,7 +528,7 @@ export const MembersPage: React.FC = () => {
                         onChange={(e) => handleRoleChange(m.id, e.target.value as WalletRole)}
                         className="px-2.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs font-semibold"
                       >
-                        <option value="WARGA">Warga</option>
+                        <option value="WARGA">Anggota</option>
                         <option value="PENGELOLA">Pengelola</option>
                         <option value="ADMIN">Admin</option>
                       </select>
@@ -572,7 +572,7 @@ export const MembersPage: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder="warga@email.com"
+                  placeholder="anggota@email.com"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
@@ -588,7 +588,7 @@ export const MembersPage: React.FC = () => {
                   onChange={(e) => setNewRole(e.target.value as WalletRole)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
                 >
-                  <option value="WARGA">Warga (Melihat laporan & iuran)</option>
+                  <option value="WARGA">Anggota (Melihat laporan & setoran)</option>
                   <option value="PENGELOLA">Pengelola (Mengajukan transaksi kas)</option>
                   <option value="ADMIN">Admin (Mengelola anggota & aturan)</option>
                 </select>

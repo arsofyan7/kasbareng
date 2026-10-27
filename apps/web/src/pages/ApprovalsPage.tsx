@@ -241,7 +241,7 @@ export const ApprovalsPage: React.FC = () => {
             Persetujuan & Verifikasi Kas
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Verifikasi setoran iuran warga dan persetujuan pengeluaran kas transparan berbasis kuorum M-of-N.
+            Verifikasi setoran anggota dan persetujuan pengeluaran kas transparan berbasis kuorum M-of-N.
           </p>
         </div>
 
@@ -260,7 +260,7 @@ export const ApprovalsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 border border-emerald-300/80 dark:border-emerald-700/80 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-            <span>Iuran Warga Masuk</span>
+            <span>Setoran Anggota Masuk</span>
             <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="text-2xl font-black text-emerald-900 dark:text-emerald-200">
@@ -286,7 +286,7 @@ export const ApprovalsPage: React.FC = () => {
 
         <div className="p-5 rounded-3xl bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/30 dark:to-indigo-950/20 border border-sky-300/80 dark:border-sky-700/80 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-sky-800 dark:text-sky-300">
-            <span>Aturan Kuorum Komunitas</span>
+            <span>Aturan Kuorum Kas Bersama</span>
             <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
           </div>
           <div className="text-2xl font-black text-sky-900 dark:text-sky-200">
@@ -313,7 +313,7 @@ export const ApprovalsPage: React.FC = () => {
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            <span>Iuran Warga ({incomingReports.length})</span>
+            <span>Setoran Anggota ({incomingReports.length})</span>
           </button>
 
           <button
@@ -404,7 +404,7 @@ export const ApprovalsPage: React.FC = () => {
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             {activeTab === 'incoming'
-              ? 'Semua laporan iuran warga telah diverifikasi atau belum ada laporan baru.'
+              ? 'Semua laporan setoran anggota telah diverifikasi atau belum ada laporan baru.'
               : activeTab === 'pending'
               ? 'Semua pengeluaran telah diproses atau belum ada pengajuan baru.'
               : activeTab === 'approved'
@@ -421,7 +421,7 @@ export const ApprovalsPage: React.FC = () => {
               <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Tanggal</th>
-                  <th className="px-6 py-4">Warga Pelapor</th>
+                  <th className="px-6 py-4">Penyetor / Anggota</th>
                   <th className="px-6 py-4">Kategori & Catatan</th>
                   <th className="px-6 py-4">Nominal</th>
                   <th className="px-6 py-4">Bukti Bayar</th>
@@ -447,7 +447,7 @@ export const ApprovalsPage: React.FC = () => {
                         <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-center shrink-0">
                           {tx.creator?.fullName?.charAt(0).toUpperCase() || 'W'}
                         </div>
-                        <span className="truncate">{tx.creator?.fullName || 'Warga'}</span>
+                        <span className="truncate">{tx.creator?.fullName || 'Anggota'}</span>
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5 ml-9 truncate">
                         {tx.creator?.email}
@@ -551,7 +551,7 @@ export const ApprovalsPage: React.FC = () => {
                     <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
                       <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                         <User className="w-3.5 h-3.5 text-slate-400" />
-                        {tx.creator?.fullName || 'Warga Komunitas'}
+                        {tx.creator?.fullName || 'Anggota Kas'}
                       </span>
                       <span>•</span>
                       <span className="text-[11px] font-mono">{tx.creator?.email}</span>

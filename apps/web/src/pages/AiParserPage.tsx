@@ -42,20 +42,20 @@ export const AiParserPage: React.FC = () => {
   // Interactive sample presets for demonstration
   const samplePrompts = [
     {
-      label: 'Iuran Warga Bulanan',
-      text: 'Halo pak bendahara, mau konfirmasi sudah transfer iuran kas RT sebesar 150rb untuk bulan Oktober ya pak dari Bpk. Bambang Blok B4/12. Makasih.',
+      label: 'Iuran / Setoran Bulanan',
+      text: 'Halo bendahara, mau konfirmasi sudah transfer iuran kas bersama sebesar 150rb untuk bulan ini ya dari Bambang. Makasih.',
     },
     {
-      label: 'Belanja Operasional Pos Satpam',
-      text: 'Lapor pak ketua, kemarin malam beli 2 sak semen dan kabel lampu pos satpam total habis Rp 185.000. Nota pembelian sudah disimpan di pos.',
+      label: 'Belanja Keperluan Bersama',
+      text: 'Lapor, tadi siang beli perlengkapan dan peralatan operasional bersama total habis Rp 185.000. Nota pembelian sudah disimpan ya.',
     },
     {
-      label: 'Donasi Kebersihan Warga',
-      text: 'Assalamu alaikum, titip donasi kas sosial dan kerja bakti warga 100000 rupiah dari Ibu Siti Blok A2. Semoga berkah.',
+      label: 'Donasi / Dana Sosial',
+      text: 'Assalamu alaikum, titip donasi kas sosial dan kegiatan bersama 100000 rupiah dari Ibu Siti. Semoga berkah.',
     },
     {
-      label: 'Konsumsi Rapat Warga',
-      text: 'Catatan pengeluaran: beli snack kotak dan air mineral gelas 75.000 untuk rapat warga semalam.',
+      label: 'Konsumsi Pertemuan Bersama',
+      text: 'Catatan pengeluaran: beli konsumsi dan snack 75.000 untuk agenda kumpul bersama semalam.',
     },
   ];
 
@@ -99,25 +99,25 @@ export const AiParserPage: React.FC = () => {
       if (amount <= 0) amount = 100000; // Fallback default
 
       // 3. Determine Category
-      let category = 'Iuran Kas Warga';
+      let category = 'Iuran Kas Bersama';
       if (isExpense) {
-        if (lower.includes('satpam') || lower.includes('pos') || lower.includes('semen') || lower.includes('lampu')) {
-          category = 'Sarana & Prasarana Lingkungan';
+        if (lower.includes('satpam') || lower.includes('pos') || lower.includes('semen') || lower.includes('lampu') || lower.includes('alat') || lower.includes('perlengkapan')) {
+          category = 'Operasional & Perlengkapan';
         } else if (lower.includes('snack') || lower.includes('konsumsi') || lower.includes('makan') || lower.includes('minum')) {
-          category = 'Konsumsi & Rapat Warga';
+          category = 'Konsumsi & Agenda Bersama';
         } else {
-          category = 'Operasional Kas RT/RW';
+          category = 'Operasional Bersama';
         }
       } else {
         if (lower.includes('donasi') || lower.includes('sosial') || lower.includes('santunan')) {
           category = 'Donasi & Dana Sosial';
         } else {
-          category = 'Iuran Kas Warga Bulanan';
+          category = 'Iuran / Setoran Bulanan';
         }
       }
 
       // 4. Extract Suggested Sender / Resident Name
-      let sender = 'Warga Komunitas';
+      let sender = 'Anggota Kas';
       const senderMatch = text.match(/(?:dari|atas nama|milik|oleh)\s+([A-Za-z\.\s]+?)(?:\s+blok|\s+rt|\.|\,|$)/i);
       if (senderMatch && senderMatch[1].trim().length > 2) {
         sender = senderMatch[1].trim();
@@ -164,13 +164,13 @@ export const AiParserPage: React.FC = () => {
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Ekstraksi pesan chat WhatsApp / Telegram warga menjadi draf transaksi kas secara pasif.
+            Ekstraksi pesan chat WhatsApp / Telegram anggota atau keluarga menjadi draf transaksi kas secara pasif.
           </p>
         </div>
 
         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300">
           <Bot className="w-4 h-4 text-emerald-500" />
-          <span>Dompet: <strong>{activeWallet?.name || 'Kas Komunitas'}</strong></span>
+          <span>Dompet: <strong>{activeWallet?.name || 'Kas Bersama'}</strong></span>
         </div>
       </div>
 
@@ -194,14 +194,14 @@ export const AiParserPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                Simulasi Pesan Chat Warga
+                Simulasi Pesan Chat Anggota
               </h3>
             </div>
             <span className="text-[11px] text-slate-400 font-mono">WhatsApp / Telegram</span>
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            Pilih contoh pesan di bawah ini atau tempel teks pesan asli dari grup obrolan warga:
+            Pilih contoh pesan di bawah ini atau tempel teks pesan asli dari grup obrolan anggota/keluarga:
           </p>
 
           {/* Quick Preset Buttons */}
@@ -228,7 +228,7 @@ export const AiParserPage: React.FC = () => {
               value={inputChatText}
               onChange={(e) => setInputChatText(e.target.value)}
               rows={5}
-              placeholder="Ketik atau tempel teks pesan warga di sini... Contoh: 'Sudah transfer kas 150rb dari Bpk Joko Blok B2'"
+              placeholder="Ketik atau tempel teks pesan anggota/keluarga di sini... Contoh: 'Sudah transfer kas 150rb dari Bpk Joko'"
               className="w-full text-xs p-3.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             />
 

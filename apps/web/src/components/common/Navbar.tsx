@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20">
             <Users className="w-3.5 h-3.5" />
-            Warga
+            Anggota
           </span>
         );
     }
@@ -78,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-              Keuangan Komunitas Terbuka & M-of-N Quorum
+              Keuangan Bersama Terbuka & Kuorum M-of-N
             </p>
           </div>
         </div>
@@ -89,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onOpenWalletModal}
               className="group flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-left transition-all"
-              title="Ganti Dompet Komunitas"
+              title="Ganti Dompet Kas Bersama"
             >
               <div className="max-w-[130px] sm:max-w-[200px] truncate">
                 <span className="block text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
@@ -117,7 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onOpenJoinWallet}
               className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              title="Gabung ke Komunitas Lain dengan Kode"
+              title="Gabung ke Kas Bersama Lain dengan Kode"
             >
               <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Gabung Kode</span>
@@ -192,7 +192,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                       >
                         <KeyRound className="w-4 h-4 text-emerald-500" />
-                        Gabung Komunitas (Kode)
+                        Gabung Kas Bersama (Kode)
                       </button>
                     )}
                     <button

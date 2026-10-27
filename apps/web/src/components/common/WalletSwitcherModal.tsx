@@ -25,7 +25,7 @@ export const WalletSwitcherModal: React.FC<WalletSwitcherModalProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Pilih Dompet Kas Komunitas
+              Pilih Dompet Kas Bersama
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Setiap dompet kas bersifat tertutup dan memiliki aturan mandiri.

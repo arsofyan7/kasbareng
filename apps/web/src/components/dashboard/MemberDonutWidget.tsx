@@ -40,7 +40,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
               Ringkasan Anggota
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Distribusi status warga dompet
+              Distribusi status keanggotaan kas
             </p>
           </div>
         </div>
@@ -145,7 +145,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
           onClick={onNavigateToMembers}
           className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 group cursor-pointer transition-colors"
         >
-          <span>Kelola Anggota Komunitas</span>
+          <span>Kelola Anggota</span>
           <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>

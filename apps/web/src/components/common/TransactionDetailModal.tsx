@@ -658,7 +658,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               Diajukan Oleh
             </span>
             <span className="font-semibold text-slate-900 dark:text-white">
-              {transaction.creator?.fullName || 'Warga'} {isCreator && '(Anda)'}
+              {transaction.creator?.fullName || 'Anggota'} {isCreator && '(Anda)'}
             </span>
           </div>
 

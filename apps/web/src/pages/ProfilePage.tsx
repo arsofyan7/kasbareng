@@ -119,7 +119,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
         </div>
       </div>
 
-      {/* Fitur Algoritma & Tata Kelola Komunitas */}
+      {/* Fitur Algoritma & Tata Kelola Kas Bersama */}
       {onOpenAlgorithmModal && (
         <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/70 to-slate-50 dark:from-indigo-950/30 dark:to-slate-900 border border-indigo-300 dark:border-indigo-700/80 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
@@ -132,7 +132,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
                   Fitur Algoritma & Tata Kelola
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Periksa kuorum persetujuan M-of-N komunitas & inspeksi rantai hash SHA-256
+                  Periksa kuorum persetujuan M-of-N kas bersama & inspeksi rantai hash SHA-256
                 </p>
               </div>
             </div>

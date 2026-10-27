@@ -40,7 +40,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
                 Fitur Algoritma & Tata Kelola
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Pondasi matematis & kriptografis transparansi kas komunitas
+                Pondasi matematis & kriptografis transparansi kas bersama
               </p>
             </div>
           </div>
@@ -59,7 +59,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                  Aturan Komunitas (Kuorum M-of-N)
+                  Aturan Kas Bersama (Kuorum M-of-N)
                 </span>
               </div>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
@@ -80,7 +80,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
 
               <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-emerald-200 dark:border-emerald-800/60">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-0.5">
-                  Peran Anda di Komunitas
+                  Peran Anda di Dompet Ini
                 </span>
                 <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                   {activeWallet.myRole}
@@ -89,7 +89,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Transaksi pengeluaran dana kas komunitas wajib disetujui oleh minimal{' '}
+              Transaksi pengeluaran dana kas bersama wajib disetujui oleh minimal{' '}
               <strong>{activeWallet.requiredApprovals} pengurus yang sah</strong>. Sistem menerapkan
               evaluasi kuorum dinamis dengan perlindungan <em>anti-self approval</em> untuk mencegah
               pencairan dana sepihak.
@@ -97,7 +97,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
           </div>
         ) : (
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 text-center">
-            Pilih dompet kas aktif untuk melihat aturan kuorum spesifik komunitas.
+            Pilih dompet kas aktif untuk melihat aturan kuorum spesifik kas bersama.
           </div>
         )}
 

@@ -225,7 +225,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
             Transaksi Kas
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Semua transaksi kas komunitas yang divalidasi oleh Finite State Machine (FSM).
+            Semua transaksi kas bersama yang divalidasi oleh Finite State Machine (FSM).
           </p>
         </div>
 
@@ -453,7 +453,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                             {tx.notes || tx.category}
                           </div>
                           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Oleh {tx.creator?.fullName || 'Warga'} • Ref #{tx.id.substring(0, 8)}
+                            Oleh {tx.creator?.fullName || 'Anggota'} • Ref #{tx.id.substring(0, 8)}
                           </div>
                         </td>
 
@@ -531,7 +531,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                           {tx.notes || tx.category}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                          {tx.category} • Oleh {tx.creator?.fullName || 'Warga'}
+                          {tx.category} • Oleh {tx.creator?.fullName || 'Anggota'}
                         </div>
                       </div>
 

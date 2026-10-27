@@ -100,13 +100,13 @@ export const AuthPage: React.FC = () => {
           <div className="text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-500/20">
               <Sparkles className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
-              <span>Transparansi Kas Komunitas & Gotong Royong</span>
+              <span>Transparansi Kas Keluarga & Komunitas Bersama</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              {mode === 'login' ? 'Selamat Datang Kembali' : 'Bergabung Bersama Warga'}
+              {mode === 'login' ? 'Selamat Datang Kembali' : 'Mulai Kas & Tabungan Bersama'}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Platform transparansi keuangan komunitas / perkumpulan
+              Platform transparansi kas keluarga, komunitas, & perkumpulan
             </p>
           </div>
 
@@ -199,7 +199,7 @@ export const AuthPage: React.FC = () => {
               disabled={isLoading}
               className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             >
-              <span>{isLoading ? 'Memproses...' : mode === 'login' ? 'Masuk ke Kas Komunitas' : 'Daftar Akun'}</span>
+              <span>{isLoading ? 'Memproses...' : mode === 'login' ? 'Masuk ke Kas Bersama' : 'Daftar Akun'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -222,7 +222,7 @@ export const AuthPage: React.FC = () => {
                 onClick={() => handleDemoFill('warga')}
                 className="flex-1 py-1.5 px-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition-colors"
               >
-                Isi Akun Warga
+                Isi Akun Anggota
               </button>
             </div>
           </div>

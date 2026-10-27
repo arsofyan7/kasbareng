@@ -146,10 +146,10 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Kode Undangan Komunitas
+                Kode Undangan Kas Bersama
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Khusus Admin: Atur akses masuk warga
+                Khusus Admin: Atur akses masuk anggota
               </p>
             </div>
           </div>
@@ -236,7 +236,7 @@ export const ManageInviteCodeModal: React.FC<ManageInviteCodeModalProps> = ({
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition-all"
             >
               <Share2 className="w-4 h-4" />
-              Bagikan Langsung ke WhatsApp Komunitas
+              Bagikan ke WhatsApp Anggota / Grup
             </button>
 
             {/* Admin Controls */}

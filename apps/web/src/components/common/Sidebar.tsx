@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </div>
           <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-300">
-            Kas Komunitas Terbuka
+            Kas Bersama Terbuka
           </p>
           <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/70 leading-snug">
             Kelola keuangan bersama, lebih transparan.

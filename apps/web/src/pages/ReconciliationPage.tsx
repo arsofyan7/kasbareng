@@ -280,7 +280,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Pencocokan mutasi rekening koran warga secara transparan, deterministik, dan dapat diaudit.
+            Pencocokan mutasi rekening koran dan kas bersama secara transparan, deterministik, dan dapat diaudit.
           </p>
         </div>
 
@@ -706,7 +706,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                       {b.matchStatus === 'UNMATCHED' && isManagerOrAdmin && (
                         <div className="ml-12 flex items-center justify-between text-xs text-slate-500 pt-1">
                           <span className="text-slate-400">
-                            Mutasi ini belum tercatat pada draf kas komunitas.
+                            Mutasi ini belum tercatat pada draf kas bersama.
                           </span>
                           <button
                             onClick={() => {
@@ -784,7 +784,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                 value={manualMatchReason}
                 onChange={(e) => setManualMatchReason(e.target.value)}
                 rows={3}
-                placeholder="Contoh: Dikonfirmasi melalui bukti transfer screenshot WhatsApp dari warga..."
+                placeholder="Contoh: Dikonfirmasi melalui bukti transfer screenshot WhatsApp dari anggota/keluarga..."
                 className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <p className="text-[11px] text-slate-400">
@@ -848,7 +848,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                 type="text"
                 value={newTxCategory}
                 onChange={(e) => setNewTxCategory(e.target.value)}
-                placeholder="Contoh: Iuran Warga Blok C, Donasi Renovasi..."
+                placeholder="Contoh: Setoran Kas Bersama, Tabungan Rutin, Donasi..."
                 className="w-full text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>

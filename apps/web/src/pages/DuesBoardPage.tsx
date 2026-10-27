@@ -124,7 +124,7 @@ export const DuesBoardPage: React.FC = () => {
   if (!activeWallet) {
     return (
       <div className="p-8 text-center text-slate-500">
-        Pilih dompet kas komunitas terlebih dahulu.
+        Pilih dompet kas bersama terlebih dahulu.
       </div>
     );
   }
@@ -140,7 +140,7 @@ export const DuesBoardPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                Papan Rekap Iuran Komunitas
+                Papan Rekap Iuran & Setoran Bersama
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
                   {data?.summary?.duesType === 'TARGET_INSTALLMENTS'
                     ? `Target ${data.summary.targetInstallmentsCount || 10} Termin`
@@ -148,7 +148,7 @@ export const DuesBoardPage: React.FC = () => {
                 </span>
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Transparan untuk seluruh warga & pengurus. Pantau siapa yang sudah lunas dan siapa yang belum bayar.
+                Transparan untuk seluruh anggota & pengurus. Pantau siapa yang sudah lunas dan siapa yang belum bayar.
               </p>
             </div>
           </div>
@@ -241,7 +241,7 @@ export const DuesBoardPage: React.FC = () => {
             className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>{isManagerOrAdmin ? 'Catat Setoran Iuran' : 'Lapor Pembayaran'}</span>
+            <span>{isManagerOrAdmin ? 'Catat Setoran' : 'Lapor Setoran'}</span>
           </button>
         </div>
       </div>
@@ -305,7 +305,7 @@ export const DuesBoardPage: React.FC = () => {
               Rp {data.summary.totalPending.toLocaleString('id-ID')}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Laporan warga yang belum disetujui pengurus
+              Laporan setoran anggota yang belum disetujui pengurus
             </p>
           </div>
 
@@ -335,7 +335,7 @@ export const DuesBoardPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>
-            Papan iuran ini bersifat <strong>terbuka dan transparan</strong> untuk seluruh anggota dompet kas guna menjaga akuntabilitas gotong royong warga.
+            Papan iuran ini bersifat <strong>terbuka dan transparan</strong> untuk seluruh anggota dompet kas guna menjaga akuntabilitas gotong royong anggota.
           </span>
         </div>
         <div className="flex items-center gap-3 text-[11px] shrink-0">
@@ -357,7 +357,7 @@ export const DuesBoardPage: React.FC = () => {
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Cari nama warga / anggota..."
+            placeholder="Cari nama anggota / penyetor..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3.5 py-2 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
@@ -408,7 +408,7 @@ export const DuesBoardPage: React.FC = () => {
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold">
                 <th className="py-3.5 px-4 sticky left-0 z-20 bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur-sm min-w-[180px] shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
-                  Anggota Komunitas
+                  Anggota Kas
                 </th>
                 {data?.periods.map((p) => (
                   <th key={p.key} className="py-3.5 px-2 text-center min-w-[56px]">
@@ -566,7 +566,7 @@ export const DuesBoardPage: React.FC = () => {
 
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-500">Anggota / Warga:</span>
+                <span className="text-slate-500">Anggota Penyetor:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-100">
                   {selectedCell.memberName}
                 </span>

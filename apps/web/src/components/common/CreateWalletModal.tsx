@@ -67,7 +67,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setErrorMsg('Nama dompet kas komunitas wajib diisi.');
+      setErrorMsg('Nama dompet kas bersama wajib diisi.');
       return;
     }
 
@@ -150,7 +150,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
             <input
               type="text"
               required
-              placeholder="Contoh: Kas RT 05 RW 02, Kas Masjid Al-Ikhlas"
+              placeholder="Contoh: Tabungan Keluarga, Kas RT 05, Kas Usaha, Arisan"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
@@ -277,7 +277,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                 />
               </div>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Jika diisi, nominal ini menjadi acuan kalkulasi otomatis saat warga membayar atau lapor iuran.
+                Jika diisi, nominal ini menjadi acuan kalkulasi otomatis saat anggota menyetor atau lapor iuran.
               </p>
             </div>
           </div>
@@ -287,7 +287,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                Kode Akses Warga (Private Gated)
+                Kode Akses Anggota (Private Gated)
               </label>
             </div>
 

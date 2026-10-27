@@ -143,10 +143,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Belum Ada Dompet Kas Komunitas
+            Belum Ada Dompet Kas Bersama
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-            Gabung ke kas warga yang sudah ada dengan kode undangan, atau buat dompet kas baru untuk RT/RW/organisasi Anda.
+            Gabung ke kas bersama yang sudah ada dengan kode undangan, atau buat dompet kas baru untuk keluarga, komunitas, atau perkumpulan Anda.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -156,7 +156,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
             >
               <KeyRound className="w-4 h-4" />
-              Gabung Komunitas (Pakai Kode)
+              Gabung Kas Bersama (Pakai Kode)
             </button>
           )}
           <button
@@ -220,7 +220,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             Halo, {user?.fullName.split(' ')[0]} <span>👋</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-            Berikut ringkasan kas komunitas{' '}
+            Berikut ringkasan kas bersama{' '}
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">
               {activeWallet?.name}
             </span>

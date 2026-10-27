@@ -46,7 +46,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
               Papan Iuran Bulan Ini
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Kepatuhan iuran warga aktif
+              Kepatuhan setoran & iuran anggota
             </p>
           </div>
         </div>

@@ -99,7 +99,7 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
               Aktivitas Terbaru
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              {isManagerOrAdmin ? 'Mutasi kas komunitas terkini' : 'Pencatatan kas Anda'}
+              {isManagerOrAdmin ? 'Mutasi kas bersama terkini' : 'Pencatatan kas Anda'}
             </p>
           </div>
         </div>
@@ -180,7 +180,7 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
                       {tx.category}
                     </div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
-                      <span className="truncate">{tx.creator?.fullName?.split(' ')[0] || 'Warga'}</span>
+                      <span className="truncate">{tx.creator?.fullName?.split(' ')[0] || 'Anggota'}</span>
                       <span>•</span>
                       <span>
                         {new Date(tx.createdAt).toLocaleDateString('id-ID', {

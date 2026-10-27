@@ -59,7 +59,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20">
             <Users className="w-3.5 h-3.5" />
-            Warga
+            Anggota
           </span>
         );
     }
@@ -71,7 +71,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
             <WalletCards className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            Kantong Kas Komunitas
+            Kantong Kas Bersama
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Daftar seluruh dompet kas tertutup yang Anda ikuti atau kelola.
