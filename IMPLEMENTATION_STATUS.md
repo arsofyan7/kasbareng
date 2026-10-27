@@ -369,6 +369,41 @@ Sumber Kebenaran Kebutuhan: Dokumen di folder `requirements/*.txt`.
   - `npm --workspace=apps/web run build`: 100% lulus (dist bersih, 0 lint/type error).
   - `npm run test:api`: 103/103 tests lulus (100% green across all 13 test suites).
 
+---
+
+### Fase Transformasi Visual Tahap 2: Dashboard Widgets Baru (Mini Papan Iuran, Donut Chart Anggota, Tren Kas 6 Bulan, & Aktivitas Terbaru)
+- **Status**: **COMPLETED**
+- **Tanggal Selesai**: 2026-10-27
+- **Tujuan & Filosofi**:
+  - Mentransformasikan beranda kas komunitas dari sekadar angka statis menjadi pusat kendali keuangan (*Financial Command Center*) yang kaya visual, interaktif, dan berbobot akademis/profesional.
+  - Mencapai keselarasan penuh (*100% Mockup Parity*) dengan desain Fintech Komunitas modern.
+- **Rincian Implementasi**:
+  1. **Widget Mini Papan Iuran Bulan Ini (`MiniDuesWidget.tsx`)**:
+     - Mengambil data kepatuhan iuran real-time dari `GET /api/v1/wallets/:id/dues-board`.
+     - Pemilih periode bulan aktif (*Month Dropdown Selector*) dengan dukungan multi-bulan/termin.
+     - Bar progres persentase kepatuhan warga (`X dari Y anggota • Z%`) dengan gradien hijau mulus.
+     - 2 Kotak status mikro: **Sudah Membayar** (ikon centang hijau) dan **Belum Membayar** (ikon jam kuning).
+     - Tombol pintasan `Lihat Detail Papan Iuran →` untuk langsung melompat ke matriks rekap penuh.
+  2. **Widget Ringkasan Anggota Donut Chart (`MemberDonutWidget.tsx`)**:
+     - Mengambil data keanggotaan real-time dari `GET /api/v1/wallets/:id/members`.
+     - **Grafik Donut SVG Murni (Zero Dependency)** dengan penghitungan busur lingkaran matematis presisi ($C = 2\pi r$).
+     - Menampilkan total anggota di tengah lubang donat dengan tipografi semibold tebal.
+     - Legenda status: **Aktif** (Emerald), **Menunggu** (Amber), dan **Nonaktif** (Rose).
+     - Tombol pintasan `Kelola Anggota Komunitas →` untuk langsung melompat ke tab peran & akses.
+  3. **Widget Tren Saldo Kas 6 Bulan (`CashTrendWidget.tsx`)**:
+     - Mengagregasi saldo buku kas berjalan (*running posted ledger balance*) secara akurat selama 6 bulan terakhir.
+     - Skala sumbu Y adaptif (*smart dynamic ceiling*) dengan label Rupiah yang rapi (`jt` / `rb`).
+     - Batang 5 bulan sebelumnya berwarna *soft mint / emerald muda*, sedangkan **bulan aktif berjalan diberi warna gradien tegas dengan animasi highlight menyala (pulsing dot)**.
+     - **Tooltip interaktif** saat kursor diarahkan atau disentuh di HP yang menampilkan nama bulan dan nominal saldo presisi.
+  4. **Widget Aktivitas Terbaru Berdampingan (`RecentActivityWidget.tsx`)**:
+     - Menampilkan mutasi kas terkini bersanding di samping grafik tren kas dalam grid 2 kolom di desktop.
+     - Label outline tipe transaksi (`Pemasukan` hijau, `Pengeluaran` merah).
+     - Nominal berwarna dengan tanda `+` atau `-`, pill status FSM terverifikasi, dan filter tab cepat (*Semua, Masuk, Keluar*).
+- **Hasil Verifikasi**:
+  - `npm --workspace=apps/web run build`: 100% lulus (dist bersih, 0 lint/type error).
+  - `npm run test:api`: 103/103 tests lulus (100% green across all 13 test suites).
+
+
 
 
 
