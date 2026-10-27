@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletContext';
-import { TransactionType, ApiResponse, Transaction } from '../../types';
+import { TransactionType, ApiResponse, Transaction, DuesBoardResult } from '../../types';
 import {
   X,
   TrendingUp,
@@ -15,6 +15,7 @@ import {
   Calendar,
   Check,
   Users,
+  Clock,
 } from 'lucide-react';
 
 interface RecordTransactionModalProps {
@@ -36,7 +37,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { activeWallet } = useWallet();
 
   const isWarga = activeWallet?.myRole === 'WARGA';
@@ -55,6 +56,10 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   // Target member state (for Admin/Pengelola recording cash on behalf of a warga)
   const [members, setMembers] = useState<Array<{ userId: string; fullName: string; role: string }>>([]);
   const [targetUserId, setTargetUserId] = useState<string>(initialTargetUserId || '');
+
+  // Dues board status map to disable already paid / pending periods
+  const [duesRecordsMap, setDuesRecordsMap] = useState<Record<string, Record<string, { status: string; amount?: number }>>>({});
+  const [isLoadingDues, setIsLoadingDues] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -100,6 +105,55 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   }, [isOpen, activeWallet, token, isWarga]);
 
+  // Fetch dues board to get real-time payment status per member
+  useEffect(() => {
+    if (!isOpen || !activeWallet || !token) return;
+    if (duesType === 'FREEFORM') return;
+
+    setIsLoadingDues(true);
+    fetch(`/api/v1/wallets/${activeWallet.id}/dues-board?year=${currentYear}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((json: ApiResponse<DuesBoardResult>) => {
+        if (json.data && Array.isArray(json.data.members)) {
+          const map: Record<string, Record<string, { status: string; amount?: number }>> = {};
+          json.data.members.forEach((m) => {
+            map[m.userId] = m.records || {};
+          });
+          setDuesRecordsMap(map);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingDues(false));
+  }, [isOpen, activeWallet, token, duesType, currentYear]);
+
+  const effectiveUserId = isWarga ? user?.id : (targetUserId || user?.id);
+  const userDuesRecords = useMemo(() => {
+    return (effectiveUserId && duesRecordsMap[effectiveUserId]) || {};
+  }, [effectiveUserId, duesRecordsMap]);
+
+  // Clean out any periods from selection that are already PAID or PENDING for effective target user
+  useEffect(() => {
+    if (!effectiveUserId || !duesRecordsMap[effectiveUserId]) return;
+    const userRecs = duesRecordsMap[effectiveUserId];
+    setSelectedPeriods((prev) => {
+      const filtered = prev.filter((k) => {
+        const st = userRecs[k]?.status;
+        return st !== 'PAID' && st !== 'PENDING';
+      });
+      if (filtered.length !== prev.length) {
+        if (duesAmount && filtered.length > 0) {
+          setAmountStr((filtered.length * duesAmount).toLocaleString('id-ID'));
+        } else if (filtered.length === 0) {
+          setAmountStr('');
+        }
+        return filtered;
+      }
+      return prev;
+    });
+  }, [effectiveUserId, duesRecordsMap, duesAmount]);
+
   const availablePeriods = useMemo(() => {
     if (duesType === 'FREEFORM' || !activeWallet) return [];
     if (duesType === 'TARGET_INSTALLMENTS') {
@@ -122,7 +176,18 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     });
   }, [duesType, activeWallet, currentYear]);
 
+  const allPeriodsSettled = useMemo(() => {
+    if (availablePeriods.length === 0) return false;
+    return availablePeriods.every((p) => {
+      const st = userDuesRecords[p.key]?.status;
+      return st === 'PAID' || st === 'PENDING';
+    });
+  }, [availablePeriods, userDuesRecords]);
+
   const togglePeriod = (pKey: string) => {
+    const st = userDuesRecords[pKey]?.status;
+    if (st === 'PAID' || st === 'PENDING') return;
+
     const next = selectedPeriods.includes(pKey)
       ? selectedPeriods.filter((k) => k !== pKey)
       : [...selectedPeriods, pKey];
@@ -131,6 +196,8 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     if (duesAmount && next.length > 0) {
       setAmountStr((next.length * duesAmount).toLocaleString('id-ID'));
       if (!category) setCategory('Iuran / Setoran Bulanan');
+    } else if (next.length === 0) {
+      setAmountStr('');
     }
   };
 
@@ -370,55 +437,6 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
 
         {/* Form Fields */}
         <div className="space-y-4">
-          {/* Periode Iuran Multi-Bulan / Checklist (Only for INCOME and when duesType !== FREEFORM) */}
-          {type === 'INCOME' && duesType !== 'FREEFORM' && availablePeriods.length > 0 && (
-            <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700/80 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  Pilih Periode Iuran (Bisa Borongan / Sekaligus)
-                </label>
-                {duesAmount && (
-                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
-                    Rp {duesAmount.toLocaleString('id-ID')} / periode
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
-                {availablePeriods.map((p) => {
-                  const isSelected = selectedPeriods.includes(p.key);
-                  return (
-                    <button
-                      type="button"
-                      key={p.key}
-                      onClick={() => togglePeriod(p.key)}
-                      className={`py-1.5 px-2 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1 transition-all ${
-                        isSelected
-                          ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
-                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-emerald-300'
-                      }`}
-                    >
-                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                      {p.shortLabel}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {selectedPeriods.length > 0 ? (
-                <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
-                  Terpilih: <strong>{selectedPeriods.length} periode</strong>
-                  {duesAmount && ` (Otomatis kalkulasi: Rp ${(selectedPeriods.length * duesAmount).toLocaleString('id-ID')})`}
-                </p>
-              ) : (
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                  Klik untuk mencentang bulan/termin yang dibayar agar status di Papan Iuran otomatis tercatat.
-                </p>
-              )}
-            </div>
-          )}
-
           {/* Member Selector (Only for Admin/Pengelola recording INCOME cash on behalf of a resident) */}
           {!isWarga && type === 'INCOME' && members.length > 0 && (
             <div>
@@ -438,6 +456,124 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* Periode Iuran Multi-Bulan / Checklist (Only for INCOME and when duesType !== FREEFORM) */}
+          {type === 'INCOME' && duesType !== 'FREEFORM' && availablePeriods.length > 0 && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Pilih Periode Iuran (Bisa Borongan / Sekaligus)
+                </label>
+                {duesAmount && (
+                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                    Rp {duesAmount.toLocaleString('id-ID')} / periode
+                  </span>
+                )}
+              </div>
+
+              {allPeriodsSettled && (
+                <div className="p-2.5 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 flex items-start gap-2 text-xs text-emerald-800 dark:text-emerald-200">
+                  <FileCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <span>
+                    Semua periode {duesType === 'TARGET_INSTALLMENTS' ? 'setoran' : 'bulan'} di tahun ini untuk anggota ini sudah lunas atau sedang menunggu verifikasi.
+                  </span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5">
+                {availablePeriods.map((p) => {
+                  const isSelected = selectedPeriods.includes(p.key);
+                  const periodStatus = userDuesRecords[p.key]?.status;
+                  const isPaid = periodStatus === 'PAID';
+                  const isPending = periodStatus === 'PENDING';
+                  const isDisabled = isPaid || isPending;
+
+                  return (
+                    <button
+                      type="button"
+                      key={p.key}
+                      disabled={isDisabled}
+                      onClick={() => togglePeriod(p.key)}
+                      title={
+                        isPaid
+                          ? `${p.label}: Sudah Lunas`
+                          : isPending
+                          ? `${p.label}: Menunggu Verifikasi Pengurus`
+                          : isSelected
+                          ? `${p.label}: Terpilih`
+                          : `Pilih ${p.label}`
+                      }
+                      className={`py-1.5 px-2 rounded-xl text-xs font-semibold border flex flex-col items-center justify-center gap-0.5 transition-all ${
+                        isPaid
+                          ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 cursor-not-allowed opacity-80'
+                          : isPending
+                          ? 'border-amber-300 dark:border-amber-700/80 bg-amber-100/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 cursor-not-allowed opacity-80'
+                          : isSelected
+                          ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-emerald-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1">
+                        {isPaid && <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400 stroke-[3]" />}
+                        {isPending && <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />}
+                        {isSelected && !isDisabled && <Check className="w-3 h-3 stroke-[3]" />}
+                        <span>{p.shortLabel}</span>
+                      </div>
+                      {isPaid && (
+                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                          Lunas
+                        </span>
+                      )}
+                      {isPending && (
+                        <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                          Menunggu
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Status Indicator Legend */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/60 text-[10px]">
+                <div className="flex flex-wrap items-center gap-2.5 text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 inline-flex items-center justify-center">
+                      <Check className="w-2 h-2 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
+                    </span>
+                    Sudah Lunas
+                  </span>
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 inline-flex items-center justify-center">
+                      <Clock className="w-2 h-2 text-amber-600 dark:text-amber-400" />
+                    </span>
+                    Menunggu Verifikasi
+                  </span>
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 inline-block" />
+                    Belum Bayar
+                  </span>
+                </div>
+                {isLoadingDues && (
+                  <span className="text-slate-400 dark:text-slate-500 animate-pulse">
+                    Memeriksa status...
+                  </span>
+                )}
+              </div>
+
+              {selectedPeriods.length > 0 ? (
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
+                  Terpilih: <strong>{selectedPeriods.length} periode</strong>
+                  {duesAmount && ` (Otomatis kalkulasi: Rp ${(selectedPeriods.length * duesAmount).toLocaleString('id-ID')})`}
+                </p>
+              ) : (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  Klik untuk mencentang bulan/termin yang belum dibayar agar status di Papan Iuran otomatis tercatat.
+                </p>
+              )}
             </div>
           )}
 
