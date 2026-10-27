@@ -207,7 +207,7 @@ transactionRouter.post(
 
       const transaction = await prisma.transaction.findUnique({
         where: { id: transactionId },
-        select: { walletId: true },
+        select: { walletId: true, type: true, creatorId: true },
       });
 
       if (!transaction) {
@@ -223,8 +223,25 @@ transactionRouter.post(
         },
       });
 
-      if (!member || (member.role !== WalletRole.ADMIN && member.role !== WalletRole.PENGELOLA)) {
-        return sendError(res, 'FORBIDDEN', 'Hanya Pengelola atau Admin yang dapat mengajukan transaksi.', 403);
+      if (!member) {
+        return sendError(res, 'FORBIDDEN', 'Anda bukan anggota dompet kas ini.', 403);
+      }
+
+      // Role check based on transaction type:
+      // EXPENSE: Only Admin and Pengelola can propose spending
+      // INCOME: Admin, Pengelola, or the member creator can submit their income/dues report
+      if (transaction.type === TransactionType.EXPENSE) {
+        if (member.role !== WalletRole.ADMIN && member.role !== WalletRole.PENGELOLA) {
+          return sendError(res, 'FORBIDDEN', 'Hanya Pengelola atau Admin yang dapat mengajukan pengeluaran kas.', 403);
+        }
+      } else {
+        if (
+          member.role !== WalletRole.ADMIN &&
+          member.role !== WalletRole.PENGELOLA &&
+          transaction.creatorId !== req.user!.id
+        ) {
+          return sendError(res, 'FORBIDDEN', 'Hanya pengelola atau anggota yang bersangkutan yang dapat mengajukan laporan setoran ini.', 403);
+        }
       }
 
       const result = await TransactionService.submitTransaction(
