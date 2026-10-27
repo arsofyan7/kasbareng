@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
 import {
   Wallet,
-  ShieldCheck,
   PlusCircle,
   KeyRound,
   Eye,
@@ -217,7 +216,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         <div className="z-10 space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            Halo, {user?.fullName.split(' ')[0]} <span>👋</span>
+            Halo, {(() => {
+              if (!user?.fullName) return '';
+              const parts = user.fullName.trim().split(/\s+/);
+              if (/^(Bpk\.?|Pak\.?|Ibu\.?|Mas|Mba|Mbak|Sdr\.?)$/i.test(parts[0]) && parts.length > 1) {
+                return `${parts[0]} ${parts[1]}`;
+              }
+              return parts[0];
+            })()} <span>👋</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
             Berikut ringkasan kas bersama{' '}
@@ -226,19 +232,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </span>
           </p>
         </div>
-
-        {/* Quorum Policy & Audit Badges */}
-        {activeWallet && (
-          <div className="z-10 self-start sm:self-auto">
-            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-emerald-200/80 dark:border-emerald-800/60 shadow-sm text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>
-                Kuorum: <strong>{activeWallet.requiredApprovals} dari {activeWallet.memberCount} Suara</strong>
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-emerald-500 opacity-60" />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Primary Financial Balance Cards (Live Calculated via Ledger Algorithm) */}
