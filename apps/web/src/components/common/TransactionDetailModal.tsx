@@ -50,6 +50,17 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   const [paymentRef, setPaymentRef] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
 
+  // Sync transaction state whenever initialTransaction prop changes
+  useEffect(() => {
+    setTransaction(initialTransaction);
+    if (!initialTransaction) {
+      setErrorMsg(null);
+      setSuccessNotice(null);
+      setShowApprovalForm(false);
+      setShowPaymentForm(false);
+    }
+  }, [initialTransaction]);
+
   // Fetch fresh detailed transaction data on open
   useEffect(() => {
     if (!initialTransaction?.id || !token) return;
@@ -76,7 +87,16 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     };
   }, [initialTransaction?.id, token]);
 
-  if (!transaction) return null;
+  const handleClose = () => {
+    setTransaction(null);
+    setErrorMsg(null);
+    setSuccessNotice(null);
+    setShowApprovalForm(false);
+    setShowPaymentForm(false);
+    onClose();
+  };
+
+  if (!initialTransaction || !transaction) return null;
 
   const isIncome = transaction.type === 'INCOME';
   const isDraft = transaction.state === 'DRAFT';
@@ -354,8 +374,14 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
+    <div
+      onClick={handleClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150 cursor-pointer"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto cursor-default"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
@@ -370,8 +396,11 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </p>
           </div>
           <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            type="button"
+            onClick={handleClose}
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+            title="Tutup Modal"
+            aria-label="Tutup Detail Transaksi"
           >
             <X className="w-5 h-5" />
           </button>
@@ -680,8 +709,8 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         <div className="pt-3 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
-            onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800"
+            onClick={handleClose}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
           >
             Tutup
           </button>

@@ -375,20 +375,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       </div>
 
       {/* Record Transaction Modal */}
-      <RecordTransactionModal
-        isOpen={recordModalOpen}
-        initialType={recordType}
-        availableBalance={summary?.availableBalance || 0}
-        onClose={() => setRecordModalOpen(false)}
-        onSuccess={fetchDashboardData}
-      />
+      {recordModalOpen && (
+        <RecordTransactionModal
+          isOpen={recordModalOpen}
+          initialType={recordType}
+          availableBalance={summary?.availableBalance || 0}
+          onClose={() => setRecordModalOpen(false)}
+          onSuccess={fetchDashboardData}
+        />
+      )}
 
       {/* Transaction Detail Modal */}
-      <TransactionDetailModal
-        transaction={selectedTx}
-        onClose={() => setSelectedTx(null)}
-        onSuccess={fetchDashboardData}
-      />
+      {selectedTx && (
+        <TransactionDetailModal
+          transaction={selectedTx}
+          onClose={() => setSelectedTx(null)}
+          onSuccess={fetchDashboardData}
+        />
+      )}
     </div>
   );
 };

@@ -591,20 +591,24 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
       </div>
 
       {/* Transaction Detail Modal */}
-      <TransactionDetailModal
-        transaction={selectedTx}
-        onClose={() => setSelectedTx(null)}
-        onSuccess={fetchTransactions}
-      />
+      {selectedTx && (
+        <TransactionDetailModal
+          transaction={selectedTx}
+          onClose={() => setSelectedTx(null)}
+          onSuccess={fetchTransactions}
+        />
+      )}
 
       {/* Record Transaction Modal */}
-      <RecordTransactionModal
-        isOpen={localRecordModalOpen}
-        initialType={localRecordType}
-        availableBalance={0}
-        onClose={() => setLocalRecordModalOpen(false)}
-        onSuccess={fetchTransactions}
-      />
+      {localRecordModalOpen && (
+        <RecordTransactionModal
+          isOpen={localRecordModalOpen}
+          initialType={localRecordType}
+          availableBalance={0}
+          onClose={() => setLocalRecordModalOpen(false)}
+          onSuccess={fetchTransactions}
+        />
+      )}
     </div>
   );
 };
