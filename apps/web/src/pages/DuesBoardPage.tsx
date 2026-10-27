@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
-import { DuesBoardResult, ApiResponse } from '../types';
+import { DuesBoardResult, ApiResponse, Transaction } from '../types';
 import {
   CalendarDays,
   Clock,
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
 import { ManageDuesConfigModal } from '../components/common/ManageDuesConfigModal';
+import { TransactionDetailModal } from '../components/common/TransactionDetailModal';
 
 export const DuesBoardPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -58,6 +59,9 @@ export const DuesBoardPage: React.FC = () => {
     transactionId: string | null;
     receiptAttachmentId: string | null;
   } | null>(null);
+
+  // Selected transaction for detail & verification modal
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   const isManagerOrAdmin =
     activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
@@ -501,18 +505,22 @@ export const DuesBoardPage: React.FC = () => {
                             ) : isPending ? (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setSelectedCell({
-                                    memberName: member.fullName,
-                                    periodLabel: p.label,
-                                    status: 'Menunggu Verifikasi',
-                                    amount: rec.amount,
-                                    transactionId: rec.transactionId,
-                                    receiptAttachmentId: rec.receiptAttachmentId,
-                                  })
-                                }
-                                className="w-8 h-8 rounded-xl bg-amber-100/70 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 inline-flex items-center justify-center hover:scale-105 transition-transform animate-pulse"
-                                title={`${p.label}: Menunggu Verifikasi (Rp ${rec.amount.toLocaleString('id-ID')})`}
+                                onClick={() => {
+                                  if (rec.transactionId) {
+                                    setSelectedTx({ id: rec.transactionId } as Transaction);
+                                  } else {
+                                    setSelectedCell({
+                                      memberName: member.fullName,
+                                      periodLabel: p.label,
+                                      status: 'Menunggu Verifikasi',
+                                      amount: rec.amount,
+                                      transactionId: rec.transactionId,
+                                      receiptAttachmentId: rec.receiptAttachmentId,
+                                    });
+                                  }
+                                }}
+                                className="w-8 h-8 rounded-xl bg-amber-100/70 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 inline-flex items-center justify-center hover:scale-110 hover:shadow-md transition-all animate-pulse"
+                                title={`${p.label}: Menunggu Verifikasi — Klik untuk verifikasi transaksi (Rp ${rec.amount.toLocaleString('id-ID')})`}
                               >
                                 <Clock className="w-3.5 h-3.5" />
                               </button>
@@ -638,6 +646,21 @@ export const DuesBoardPage: React.FC = () => {
               </a>
             )}
 
+            {selectedCell.transactionId && (
+              <button
+                type="button"
+                onClick={() => {
+                  const txId = selectedCell.transactionId!;
+                  setSelectedCell(null);
+                  setSelectedTx({ id: txId } as Transaction);
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-emerald-200 dark:border-emerald-800"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Buka Detail & Verifikasi Transaksi
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setSelectedCell(null)}
@@ -673,6 +696,18 @@ export const DuesBoardPage: React.FC = () => {
           isOpen={duesConfigOpen}
           onClose={() => setDuesConfigOpen(false)}
           onSuccess={() => {
+            fetchDuesBoard();
+          }}
+        />
+      )}
+
+      {/* Transaction Detail & Verification Modal */}
+      {selectedTx && (
+        <TransactionDetailModal
+          transaction={selectedTx}
+          onClose={() => setSelectedTx(null)}
+          onSuccess={() => {
+            setSelectedTx(null);
             fetchDuesBoard();
           }}
         />
