@@ -1,7 +1,7 @@
 # 💰 KASBARENG
 
-> **Modern Community Treasury & Governance PWA**  
-> *Aplikasi Tata Kelola Kas Komunitas Ramah Warga dengan Kuorum M-of-N, Audit Hash Chain SHA-256 Anti-Tamper, dan Rekonsiliasi Bank Otomatis.*
+> **Modern Multi-Treasury & Financial Governance PWA**  
+> *Platform Tata Kelola Kas Bersama, Keluarga, & Komunitas dengan Kuorum M-of-N, Audit Hash Chain SHA-256 Anti-Tamper, dan Rekonsiliasi Bank Otomatis.*
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -11,6 +11,36 @@
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![Vitest](https://img.shields.io/badge/Vitest-103%2F103_Tests_Passed-green?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-orange?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
+
+<p align="center">
+  <img src="docs/screenshots/kasbareng-hero-showcase.png" alt="KASBARENG Modern Responsive UI Showcase (Desktop Web App & Mobile PWA)" width="100%" />
+</p>
+
+<p align="center">
+  <em>✨ Tampilan Antarmuka Responsif KASBARENG — Mode Desktop Web & Mobile PWA dengan Navigasi Cepat Ala E-Wallet</em>
+</p>
+
+<details>
+<summary><b>📸 Buka Galeri Tangkapan Layar Fitur Lengkap (Desktop & Mobile)</b></summary>
+<br />
+
+### 🖥️ Tampilan Desktop (Web Application)
+
+| Papan Rekap Iuran & Setoran Bersama | Transaksi Kas Ledger & FSM |
+| :---: | :---: |
+| <img src="docs/screenshots/desktop-dues.png" alt="Papan Iuran Desktop" width="100%" /> | <img src="docs/screenshots/desktop-transactions.png" alt="Transaksi Kas Desktop" width="100%" /> |
+
+| Halaman Autentikasi / Masuk Akun |
+| :---: |
+| <img src="docs/screenshots/desktop-landing.png" alt="Landing Page Desktop" width="100%" /> |
+
+### 📱 Tampilan Mobile (Progressive Web App - PWA)
+
+| Dashboard Kas Mobile | Quick Action Sheet (Modal Cepat Ala E-Wallet) |
+| :---: | :---: |
+| <img src="docs/screenshots/mobile-dashboard.png" alt="Dashboard Mobile" width="380" /> | <img src="docs/screenshots/mobile-quick-action.png" alt="Quick Action Sheet Mobile" width="380" /> |
+
+</details>
 
 ---
 
