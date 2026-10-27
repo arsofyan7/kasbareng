@@ -4,23 +4,29 @@ import { useWallet } from '../context/WalletContext';
 import {
   Wallet,
   ShieldCheck,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  Users,
   PlusCircle,
   KeyRound,
-  CalendarDays,
   Eye,
   EyeOff,
   ChevronRight,
   ChevronDown,
   Coins,
 } from 'lucide-react';
-import { Transaction, TransactionType, TransactionState, WalletSummary, ApiResponse } from '../types';
+import {
+  Transaction,
+  TransactionType,
+  WalletSummary,
+  DuesBoardResult,
+  WalletMember,
+  ApiResponse,
+} from '../types';
 import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
 import { TransactionDetailModal } from '../components/common/TransactionDetailModal';
 import { NavTab } from '../components/common/Sidebar';
+import { MiniDuesWidget } from '../components/dashboard/MiniDuesWidget';
+import { MemberDonutWidget } from '../components/dashboard/MemberDonutWidget';
+import { CashTrendWidget } from '../components/dashboard/CashTrendWidget';
+import { RecentActivityWidget } from '../components/dashboard/RecentActivityWidget';
 
 interface DashboardPageProps {
   onOpenCreateWallet: () => void;
@@ -42,6 +48,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const [summary, setSummary] = useState<WalletSummary | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [duesBoard, setDuesBoard] = useState<DuesBoardResult | null>(null);
+  const [members, setMembers] = useState<WalletMember[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
 
@@ -81,22 +89,40 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     setIsLoading(true);
 
     try {
-      // 1. Fetch balance summary
-      const sumRes = await fetch(`/api/v1/wallets/${activeWallet.id}/summary`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const sumJson: ApiResponse<WalletSummary> = await sumRes.json();
-      if (sumRes.ok && sumJson.data) {
-        setSummary(sumJson.data);
+      // Fetch balance summary, transactions, dues board, and members in parallel
+      const [sumRes, txRes, duesRes, memRes] = await Promise.all([
+        fetch(`/api/v1/wallets/${activeWallet.id}/summary`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`/api/v1/wallets/${activeWallet.id}/transactions?limit=50`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`/api/v1/wallets/${activeWallet.id}/dues-board`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`/api/v1/wallets/${activeWallet.id}/members`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (sumRes.ok) {
+        const sumJson: ApiResponse<WalletSummary> = await sumRes.json();
+        if (sumJson.data) setSummary(sumJson.data);
       }
 
-      // 2. Fetch recent transactions
-      const txRes = await fetch(`/api/v1/wallets/${activeWallet.id}/transactions?limit=20`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const txJson: ApiResponse<Transaction[]> = await txRes.json();
-      if (txRes.ok && txJson.data) {
-        setTransactions(txJson.data);
+      if (txRes.ok) {
+        const txJson: ApiResponse<Transaction[]> = await txRes.json();
+        if (txJson.data) setTransactions(txJson.data);
+      }
+
+      if (duesRes.ok) {
+        const duesJson: ApiResponse<DuesBoardResult> = await duesRes.json();
+        if (duesJson.data) setDuesBoard(duesJson.data);
+      }
+
+      if (memRes.ok) {
+        const memJson: ApiResponse<WalletMember[]> = await memRes.json();
+        if (memJson.data) setMembers(memJson.data);
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -154,72 +180,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     }
   };
 
-  const filteredTransactions = transactions.filter((tx) => {
-    if (activeFilter === 'INCOME') return tx.type === 'INCOME';
-    if (activeFilter === 'EXPENSE') return tx.type === 'EXPENSE';
-    return true;
-  });
 
-  const getStateBadge = (state: TransactionState, type?: TransactionType) => {
-    switch (state) {
-      case 'DRAFT':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            Draf
-          </span>
-        );
-      case 'SUBMITTED':
-        if (type === 'INCOME') {
-          return (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              Menunggu Verifikasi
-            </span>
-          );
-        }
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-            Menunggu Kuorum
-          </span>
-        );
-      case 'PENDING_APPROVAL':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-            Menunggu Kuorum
-          </span>
-        );
-      case 'APPROVED':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/20">
-            Disetujui
-          </span>
-        );
-      case 'COMPLETED':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-            Selesai
-          </span>
-        );
-      case 'CANCELLED':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400">
-            Dibatalkan
-          </span>
-        );
-      case 'REJECTED':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20">
-            Ditolak
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-            {state}
-          </span>
-        );
-    }
-  };
 
   const isManagerOrAdmin = activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
 
@@ -380,183 +341,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* Quick Navigation Shortcuts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Shortcut 1: Papan Iuran */}
-        <button
-          type="button"
-          onClick={() => onNavigateToTab('papan-iuran')}
-          className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/60 hover:bg-emerald-50/20 dark:hover:bg-slate-800/80 text-left transition-all group cursor-pointer shadow-sm"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-              <CalendarDays className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-              Lihat Rekap
-            </span>
-          </div>
-          <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-            Papan Iuran Komunitas
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Matriks transparansi iuran bulanan/termin seluruh warga
-          </div>
-        </button>
-
-        {/* Shortcut 2: Kelola Anggota */}
-        <button
-          type="button"
-          onClick={() => onNavigateToTab('anggota')}
-          className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-sky-500/60 hover:bg-sky-50/20 dark:hover:bg-slate-800/80 text-left transition-all group cursor-pointer shadow-sm"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-              <Users className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-              {activeWallet?.memberCount || 1} Anggota
-            </span>
-          </div>
-          <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-            Kelola Anggota & Peran
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Daftar warga, hak akses, dan kode undangan komunitas
-          </div>
-        </button>
+      {/* Middle Section: Mini Papan Iuran & Ringkasan Anggota (Donut Chart) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <MiniDuesWidget
+          duesBoard={duesBoard}
+          isLoading={isLoading}
+          onNavigateToDues={() => onNavigateToTab('papan-iuran')}
+        />
+        <MemberDonutWidget
+          members={members}
+          isLoading={isLoading}
+          onNavigateToMembers={() => onNavigateToTab('anggota')}
+        />
       </div>
 
-      {/* Transaction Feed & Chronology */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-white">
-              {isManagerOrAdmin ? 'Riwayat Transaksi Kas' : 'Riwayat Transaksi Saya'}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {isManagerOrAdmin
-                ? 'Semua transaksi kas komunitas yang divalidasi oleh Finite State Machine (FSM).'
-                : 'Tracking laporan setoran iuran dan transaksi kas yang Anda buat sendiri.'}
-            </p>
-          </div>
-
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold">
-            <button
-              onClick={() => setActiveFilter('ALL')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                activeFilter === 'ALL'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              Semua ({transactions.length})
-            </button>
-            <button
-              onClick={() => setActiveFilter('INCOME')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                activeFilter === 'INCOME'
-                  ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              Pemasukan
-            </button>
-            <button
-              onClick={() => setActiveFilter('EXPENSE')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                activeFilter === 'EXPENSE'
-                  ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              Pengeluaran
-            </button>
-          </div>
-        </div>
-
-        {/* Transaction Items */}
-        {isLoading ? (
-          <div className="text-center py-10 text-xs text-slate-400 animate-pulse">
-            Memuat daftar transaksi...
-          </div>
-        ) : filteredTransactions.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-xs space-y-2">
-            <p className="font-semibold text-slate-700 dark:text-slate-300">
-              {isManagerOrAdmin
-                ? 'Belum ada transaksi pada kategori ini.'
-                : 'Anda belum memiliki riwayat transaksi atau laporan pembayaran.'}
-            </p>
-            {isManagerOrAdmin ? (
-              <button
-                onClick={() => openRecordModal('INCOME')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                Catat Transaksi Pertama
-              </button>
-            ) : (
-              <button
-                onClick={() => openRecordModal('INCOME')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-500/20 cursor-pointer transition-all"
-              >
-                <TrendingUp className="w-3.5 h-3.5" />
-                Lapor Pembayaran Sekarang
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
-            {filteredTransactions.map((tx) => {
-              const isIncome = tx.type === 'INCOME';
-              return (
-                <div
-                  key={tx.id}
-                  onClick={() => setSelectedTx(tx)}
-                  className="py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 px-2 -mx-2 rounded-2xl cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      isIncome
-                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
-                        : 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
-                    }`}>
-                      {isIncome ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                    </div>
-
-                    <div>
-                      <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-                        {tx.category}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                        <span>{tx.creator?.fullName?.split(' ')[0] || 'Warga'}</span>
-                        <span>�</span>
-                        <span>
-                          {new Date(tx.createdAt).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right space-y-1">
-                    <div className={`font-bold text-sm ${
-                      isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
-                    }`}>
-                      {isIncome ? '+ ' : '- '}
-                      Rp {tx.amount.toLocaleString('id-ID')}
-                    </div>
-                    <div>{getStateBadge(tx.state, tx.type)}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {/* Bottom Section: Tren Saldo Kas 6 Bulan (Bar Chart) & Aktivitas Terbaru Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <CashTrendWidget
+          currentBalance={summary?.postedBalance || 0}
+          transactions={transactions}
+          isLoading={isLoading}
+        />
+        <RecentActivityWidget
+          transactions={transactions}
+          isLoading={isLoading}
+          isManagerOrAdmin={isManagerOrAdmin}
+          onSelectTransaction={(tx) => setSelectedTx(tx)}
+          onOpenRecordModal={openRecordModal}
+          activeFilter={activeFilter}
+          onChangeFilter={setActiveFilter}
+        />
       </div>
 
       {/* Record Transaction Modal */}
