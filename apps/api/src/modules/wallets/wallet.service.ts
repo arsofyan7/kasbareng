@@ -50,12 +50,21 @@ export const UpdatePolicySchema = z.object({
   thresholdAmount: z.number().positive().optional().nullable(),
 });
 
+export const UpdateWalletSettingsSchema = z.object({
+  name: z.string().min(3, 'Nama dompet kas minimal 3 karakter').max(100).optional(),
+  description: z.string().max(500).optional().nullable(),
+  duesType: z.nativeEnum(DuesType).optional(),
+  duesAmount: z.number().positive().optional().nullable(),
+  targetInstallmentsCount: z.number().int().positive().optional().nullable(),
+});
+
 export type CreateWalletInput = z.input<typeof CreateWalletSchema>;
 export type AddMemberInput = z.infer<typeof AddMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof UpdateMemberSchema>;
 export type JoinWalletInput = z.infer<typeof JoinWalletSchema>;
 export type UpdateInviteCodeInput = z.infer<typeof UpdateInviteCodeSchema>;
 export type UpdatePolicyInput = z.infer<typeof UpdatePolicySchema>;
+export type UpdateWalletSettingsInput = z.infer<typeof UpdateWalletSettingsSchema>;
 
 export class WalletService {
   /**
@@ -697,6 +706,65 @@ export class WalletService {
       return {
         ...newPolicy,
         thresholdAmount: newPolicy.thresholdAmount ? Number(newPolicy.thresholdAmount) : null,
+      };
+    });
+  }
+
+  /**
+   * Updates general wallet settings including dues configuration (duesType, duesAmount, targetInstallmentsCount).
+   * Automatically records a tamper-evident audit event in the SHA-256 hash chain.
+   */
+  static async updateWalletSettings(walletId: string, actorId: string, input: unknown) {
+    const validated = UpdateWalletSettingsSchema.parse(input);
+
+    return await prisma.$transaction(async (tx) => {
+      const wallet = await tx.wallet.findUnique({
+        where: { id: walletId },
+      });
+
+      if (!wallet) {
+        throw { status: 404, code: 'NOT_FOUND', message: 'Dompet kas tidak ditemukan.' };
+      }
+
+      const updated = await tx.wallet.update({
+        where: { id: walletId },
+        data: {
+          ...(validated.name !== undefined ? { name: validated.name.trim() } : {}),
+          ...(validated.description !== undefined ? { description: validated.description?.trim() || null } : {}),
+          ...(validated.duesType !== undefined ? { duesType: validated.duesType } : {}),
+          ...(validated.duesAmount !== undefined
+            ? { duesAmount: validated.duesAmount !== null ? new Prisma.Decimal(validated.duesAmount) : null }
+            : {}),
+          ...(validated.targetInstallmentsCount !== undefined
+            ? { targetInstallmentsCount: validated.targetInstallmentsCount }
+            : {}),
+        },
+      });
+
+      await AuditService.recordAuditEvent(tx, {
+        walletId,
+        actorId,
+        eventType: 'WALLET_SETTINGS_UPDATED',
+        metadata: {
+          previous: {
+            name: wallet.name,
+            duesType: wallet.duesType,
+            duesAmount: wallet.duesAmount ? Number(wallet.duesAmount) : null,
+            targetInstallmentsCount: wallet.targetInstallmentsCount,
+          },
+          updated: {
+            name: updated.name,
+            duesType: updated.duesType,
+            duesAmount: updated.duesAmount ? Number(updated.duesAmount) : null,
+            targetInstallmentsCount: updated.targetInstallmentsCount,
+          },
+          reason: 'Pengurus memperbarui konfigurasi atau nominal acuan iuran kas.',
+        },
+      });
+
+      return {
+        ...updated,
+        duesAmount: updated.duesAmount ? Number(updated.duesAmount) : null,
       };
     });
   }

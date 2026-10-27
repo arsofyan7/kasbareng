@@ -21,6 +21,16 @@ interface WalletContextType {
   ) => Promise<Wallet>;
   joinWallet: (inviteCode: string) => Promise<{ walletId: string; name: string }>;
   updateInviteCode: (walletId: string, customCode?: string) => Promise<{ id: string; inviteCode: string }>;
+  updateWalletSettings: (
+    walletId: string,
+    settings: {
+      name?: string;
+      description?: string | null;
+      duesType?: import('../types').DuesType;
+      duesAmount?: number | null;
+      targetInstallmentsCount?: number | null;
+    }
+  ) => Promise<Wallet>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -170,6 +180,36 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return json.data;
   };
 
+  const updateWalletSettings = async (
+    walletId: string,
+    settings: {
+      name?: string;
+      description?: string | null;
+      duesType?: import('../types').DuesType;
+      duesAmount?: number | null;
+      targetInstallmentsCount?: number | null;
+    }
+  ) => {
+    if (!token) throw new Error('Otentikasi diperlukan.');
+
+    const res = await fetch(`/api/v1/wallets/${walletId}/settings`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(settings),
+    });
+
+    const json: ApiResponse<Wallet> = await res.json();
+    if (!res.ok || !json.data) {
+      throw new Error(json.error?.message || 'Gagal memperbarui pengaturan dompet.');
+    }
+
+    await refreshWallets();
+    return json.data;
+  };
+
   return (
     <WalletContext.Provider
       value={{
@@ -181,6 +221,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         createWallet,
         joinWallet,
         updateInviteCode,
+        updateWalletSettings,
       }}
     >
       {children}

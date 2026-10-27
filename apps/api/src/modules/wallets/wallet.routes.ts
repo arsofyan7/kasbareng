@@ -255,3 +255,32 @@ walletRouter.put(
     }
   }
 );
+
+// 13. Update General Wallet Settings & Dues Config (ADMIN or PENGELOLA)
+walletRouter.patch(
+  '/:walletId/settings',
+  requireAuth,
+  requireWalletRole([WalletRole.ADMIN, WalletRole.PENGELOLA]),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const walletId = String(req.params.walletId);
+      const updated = await WalletService.updateWalletSettings(
+        walletId,
+        req.user!.id,
+        req.body
+      );
+      return sendSuccess(res, updated, 200, { message: 'Pengaturan iuran dompet kas berhasil diperbarui!' });
+    } catch (err: any) {
+      if (err instanceof ZodError) {
+        return sendError(res, 'VALIDATION_ERROR', 'Format data pengaturan tidak valid.', 400, err.errors);
+      }
+      return sendError(
+        res,
+        err.code || 'UPDATE_SETTINGS_FAILED',
+        err.message || 'Gagal memperbarui pengaturan dompet.',
+        err.status || 400
+      );
+    }
+  }
+);
+

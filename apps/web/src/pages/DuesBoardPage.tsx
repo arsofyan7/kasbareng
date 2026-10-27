@@ -18,8 +18,10 @@ import {
   ChevronRight,
   Info,
   ExternalLink,
+  Sliders,
 } from 'lucide-react';
 import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
+import { ManageDuesConfigModal } from '../components/common/ManageDuesConfigModal';
 
 export const DuesBoardPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -40,6 +42,9 @@ export const DuesBoardPage: React.FC = () => {
 
   // Record/Pay modal
   const [recordModalOpen, setRecordModalOpen] = useState<boolean>(false);
+
+  // Manage dues config modal (Admin / Pengelola)
+  const [duesConfigOpen, setDuesConfigOpen] = useState<boolean>(false);
 
   // Selected cell detail modal
   const [selectedCell, setSelectedCell] = useState<{
@@ -174,6 +179,19 @@ export const DuesBoardPage: React.FC = () => {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+          )}
+
+          {/* Manage Dues Config Button (Admin & Pengelola) */}
+          {isManagerOrAdmin && (
+            <button
+              type="button"
+              onClick={() => setDuesConfigOpen(true)}
+              className="px-3.5 py-2.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+              title="Sesuaikan Skema atau Nominal Iuran Kas"
+            >
+              <Sliders className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Atur Iuran</span>
+            </button>
           )}
 
           {/* Refresh */}
@@ -616,6 +634,17 @@ export const DuesBoardPage: React.FC = () => {
           isOpen={recordModalOpen}
           initialType="INCOME"
           onClose={() => setRecordModalOpen(false)}
+          onSuccess={() => {
+            fetchDuesBoard();
+          }}
+        />
+      )}
+
+      {/* Manage Dues Config Modal (Admin & Pengelola) */}
+      {duesConfigOpen && (
+        <ManageDuesConfigModal
+          isOpen={duesConfigOpen}
+          onClose={() => setDuesConfigOpen(false)}
           onSuccess={() => {
             fetchDuesBoard();
           }}

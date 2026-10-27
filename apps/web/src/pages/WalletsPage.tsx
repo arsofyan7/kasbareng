@@ -11,7 +11,10 @@ import {
   KeyRound,
   Copy,
   Check,
+  Calendar,
+  Sliders,
 } from 'lucide-react';
+import { ManageDuesConfigModal } from '../components/common/ManageDuesConfigModal';
 
 interface WalletsPageProps {
   onOpenCreateWallet: () => void;
@@ -26,6 +29,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
 }) => {
   const { wallets, activeWallet, selectWallet } = useWallet();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isDuesModalOpen, setIsDuesModalOpen] = useState(false);
 
   const handleCopyCode = (e: React.MouseEvent, code?: string, id?: string) => {
     e.stopPropagation();
@@ -158,6 +162,38 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                     </span>
                   </div>
                 </div>
+
+                {/* Dues Rate & Scheme */}
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Iuran:</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">
+                      {wallet.duesType === 'FREEFORM'
+                        ? 'Sukarela'
+                        : wallet.duesType === 'TARGET_INSTALLMENTS'
+                        ? `${wallet.targetInstallmentsCount || 10} Termin`
+                        : wallet.duesAmount
+                        ? `Rp ${Number(wallet.duesAmount).toLocaleString('id-ID')} / bln`
+                        : 'Bulanan'}
+                    </span>
+                  </div>
+                  {(wallet.myRole === 'ADMIN' || wallet.myRole === 'PENGELOLA') && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectWallet(wallet.id);
+                        setIsDuesModalOpen(true);
+                      }}
+                      className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1"
+                      title="Atur Skema & Nominal Iuran"
+                    >
+                      <Sliders className="w-3 h-3" />
+                      Atur
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Action Button */}
@@ -187,6 +223,14 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
           );
         })}
       </div>
+
+      {/* Manage Dues Config Modal */}
+      {isDuesModalOpen && (
+        <ManageDuesConfigModal
+          isOpen={isDuesModalOpen}
+          onClose={() => setIsDuesModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

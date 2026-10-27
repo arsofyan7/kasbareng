@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '../../context/WalletContext';
 import { ApiResponse, DuesType } from '../../types';
-import { X, ShieldCheck, AlertCircle, KeyRound, Loader2, Sparkles, Dices, Calendar, Layers, HeartHandshake, Banknote } from 'lucide-react';
+import { X, ShieldCheck, AlertCircle, KeyRound, Loader2, Sparkles, Dices, Calendar, Layers, HeartHandshake, Banknote, Info } from 'lucide-react';
 
 interface CreateWalletModalProps {
   isOpen: boolean;
@@ -193,8 +193,8 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                 }`}
               >
                 <Calendar className="w-4 h-4 text-emerald-600" />
-                <span className="font-semibold text-[11px]">Bulanan</span>
-                <span className="text-[9px] text-slate-400">12 Bulan / Thn</span>
+                <span className="font-semibold text-[11px]">Rutin Bulanan</span>
+                <span className="text-[9px] text-slate-500 dark:text-slate-400">Berkelanjutan</span>
               </button>
 
               <button
@@ -225,6 +225,16 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                 <span className="text-[9px] text-slate-400">Tanpa Tagihan</span>
               </button>
             </div>
+
+            {/* Catatan Edukasi: Satu Dompet Berlaku Selamanya */}
+            {duesType === 'MONTHLY' && (
+              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 flex items-start gap-2.5 text-[11px] text-slate-700 dark:text-slate-300 shadow-xs">
+                <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">
+                  <strong>Satu dompet berlaku selamanya.</strong> Pergantian tahun kas dan arsip iuran dikelola otomatis tanpa perlu membuat dompet baru. Pengurus juga dapat mengubah nominal acuan iuran kapan saja sesuai hasil rapat warga.
+                </span>
+              </div>
+            )}
 
             {duesType === 'TARGET_INSTALLMENTS' && (
               <div className="pt-1">
