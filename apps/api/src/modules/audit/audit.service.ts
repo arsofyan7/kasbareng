@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * MODUL AUDIT: SERVICE AUDIT TRAIL KRIPTOGRAFIS (audit.service.ts)
+ * ============================================================================
+ * Service ini mengelola pembuatan dan verifikasi rantai hash SHA-256 (Tamper-Evident Hash Chain)
+ * untuk setiap peristiwa penting di dalam dompet (perubahan status transaksi, persetujuan,
+ * pencairan saldo, penolakan, penyesuaian).
+ * 
+ * Konsep Kriptografi:
+ * 1. Kanonisasi JSON (`canonicalizeJson`): Menjamin urutan key JSON identik dan deterministik
+ *    sehingga tidak rentan terhadap perbedaan representasi serialization.
+ * 2. Payload Hash: Hash SHA-256 dari string payload kanonikal.
+ * 3. Previous Hash: Pointer kriptografis ke `currentHash` baris sebelum sequence ini.
+ *    Untuk blok pertama (Genesis), digunakan konstanta `GENESIS_PREVIOUS_HASH` (64 karakter '0').
+ * 4. Current Hash: `SHA-256(walletId + sequenceNo + payloadHash + previousHash + timestamp)`.
+ */
+
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../common/prisma';
 import { canonicalizeJson } from '../../algorithms/canonicalization/canonical-json';
@@ -9,6 +26,10 @@ import {
   VerificationResult,
 } from '../../algorithms/hash-chain/hash-chain';
 
+/**
+ * Interface `RecordAuditInput`:
+ * DTO (Data Transfer Object) untuk mencatat suatu event ke audit log.
+ */
 export interface RecordAuditInput {
   walletId: string;
   actorId?: string;
@@ -23,8 +44,23 @@ export interface RecordAuditInput {
 
 export class AuditService {
   /**
-   * Appends a new tamper-evident SHA-256 audit log event to the wallet's hash chain.
-   * Can be executed within an existing Prisma transaction or standalone.
+   * ============================================================================
+   * METHOD: recordAuditEvent
+   * ============================================================================
+   * Fungsi Blok:
+   * Menambahkan entri baru ke rantai hash audit dompet secara atomic.
+   * Dapat dieksekusi di dalam transaksi Prisma (`txClient`) bersama operasi transaksi keuangan,
+   * sehingga jika pencatatan audit gagal, seluruh perubahan saldo atau transaksi ikut di-rollback.
+   * 
+   * Alur Kerja:
+   * 1. Menentukan timestamp server (menggunakan `serverTimestamp` atau waktu saat ini).
+   * 2. Query log audit terakhir milik dompet (`sequenceNo: 'desc'`) untuk mendapatkan `sequenceNo` dan `currentHash` terakhir.
+   * 3. Jika belum ada log (blok pertama), `sequenceNo = 1` dan `previousHash = GENESIS_PREVIOUS_HASH`.
+   *    Jika sudah ada, `sequenceNo = lastLog.sequenceNo + 1` dan `previousHash = lastLog.currentHash`.
+   * 4. Membuat identifier unik event (`eventId`).
+   * 5. Membentuk objek payload data event dan mengonversinya menjadi string JSON kanonikal dengan `canonicalizeJson`.
+   * 6. Menghitung `payloadHash` dan `currentHash` baru via algoritma `computeHashChainEvent`.
+   * 7. Menyimpan entri baru secara permanen ke tabel `AuditLog` di database via Prisma.
    */
   static async recordAuditEvent(
     txClient: Prisma.TransactionClient | typeof prisma,
@@ -32,7 +68,7 @@ export class AuditService {
   ) {
     const timestamp = input.serverTimestamp || new Date();
 
-    // 1. Fetch latest audit log for this wallet to get sequence_no and previous_hash
+    // 1. Ambil entri audit terakhir untuk dompet ini guna mendapatkan sequence_no dan previous_hash
     const lastLog = await txClient.auditLog.findFirst({
       where: { walletId: input.walletId },
       orderBy: { sequenceNo: 'desc' },
@@ -43,7 +79,7 @@ export class AuditService {
     const previousHash = lastLog?.currentHash || GENESIS_PREVIOUS_HASH;
     const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-    // 2. Build canonical audit payload (sanitized, structured, sorted)
+    // 2. Susun objek payload audit kanonikal (terstruktur, higienis, dan terurut deterministik)
     const payloadObject = {
       actorId: input.actorId || 'SYSTEM',
       eventId,
@@ -60,7 +96,7 @@ export class AuditService {
 
     const canonicalPayload = canonicalizeJson(payloadObject);
 
-    // 3. Compute pure hash chain event (payloadHash & currentHash)
+    // 3. Hitung hash kriptografis murni (payloadHash & currentHash rantai)
     const chainEvent = computeHashChainEvent({
       walletId: input.walletId,
       sequenceNo,
@@ -69,7 +105,7 @@ export class AuditService {
       serverTimestamp: payloadObject.serverTimestamp,
     });
 
-    // 4. Store in database
+    // 4. Simpan entri audit log ke database
     const savedLog = await txClient.auditLog.create({
       data: {
         walletId: input.walletId,
@@ -87,8 +123,19 @@ export class AuditService {
   }
 
   /**
-   * Verifies the entire cryptographic hash chain for a wallet.
-   * Runs the pure verifyHashChain algorithm on all recorded events.
+   * ============================================================================
+   * METHOD: verifyWalletChain
+   * ============================================================================
+   * Fungsi Blok:
+   * Memvalidasi keutuhan matematis seluruh rantai audit dompet dari sequence #1 (Genesis)
+   * sampai entri termutakhir tanpa celah.
+   * 
+   * Alur Kerja:
+   * 1. Query seluruh entri `auditLog` dompet terurut naik berdasarkan sequence (`sequenceNo: 'asc'`).
+   * 2. Format baris database menjadi struktur `HashChainEvent[]`.
+   * 3. Jalankan algoritma verifikasi murni `verifyHashChain(chainEvents)`.
+   * 4. Periksa kecocokan rekalkulasi SHA-256 payload dan keterhubungan `previousHash` setiap blok.
+   * 5. Kembalikan objek status verifikasi lengkap beserta timestamp verifikasi.
    */
   static async verifyWalletChain(walletId: string): Promise<
     VerificationResult & {
@@ -127,7 +174,18 @@ export class AuditService {
   }
 
   /**
-   * Fetches paginated audit logs for a wallet.
+   * ============================================================================
+   * METHOD: getWalletAuditLogs
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengambil daftar log audit dengan dukungan pagination untuk antarmuka pengguna (UI).
+   * 
+   * Alur Kerja:
+   * 1. Sanitasi parameter `page` (min: 1) dan `limit` (rentang 1..100).
+   * 2. Hitung offset database: `skip = (page - 1) * limit`.
+   * 3. Jalankan query data dan penghitungan total secara paralel dengan `Promise.all`.
+   * 4. Parse field `canonicalPayload` (JSON string) kembali ke objek JavaScript agar mudah dibaca frontend.
+   * 5. Kembalikan data list beserta pagination metadata.
    */
   static async getWalletAuditLogs(
     walletId: string,
@@ -169,10 +227,22 @@ export class AuditService {
   }
 
   /**
-   * Tamper Simulation Drill:
-   * Directly alters a historical record in the database without recalculating the hash.
-   * This is used to prove to auditors / professors that any unauthorized database modification
-   * is instantly detected by verifyHashChain.
+   * ============================================================================
+   * METHOD: simulateTamper
+   * ============================================================================
+   * Fungsi Blok:
+   * Menyuntikkan manipulasi ke dalam kolom `canonicalPayload` suatu sequence audit log
+   * secara langsung di database, tanpa memperbarui nilai `payloadHash` maupun `currentHash`.
+   * 
+   * Tujuan:
+   * Membuktikan secara nyata bahwa setiap pengubahan data unauthorized di database
+   * (oleh DBA atau pihak ketiga) langsung mematahkan validitas rantai hash saat `verifyWalletChain` dipanggil.
+   * 
+   * Alur Kerja:
+   * 1. Cari rekaman audit berdasarkan kombinasi unique `walletId` dan `sequenceNo`.
+   * 2. Jika tidak ditemukan, lemparkan error 404 LOG_NOT_FOUND.
+   * 3. Lakukan update langsung ke tabel `auditLog` mengubah `canonicalPayload` menjadi `maliciousPayload`.
+   * 4. Kembalikan ringkasan operasi manipulasi untuk keperluan audit drill.
    */
   static async simulateTamper(walletId: string, sequenceNo: number, maliciousPayload: string) {
     const target = await prisma.auditLog.findUnique({
@@ -189,7 +259,7 @@ export class AuditService {
       };
     }
 
-    // Intentionally modify canonicalPayload without updating payloadHash or currentHash
+    // Ubah kolom canonicalPayload secara sepihak tanpa mengkalkulasi ulang hash
     const tampered = await prisma.auditLog.update({
       where: { id: target.id },
       data: {
@@ -206,7 +276,17 @@ export class AuditService {
   }
 
   /**
-   * Restores a tampered event's canonicalPayload back to match its payloadHash.
+   * ============================================================================
+   * METHOD: repairLog
+   * ============================================================================
+   * Fungsi Blok:
+   * Memulihkan kembali `canonicalPayload` pada sequence yang diuji coba simulasi tamper
+   * ke konten aslinya agar rantai audit kembali valid 100%.
+   * 
+   * Alur Kerja:
+   * 1. Temukan baris audit berdasarkan `walletId` dan `sequenceNo`.
+   * 2. Perbarui kolom `canonicalPayload` dengan `restoredPayload`.
+   * 3. Kembalikan status pemulihan berhasil.
    */
   static async repairLog(walletId: string, sequenceNo: number, restoredPayload: string) {
     const target = await prisma.auditLog.findUnique({
@@ -227,3 +307,4 @@ export class AuditService {
     return { repaired: true, sequenceNo };
   }
 }
+

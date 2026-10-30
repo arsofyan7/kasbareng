@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * MODUL TRANSAKSI: SERVICE LOGIKA BISNIS TRANSAKSI KAS (transaction.service.ts)
+ * ============================================================================
+ * Service ini merupakan inti operasional keuangan KasBareng. Bertanggung jawab atas:
+ * 1. Kalkulasi saldo buku besar (Ledger) dan saldo dicadangkan (Reservations) secara real-time.
+ * 2. Pembuatan, pembaruan, dan pembatalan draf transaksi keuangan.
+ * 3. Mesin State FSM (Finite State Machine) untuk memvalidasi alur transisi status transaksi.
+ * 4. Multi-Approval M-of-N Quorum untuk persetujuan pengeluaran kas (EXPENSE) dengan Anti-Self Approval.
+ * 5. Single-Manager Verification untuk verifikasi setoran mandiri warga (INCOME/Iuran).
+ * 6. Eksekusi pencairan kas dan pembukuan resmi ke buku besar (Ledger DEBIT / CREDIT).
+ * 7. Pencatatan audit trail SHA-256 tamper-evident pada setiap mutasi status keuangan.
+ */
+
 import {
   Prisma,
   TransactionType,
@@ -16,6 +30,9 @@ import { calculateBalance, LedgerEntry as AlgoLedgerEntry } from '../../algorith
 import { evaluateQuorum } from '../../algorithms/quorum/quorum-evaluator';
 import { AuditService } from '../audit/audit.service';
 
+/**
+ * Skema Validasi Zod: Pembuatan Transaksi Baru (CreateTransactionSchema)
+ */
 export const CreateTransactionSchema = z.object({
   type: z.nativeEnum(TransactionType),
   amount: z.number().positive('Nominal transaksi harus lebih besar dari 0'),
@@ -27,6 +44,9 @@ export const CreateTransactionSchema = z.object({
   targetUserId: z.string().optional(),
 });
 
+/**
+ * Skema Validasi Zod: Pembaruan Draf Transaksi (UpdateTransactionSchema)
+ */
 export const UpdateTransactionSchema = z.object({
   expectedVersion: z.number().int().positive(),
   amount: z.number().positive().optional(),
@@ -35,12 +55,18 @@ export const UpdateTransactionSchema = z.object({
   receiptAttachmentId: z.string().optional(),
 });
 
+/**
+ * Skema Validasi Zod: Pemberian Suara Persetujuan M-of-N (ProcessApprovalSchema)
+ */
 export const ProcessApprovalSchema = z.object({
   decision: z.nativeEnum(ApprovalDecision),
   expectedVersion: z.number().int().positive().optional(),
   comment: z.string().max(500).optional(),
 });
 
+/**
+ * Skema Validasi Zod: Eksekusi Pencairan Pembayaran (ExecutePaymentSchema)
+ */
 export const ExecutePaymentSchema = z.object({
   paymentReference: z.string().max(100).optional(),
   evidenceAttachmentId: z.string().optional(),
@@ -48,6 +74,9 @@ export const ExecutePaymentSchema = z.object({
   expectedVersion: z.number().int().positive().optional(),
 });
 
+/**
+ * Skema Validasi Zod: Verifikasi Setoran Pemasukan/Iuran (VerifyIncomeSchema)
+ */
 export const VerifyIncomeSchema = z.object({
   decision: z.enum(['APPROVE', 'REJECT']),
   notes: z.string().max(500).optional(),
@@ -61,7 +90,24 @@ export type ExecutePaymentInput = z.infer<typeof ExecutePaymentSchema>;
 
 export class TransactionService {
   /**
-   * Calculates current wallet balance using the isolated Ledger Balance Calculator algorithm.
+   * ============================================================================
+   * METHOD: getWalletBalanceSummary
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengkalkulasi posisi saldo kas dompet secara matematis menggunakan algoritma murni
+   * `calculateBalance` (Balance Calculator).
+   * 
+   * Alur Kerja:
+   * 1. Query mata uang dompet dari tabel `Wallet`.
+   * 2. Query seluruh entri buku besar resmi (`LedgerEntry`) terurut berdasarkan `effectiveAt: 'asc'`.
+   * 3. Konversi entri buku besar menjadi format input algoritma murni (BigInt Rupiah).
+   * 4. Query transaksi pengeluaran (EXPENSE) yang sedang aktif dicadangkan
+   *    (berstatus PENDING_APPROVAL, APPROVED, atau PAYMENT_PENDING).
+   * 5. Eksekusi fungsi murni `calculateBalance` untuk mendapatkan:
+   *    - `postedBalance`: Saldo kas buku besar aktual (total credit - total debit).
+   *    - `activeReservations`: Total dana pengeluaran yang sedang tertahan dalam proses persetujuan.
+   *    - `availableBalance`: Saldo efektif yang masih bebas dibelanjakan (postedBalance - activeReservations).
+   * 6. Kembalikan ringkasan angka ke format numerik standar.
    */
   static async getWalletBalanceSummary(walletId: string) {
     const wallet = await prisma.wallet.findUnique({
@@ -78,7 +124,7 @@ export class TransactionService {
       orderBy: { effectiveAt: 'asc' },
     });
 
-    // Map Prisma LedgerEntry to pure algorithm input
+    // Petakan rekaman LedgerEntry Prisma ke input algoritma murni
     const algoEntries: AlgoLedgerEntry[] = ledgerEntries
       .filter((e) => e.entryType === LedgerEntryType.CREDIT || e.entryType === LedgerEntryType.DEBIT)
       .map((e) => ({
@@ -91,7 +137,7 @@ export class TransactionService {
         createdAt: e.createdAt,
       }));
 
-    // Reservations (EXPENSE transactions in PENDING_APPROVAL / PAYMENT_PENDING)
+    // Ambil cadangan dana (Reservations): transaksi EXPENSE yang sedang menggantung di PENDING_APPROVAL / PAYMENT_PENDING
     const activeExpenseReservations = await prisma.transaction.findMany({
       where: {
         walletId,
@@ -132,7 +178,21 @@ export class TransactionService {
   }
 
   /**
-   * Creates a transaction draft.
+   * ============================================================================
+   * METHOD: createDraft
+   * ============================================================================
+   * Fungsi Blok:
+   * Membuat draf transaksi baru di database secara atomic.
+   * 
+   * Alur Kerja:
+   * 1. Validasi input menggunakan `CreateTransactionSchema.parse(input)`.
+   * 2. Buka transaksi database Prisma (`prisma.$transaction`):
+   *    a. Buat rekaman `Transaction` baru dengan `state: DRAFT` dan `version: 1`.
+   *    b. Buat entri kronologis `TransactionEvent` bertipe `DRAFT_CREATED`.
+   *    c. Jika transaksi bertipe `INCOME` dan mencantumkan periode iuran (`periodKeys`),
+   *       buat/perbarui rekaman `DuesRecord` dengan status `PENDING`.
+   *    d. Catat event ke tamper-evident audit hash chain via `AuditService.recordAuditEvent`.
+   * 3. Kembalikan data transaksi yang baru dibuat.
    */
   static async createDraft(walletId: string, actorId: string, input: CreateTransactionInput) {
     const validated = CreateTransactionSchema.parse(input);
@@ -174,6 +234,7 @@ export class TransactionService {
         },
       });
 
+      // Tautkan pencatatan periode iuran jika transaksi pemasukan mencakup iuran warga
       if (validated.type === TransactionType.INCOME && validated.periodKeys && validated.periodKeys.length > 0) {
         const duesUserId = validated.targetUserId || actorId;
         const amountPerPeriod = validated.amount / validated.periodKeys.length;
@@ -223,7 +284,12 @@ export class TransactionService {
   }
 
   /**
-   * Fetches paginated list of transactions for a wallet.
+   * ============================================================================
+   * METHOD: getWalletTransactions
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengambil daftar transaksi terpaginasi untuk dompet tertentu dengan filter tipe dan status.
+   * Mendukung pembatasan `creatorId` untuk mematuhi aturan visibilitas RBAC anggota WARGA.
    */
   static async getWalletTransactions(
     walletId: string,
@@ -275,7 +341,12 @@ export class TransactionService {
   }
 
   /**
-   * Gets single transaction details with full chronology and approvals.
+   * ============================================================================
+   * METHOD: getTransactionById
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengambil satu data transaksi lengkap beserta relasi pembuat, kebijakan persetujuan,
+   * daftar suara approver, event log kronologis, dan bukti pembayaran.
    */
   static async getTransactionById(transactionId: string) {
     const transaction = await prisma.transaction.findUnique({
@@ -329,7 +400,18 @@ export class TransactionService {
   }
 
   /**
-   * Updates an existing draft with optimistic locking check.
+   * ============================================================================
+   * METHOD: updateDraft
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengubah konten draf transaksi dengan proteksi Optimistic Locking (versi transaksi).
+   * 
+   * Alur Kerja:
+   * 1. Validasi skema input.
+   * 2. Periksa apakah transaksi berstatus `DRAFT`. Jika bukan, tolak perubahan.
+   * 3. Periksa versi: `transaction.version !== validated.expectedVersion` -> lempar 409 TRANSACTION_VERSION_CONFLICT.
+   * 4. Perbarui data dan tingkatkan kolom `version` (+1).
+   * 5. Catat `TransactionEvent` dan entri audit log SHA-256.
    */
   static async updateDraft(
     transactionId: string,
@@ -417,8 +499,21 @@ export class TransactionService {
   }
 
   /**
-   * Submits a transaction draft into the approval / posting workflow.
-   * Integrates the pure FSM Transition Validator algorithm.
+   * ============================================================================
+   * METHOD: submitTransaction
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengajukan transaksi draf ke alur persetujuan FSM.
+   * 
+   * Logika Khusus:
+   * 1. Transaksi EXPENSE:
+   *    - Berpindah dari DRAFT -> SUBMITTED -> PENDING_APPROVAL.
+   *    - Memvalidasi kecukupan saldo efektif tersedia (Available Balance).
+   *    - Mencadangkan saldo secara otomatis agar tidak overspend.
+   * 2. Transaksi INCOME:
+   *    - Jika pembuatnya WARGA (Member Self-Report): tetap berstatus `SUBMITTED`
+   *      menunggu verifikasi oleh pengurus/admin kas. Saldo kas TIDAK bertambah sebelum verifikasi.
+   *    - Jika pembuatnya ADMIN/PENGELOLA: langsung `COMPLETED` dan memposting entri Ledger CREDIT.
    */
   static async submitTransaction(
     transactionId: string,
@@ -443,7 +538,7 @@ export class TransactionService {
         };
       }
 
-      // Step 1: Run FSM validator: DRAFT -> SUBMITTED
+      // Validasi FSM: DRAFT -> SUBMITTED
       const fsmResult = validateTransition({
         currentState: transaction.state as any,
         event: 'SUBMIT',
@@ -463,9 +558,8 @@ export class TransactionService {
 
       let finalState: TransactionState = TransactionState.SUBMITTED;
 
-      // Handle EXPENSE workflow: needs approval quorum
+      // Alur untuk pengeluaran kas (EXPENSE)
       if (transaction.type === TransactionType.EXPENSE) {
-        // Step 2: FSM: SUBMITTED -> PENDING_APPROVAL
         const approvalFsm = validateTransition({
           currentState: 'SUBMITTED',
           event: 'REQUEST_APPROVAL',
@@ -481,7 +575,7 @@ export class TransactionService {
 
         finalState = TransactionState.PENDING_APPROVAL;
 
-        // Check wallet available balance
+        // Validasi kecukupan saldo kas tersedia (Available Balance)
         const balance = await this.getWalletBalanceSummary(transaction.walletId);
         if (balance.availableBalance < Number(transaction.amount)) {
           throw {
@@ -491,8 +585,7 @@ export class TransactionService {
           };
         }
       } else {
-        // INCOME workflow:
-        // Check if transaction creator is a WARGA (Member Self-Report)
+        // Alur untuk pemasukan kas (INCOME)
         const creatorMember = await tx.walletMember.findUnique({
           where: {
             walletId_userId: {
@@ -505,12 +598,12 @@ export class TransactionService {
         const isWargaCreator = creatorMember?.role === WalletRole.WARGA;
 
         if (isWargaCreator) {
-          // Member Self-Report: Stays in SUBMITTED state (Awaiting verification by Pengurus/Admin)
-          // Financial Security: Saldo kas TIDAK bertambah sebelum diverifikasi pengurus!
+          // Laporan mandiri warga: Tetap di status SUBMITTED (menunggu verifikasi)
+          // Keamanan Finansial: Saldo kas TIDAK bertambah sebelum diverifikasi pengurus!
           finalState = TransactionState.SUBMITTED;
         } else {
-          // Recorded by ADMIN / PENGELOLA:
-          // Directly completes and posts credit to ledger upon submission!
+          // Dicatat langsung oleh ADMIN atau PENGELOLA:
+          // Langsung selesai (COMPLETED) dan posting ke buku besar kredit
           finalState = TransactionState.COMPLETED;
 
           await tx.ledgerEntry.create({
@@ -523,7 +616,7 @@ export class TransactionService {
             },
           });
 
-          // If transaction has associated dues records, mark them PAID
+          // Tandai rekaman iuran sebagai PAID
           await tx.duesRecord.updateMany({
             where: { transactionId: transaction.id },
             data: { status: DuesPaymentStatus.PAID },
@@ -585,7 +678,12 @@ export class TransactionService {
   }
 
   /**
-   * Cancels a transaction.
+   * ============================================================================
+   * METHOD: cancelTransaction
+   * ============================================================================
+   * Fungsi Blok:
+   * Membatalkan transaksi dengan validasi transisi FSM (CANCEL), menghapus rekaman iuran gantung,
+   * dan mencatat event audit pembatalan.
    */
   static async cancelTransaction(transactionId: string, actorId: string, reason?: string) {
     return await prisma.$transaction(async (tx) => {
@@ -618,7 +716,7 @@ export class TransactionService {
         },
       });
 
-      // Remove any pending dues records associated with this cancelled transaction
+      // Hapus rekaman tagihan iuran yang terafiliasi dengan transaksi batal ini
       await tx.duesRecord.deleteMany({
         where: { transactionId },
       });
@@ -654,8 +752,20 @@ export class TransactionService {
   }
 
   /**
-   * Processes an approval decision (APPROVE or REJECT) on a transaction.
-   * Integrates pure M-of-N Quorum Evaluator with strict anti-self approval and concurrency locking.
+   * ============================================================================
+   * METHOD: processApproval
+   * ============================================================================
+   * Fungsi Blok:
+   * Memproses pemberian suara (APPROVE / REJECT) dari pengurus dompet untuk pengeluaran kas (EXPENSE).
+   * Menerapkan aturan integritas ketat:
+   * 1. State harus `PENDING_APPROVAL`.
+   * 2. Versi optimis locking harus cocok.
+   * 3. Pengurus berhak suara: status ACTIVE, role ADMIN / PENGELOLA.
+   * 4. Anti-Self Approval Guard: Pembuat pengeluaran dilarang menyetujui pengeluarannya sendiri.
+   * 5. Anti-Deduplication: Satu pengurus hanya boleh bersuara satu kali untuk versi transaksi yang sama.
+   * 6. Algoritma Quorum Evaluator mengevaluasi ambang batas M dari N pengurus.
+   *    - Jika ada REJECT: status transaksi langsung `REJECTED`.
+   *    - Jika APPROVE mencapai kuorum: status transaksi berubah menjadi `APPROVED`.
    */
   static async processApproval(
     transactionId: string,
@@ -665,7 +775,7 @@ export class TransactionService {
     const validated = ProcessApprovalSchema.parse(input);
 
     return await prisma.$transaction(async (tx) => {
-      // 1. Fetch transaction with wallet
+      // 1. Ambil transaksi beserta data dompet
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
         include: {
@@ -685,7 +795,7 @@ export class TransactionService {
         throw { status: 404, code: 'NOT_FOUND', message: 'Transaksi tidak ditemukan.' };
       }
 
-      // 2. Validate current state: must be PENDING_APPROVAL
+      // 2. Validasi status transaksi: wajib PENDING_APPROVAL
       if (transaction.state !== TransactionState.PENDING_APPROVAL) {
         throw {
           status: 400,
@@ -694,7 +804,7 @@ export class TransactionService {
         };
       }
 
-      // 3. Optimistic locking / Version check
+      // 3. Pengecekan Optimistic Locking
       if (validated.expectedVersion !== undefined && transaction.version !== validated.expectedVersion) {
         throw {
           status: 409,
@@ -703,7 +813,7 @@ export class TransactionService {
         };
       }
 
-      // 4. Verify Actor membership & role
+      // 4. Verifikasi keanggotaan dan peran pemberi persetujuan
       const member = await tx.walletMember.findUnique({
         where: {
           walletId_userId: {
@@ -729,7 +839,7 @@ export class TransactionService {
         };
       }
 
-      // 5. Anti-Self Approval Guard
+      // 5. Anti-Self Approval Guard: Pembuat dilarang menyetujui pengeluarannya sendiri
       if (transaction.creatorId === actorId) {
         throw {
           status: 403,
@@ -738,7 +848,7 @@ export class TransactionService {
         };
       }
 
-      // 6. Deduplication check on (transactionId, approverId, transactionVersion)
+      // 6. Cek duplikasi suara pada versi transaksi yang sama
       const existingApproval = await tx.transactionApproval.findUnique({
         where: {
           transactionId_approverId_transactionVersion: {
@@ -757,7 +867,7 @@ export class TransactionService {
         };
       }
 
-      // 7. Get active ApprovalPolicy
+      // 7. Ambil kebijakan persetujuan (ApprovalPolicy) aktif
       const activePolicy = await tx.approvalPolicy.findFirst({
         where: { walletId: transaction.walletId, status: 'ACTIVE' },
         orderBy: { policyVersion: 'desc' },
@@ -766,7 +876,7 @@ export class TransactionService {
       const policyVersion = activePolicy?.policyVersion || 1;
       const requiredApprovals = activePolicy?.requiredApprovals || 2;
 
-      // 8. Record the approval decision
+      // 8. Simpan keputusan persetujuan ke tabel TransactionApproval
       const approvalRecord = await tx.transactionApproval.create({
         data: {
           transactionId,
@@ -782,7 +892,7 @@ export class TransactionService {
         },
       });
 
-      // 9. Process Decision
+      // 9. Penanganan Keputusan REJECT
       if (validated.decision === ApprovalDecision.REJECT) {
         const fsmResult = validateTransition({
           currentState: transaction.state as any,
@@ -849,7 +959,7 @@ export class TransactionService {
         };
       }
 
-      // Decision is APPROVE:
+      // 10. Penanganan Keputusan APPROVE: Evaluasi Kuorum M-of-N
       const allApprovals = await tx.transactionApproval.findMany({
         where: {
           transactionId,
@@ -994,8 +1104,20 @@ export class TransactionService {
   }
 
   /**
-   * Executes disbursement payment for an APPROVED expense.
-   * Posts official DEBIT to ledger, creates PaymentRecord, and moves state to COMPLETED.
+   * ============================================================================
+   * METHOD: executePayment
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengeksekusi pembayaran pencairan kas untuk pengeluaran yang telah disetujui kuorum (`APPROVED`).
+   * 
+   * Alur Kerja:
+   * 1. Validasi state transaksi (harus `APPROVED` atau `PAYMENT_PENDING`).
+   * 2. Validasi peran pemohon (harus ADMIN atau PENGELOLA).
+   * 3. Validasi transisi FSM: INITIATE_PAYMENT dan CONFIRM_PAYMENT.
+   * 4. Buat entri resmi `LedgerEntry` bertipe `DEBIT` di buku besar dompet kas.
+   * 5. Buat rekaman bukti transfer `PaymentRecord`.
+   * 6. Pindahkan status transaksi ke `COMPLETED`.
+   * 7. Catat audit event `PAYMENT_COMPLETED` ke rantai hash SHA-256.
    */
   static async executePayment(
     transactionId: string,
@@ -1164,10 +1286,25 @@ export class TransactionService {
   }
 
   /**
-   * Verifies an income report submitted by a citizen / WARGA.
-   * Single-approver: 1 eligible manager (ADMIN / PENGELOLA) can verify or reject.
-   * If APPROVE: transitions to COMPLETED, creates CREDIT ledger entry, and increases cash balance.
-   * If REJECT: transitions to REJECTED, records rejection reason, cash balance unaffected.
+   * ============================================================================
+   * METHOD: verifyIncomeReport
+   * ============================================================================
+   * Fungsi Blok:
+   * Memproses verifikasi laporan setoran pemasukan/iuran mandiri dari warga.
+   * Menggunakan pola Single-Manager Verification (cukup satu orang ADMIN atau PENGELOLA).
+   * 
+   * Alur Kerja:
+   * 1. Validasi tipe transaksi (wajib `INCOME`) dan status transaksi (wajib `SUBMITTED`).
+   * 2. Validasi peran pemverifikasi (harus ADMIN atau PENGELOLA).
+   * 3. Jika disetujui (`APPROVE`):
+   *    a. Buat entri buku besar resmi `LedgerEntry` bertipe `CREDIT`.
+   *    b. Perbarui status transaksi menjadi `COMPLETED`.
+   *    c. Tandai rekaman tagihan iuran (`DuesRecord`) menjadi `PAID`.
+   *    d. Rekam event `INCOME_VERIFIED` ke rantai audit SHA-256.
+   * 4. Jika ditolak (`REJECT`):
+   *    a. Perbarui status transaksi menjadi `REJECTED`.
+   *    b. Hapus rekaman tagihan iuran terkait agar periode iuran terbuka kembali untuk dibayar warga.
+   *    c. Rekam event `INCOME_REJECTED` ke rantai audit SHA-256.
    */
   static async verifyIncomeReport(
     transactionId: string,
@@ -1205,7 +1342,7 @@ export class TransactionService {
         };
       }
 
-      // Check actor eligibility: must be ADMIN or PENGELOLA
+      // Pastikan aktor adalah ADMIN atau PENGELOLA
       const actorMember = await tx.walletMember.findUnique({
         where: {
           walletId_userId: {
@@ -1227,7 +1364,7 @@ export class TransactionService {
       }
 
       if (validated.decision === 'APPROVE') {
-        // 1. Post credit to ledger
+        // 1. Post entri kredit ke buku besar (saldo kas bertambah seketika)
         const ledgerEntry = await tx.ledgerEntry.create({
           data: {
             walletId: transaction.walletId,
@@ -1238,7 +1375,7 @@ export class TransactionService {
           },
         });
 
-        // 2. Transition state to COMPLETED
+        // 2. Transisi status menjadi COMPLETED
         const updated = await tx.transaction.update({
           where: { id: transactionId },
           data: {
@@ -1250,7 +1387,7 @@ export class TransactionService {
           },
         });
 
-        // 3. Record event
+        // 3. Catat riwayat event
         await tx.transactionEvent.create({
           data: {
             transactionId,
@@ -1269,13 +1406,13 @@ export class TransactionService {
           },
         });
 
-        // 4. Mark associated dues records as PAID
+        // 4. Perbarui status iuran warga menjadi PAID
         await tx.duesRecord.updateMany({
           where: { transactionId },
           data: { status: DuesPaymentStatus.PAID },
         });
 
-        // 5. Record Audit Log
+        // 5. Catat ke rantai audit SHA-256
         await AuditService.recordAuditEvent(tx, {
           walletId: transaction.walletId,
           actorId,
@@ -1299,7 +1436,7 @@ export class TransactionService {
           ledgerEntry,
         };
       } else {
-        // REJECT
+        // Keputusan REJECT: Tolak laporan pemasukan
         const updated = await tx.transaction.update({
           where: { id: transactionId },
           data: {
@@ -1311,12 +1448,12 @@ export class TransactionService {
           },
         });
 
-        // Delete associated dues records so the periods become available again
+        // Hapus rekaman iuran agar periode kembali menjadi belum bayar
         await tx.duesRecord.deleteMany({
           where: { transactionId },
         });
 
-        // Record rejection event
+        // Catat riwayat penolakan
         await tx.transactionEvent.create({
           data: {
             transactionId,
@@ -1333,7 +1470,7 @@ export class TransactionService {
           },
         });
 
-        // Record Audit Log
+        // Catat ke rantai audit SHA-256
         await AuditService.recordAuditEvent(tx, {
           walletId: transaction.walletId,
           actorId,

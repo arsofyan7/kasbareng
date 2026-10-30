@@ -1,3 +1,19 @@
+/**
+ * ============================================================================
+ * AiParserPage.tsx - Ekstraksi Pesan Chat AI Menjadi Draf Transaksi (Human-in-The-Loop)
+ * ============================================================================
+ * Komponen halaman eksperimental untuk mengekstraksi teks pesan informal dari grup
+ * obrolan komunitas (WhatsApp / Telegram) menjadi draf mutasi kas bersama:
+ * 1. Menganalisis pesan teks kasual (misal: "Sudah transfer 150rb dari Pak Joko")
+ *    menggunakan ekstraksi deterministik pola regex & NLP dasar.
+ * 2. Mengidentifikasi arah transaksi (INCOME vs EXPENSE), nominal Rupiah, kategori pos,
+ *    dan perkiraan identitas pengirim.
+ * 3. Menghasilkan Skema Data Terstruktur (JSON Payload) yang sesuai dengan kontrak API backend.
+ * 4. Penegakan Prinsip Human-in-The-Loop: AI hanya diperbolehkan membuat draf (state: DRAFT).
+ *    Sistem melarang AI memposting transaksi langsung ke ledger tanpa tinjauan dan konfirmasi manusia.
+ * 5. Integrasi Formulir Resmi: Membuka RecordTransactionModal dengan nilai awal yang telah diisi otomatis.
+ */
+
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import {
@@ -17,29 +33,46 @@ import {
 import { RecordTransactionModal } from '../components/common/RecordTransactionModal';
 import { TransactionType } from '../types';
 
+/**
+ * Interface hasil ekstraksi draf transaksi oleh mesin parser AI
+ */
 interface ParsedAiDraft {
-  type: TransactionType;
-  amount: number;
-  category: string;
-  notes: string;
-  suggestedBy: string;
-  confidenceScore: number;
-  rawText: string;
+  type: TransactionType;       // Jenis mutasi ('INCOME' | 'EXPENSE')
+  amount: number;              // Estimasi nominal numerik dalam Rupiah
+  category: string;            // Pos kategori kas yang disarankan
+  notes: string;               // Catatan rincian pesan asli yang dibersihkan
+  suggestedBy: string;         // Nama warga atau anggota kas yang terdeteksi
+  confidenceScore: number;     // Tingkat keyakinan ekstraksi AI (persentase)
+  rawText: string;             // Teks mentah asli dari pesan obrolan
 }
 
 export const AiParserPage: React.FC = () => {
+  // ---------------------------------------------------------------------------
+  // CONTEXT & STATE MANAGEMENT
+  // ---------------------------------------------------------------------------
+  // Mengambil informasi dompet kas aktif dari konteks global
   const { activeWallet } = useWallet();
 
+  // State input teks chat yang diketik atau ditempel pengguna
   const [inputChatText, setInputChatText] = useState<string>('');
+
+  // State hasil ekstraksi data terstruktur oleh AI
   const [parsedResult, setParsedResult] = useState<ParsedAiDraft | null>(null);
+
+  // Status indikator proses analisis / ekstraksi teks sedang berlangsung
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+
+  // Status visual tombol salin payload JSON
   const [copiedJson, setCopiedJson] = useState<boolean>(false);
 
-  // Pre-fill modal state
+  // State kontrol pembukaan modal pencatatan transaksi resmi
   const [recordModalOpen, setRecordModalOpen] = useState<boolean>(false);
   const [modalType, setModalType] = useState<TransactionType>('INCOME');
 
-  // Interactive sample presets for demonstration
+  // ---------------------------------------------------------------------------
+  // PRESET PROMPT SIMULASI INTERAKTIF
+  // ---------------------------------------------------------------------------
+  // Contoh format pesan chat WhatsApp yang sering dijumpai pada komunitas warga
   const samplePrompts = [
     {
       label: 'Iuran / Setoran Bulanan',
@@ -59,15 +92,22 @@ export const AiParserPage: React.FC = () => {
     },
   ];
 
-  // Smart client-side text extractor (simulates provider abstraction output)
+  // ---------------------------------------------------------------------------
+  // ALGORITMA EKSTRAKSI TEKS DETERMINISTIK (NLP / REGEX CLIENT-SIDE)
+  // ---------------------------------------------------------------------------
+  /**
+   * Menganalisis pesan teks untuk menentukan atribut transaksi secara pasif
+   * @param text - String pesan chat dari pengguna
+   */
   const analyzeTextMessage = (text: string) => {
     if (!text.trim()) return;
     setIsAnalyzing(true);
 
+    // Mensimulasikan jeda inferensi pemrosesan NLP (400ms)
     setTimeout(() => {
       const lower = text.toLowerCase();
 
-      // 1. Determine Direction / Type
+      // LANGKAH 1: Deteksi Arah Arus Kas (Pemasukan vs Pengeluaran)
       const isExpense =
         lower.includes('beli') ||
         lower.includes('biaya') ||
@@ -78,14 +118,14 @@ export const AiParserPage: React.FC = () => {
 
       const type: TransactionType = isExpense ? 'EXPENSE' : 'INCOME';
 
-      // 2. Extract Amount
+      // LANGKAH 2: Ekstraksi Nominal Rupiah dari Ragam Format Bahasa Indonesia
       let amount = 0;
-      // Match "150rb", "150 rb", "150k"
+      // Pola pencocokan singkatan informal: "150rb", "150 rb", "150k"
       const rbMatch = lower.match(/(\d+(?:[\.,]\d+)?)\s*(?:rb|ribu|k)\b/);
       if (rbMatch) {
         amount = Math.round(parseFloat(rbMatch[1].replace(',', '.')) * 1000);
       } else {
-        // Match "Rp 150.000", "Rp150000", "150.000 rupiah"
+        // Pola pencocokan formal: "Rp 150.000", "Rp150000", "150.000 rupiah"
         const rpMatch = lower.match(/(?:rp\.?|sebesar|total)?\s*(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+)\s*(?:rupiah)?/);
         if (rpMatch) {
           const cleanNum = rpMatch[1].replace(/\./g, '').replace(',', '.');
@@ -96,9 +136,10 @@ export const AiParserPage: React.FC = () => {
         }
       }
 
-      if (amount <= 0) amount = 100000; // Fallback default
+      // Nilai cadangan jika nominal gagal terurai
+      if (amount <= 0) amount = 100000;
 
-      // 3. Determine Category
+      // LANGKAH 3: Penentuan Kategori Berdasarkan Kata Kunci Konteks
       let category = 'Iuran Kas Bersama';
       if (isExpense) {
         if (lower.includes('satpam') || lower.includes('pos') || lower.includes('semen') || lower.includes('lampu') || lower.includes('alat') || lower.includes('perlengkapan')) {
@@ -116,13 +157,14 @@ export const AiParserPage: React.FC = () => {
         }
       }
 
-      // 4. Extract Suggested Sender / Resident Name
+      // LANGKAH 4: Ekstraksi Nama Pengirim / Warga Terkait
       let sender = 'Anggota Kas';
       const senderMatch = text.match(/(?:dari|atas nama|milik|oleh)\s+([A-Za-z\.\s]+?)(?:\s+blok|\s+rt|\.|\,|$)/i);
       if (senderMatch && senderMatch[1].trim().length > 2) {
         sender = senderMatch[1].trim();
       }
 
+      // LANGKAH 5: Memperbarui State Hasil Ekstraksi
       setParsedResult({
         type,
         amount,
@@ -137,6 +179,12 @@ export const AiParserPage: React.FC = () => {
     }, 400);
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLERS & USER ACTIONS
+  // ---------------------------------------------------------------------------
+  /**
+   * Menyalin skema JSON draf AI ke clipboard pengembang
+   */
   const handleCopyJson = () => {
     if (!parsedResult) return;
     navigator.clipboard.writeText(JSON.stringify(parsedResult, null, 2));
@@ -144,15 +192,21 @@ export const AiParserPage: React.FC = () => {
     setTimeout(() => setCopiedJson(false), 2000);
   };
 
+  /**
+   * Mengonversi draf AI menjadi pembukaan form resmi pencatatan transaksi
+   */
   const handleOpenDraftModal = () => {
     if (!parsedResult) return;
     setModalType(parsedResult.type);
     setRecordModalOpen(true);
   };
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI UTAMA
+  // ---------------------------------------------------------------------------
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Header */}
+      {/* 1. Header Halaman & Label Penanda Pratinjau Fitur */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -168,13 +222,14 @@ export const AiParserPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Indikator Dompet Kas Aktif */}
         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300">
           <Bot className="w-4 h-4 text-emerald-500" />
           <span>Dompet: <strong>{activeWallet?.name || 'Kas Bersama'}</strong></span>
         </div>
       </div>
 
-      {/* Human-in-The-Loop Safety Gate Banner */}
+      {/* 2. Banner Prinsip Keamanan Finansial: Human-in-The-Loop */}
       <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-700/80 flex items-start gap-3.5">
         <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
         <div className="space-y-1">
@@ -187,8 +242,9 @@ export const AiParserPage: React.FC = () => {
         </div>
       </div>
 
+      {/* 3. Tampilan Dua Kolom: Input Chat & Hasil Terstruktur */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column: Chat Input Simulator */}
+        {/* Kolom Kiri: Simulator Input Pesan Obrolan */}
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -204,7 +260,7 @@ export const AiParserPage: React.FC = () => {
             Pilih contoh pesan di bawah ini atau tempel teks pesan asli dari grup obrolan anggota/keluarga:
           </p>
 
-          {/* Quick Preset Buttons */}
+          {/* Tombol Preset Cepat */}
           <div className="flex flex-wrap gap-2">
             {samplePrompts.map((p, idx) => (
               <button
@@ -214,7 +270,7 @@ export const AiParserPage: React.FC = () => {
                   setInputChatText(p.text);
                   analyzeTextMessage(p.text);
                 }}
-                className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Sparkles className="w-3 h-3 text-amber-500" />
                 <span>{p.label}</span>
@@ -222,7 +278,7 @@ export const AiParserPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Chat Textarea */}
+          {/* Area Teks Input Pesan */}
           <div className="space-y-2">
             <textarea
               value={inputChatText}
@@ -232,10 +288,11 @@ export const AiParserPage: React.FC = () => {
               className="w-full text-xs p-3.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             />
 
+            {/* Tombol Pemicu Inferensi AI */}
             <button
               onClick={() => analyzeTextMessage(inputChatText)}
               disabled={isAnalyzing || !inputChatText.trim()}
-              className="w-full py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {isAnalyzing ? (
                 <>
@@ -252,7 +309,7 @@ export const AiParserPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Structured Output & Draft Preview */}
+        {/* Kolom Kanan: Hasil Ekstraksi Terstruktur & Pratinjau Draf */}
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -270,6 +327,7 @@ export const AiParserPage: React.FC = () => {
           </div>
 
           {!parsedResult ? (
+            /* Tampilan Keadaan Kosong (Sebelum Pesan Dianalisis) */
             <div className="text-center py-16 text-slate-400 text-xs space-y-2">
               <Bot className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto" />
               <p>Belum ada pesan yang dianalisis.</p>
@@ -278,8 +336,9 @@ export const AiParserPage: React.FC = () => {
               </p>
             </div>
           ) : (
+            /* Tampilan Kartu Hasil Ekstraksi Terstruktur */
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Draft Visual Card */}
+              {/* Kartu Ringkasan Draf Mutasi */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-600 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -322,13 +381,13 @@ export const AiParserPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* JSON Payload Viewer */}
+              {/* Penampil Skema JSON AI */}
               <div className="relative">
                 <div className="flex items-center justify-between pb-1.5 text-xs text-slate-500">
                   <span className="font-mono text-[11px]">Skema JSON AI:</span>
                   <button
                     onClick={handleCopyJson}
-                    className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                   >
                     {copiedJson ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedJson ? 'Tersalin' : 'Salin JSON'}</span>
@@ -351,11 +410,11 @@ export const AiParserPage: React.FC = () => {
                 </pre>
               </div>
 
-              {/* Action Button: Create Actual KasBareng Draft */}
+              {/* Tombol Aksi: Konversi ke Formulir Draf Transaksi Resmi KasBareng */}
               <div className="pt-2">
                 <button
                   onClick={handleOpenDraftModal}
-                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" />
                   <span>Konversi Menjadi Draf Transaksi Resmi</span>
@@ -369,7 +428,7 @@ export const AiParserPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Developer / Specification Footnote */}
+      {/* 4. Catatan Teknis Arsitektur Pengembang */}
       <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 flex items-start gap-2.5">
         <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
@@ -377,7 +436,7 @@ export const AiParserPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Record Transaction Modal Pre-Filled */}
+      {/* 5. Modal Pencatatan Transaksi Kas Resmi (Prefilled dari Hasil AI) */}
       <RecordTransactionModal
         isOpen={recordModalOpen}
         initialType={modalType}

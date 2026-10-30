@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * QuickActionSheet.tsx - Lembar Aksi Cepat (Quick Action Bottom Sheet / Modal)
+ * ============================================================================
+ * Komponen ini muncul saat pengguna menekan tombol utama "+ Transaksi Baru" (desktop)
+ * atau tombol melayang "+ Aksi" (mobile). Berfungsi sebagai pusat komando cepat untuk:
+ * 1. Pemasukan Kas / Lapor Setoran Iuran Mandiri (role adaptif untuk Anggota vs Pengurus).
+ * 2. Pengajuan Pengeluaran Kas Baru (dilindungi RBAC: hanya ADMIN & PENGELOLA yang dapat mengajukan).
+ * 3. Parser Chat AI untuk mengekstrak draf kas secara otomatis dari obrolan WhatsApp.
+ * 4. Navigasi jalan pintas (shortcut) ke Kantong Kas, Rekonsiliasi Bank, dan Anggota.
+ */
+
 import React, { useEffect } from 'react';
 import { useWallet } from '../../context/WalletContext';
 import { NavTab } from './Sidebar';
@@ -13,13 +25,16 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+/**
+ * Interface properti QuickActionSheet
+ */
 interface QuickActionSheetProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelectIncome: () => void;
-  onSelectExpense: () => void;
-  onSelectAiChat: () => void;
-  onNavigateTab?: (tab: NavTab) => void;
+  isOpen: boolean;                      // Status visibilitas lembar aksi
+  onClose: () => void;                  // Callback penutupan lembar
+  onSelectIncome: () => void;           // Membuka modal form transaksi pemasukan
+  onSelectExpense: () => void;          // Membuka modal form transaksi pengeluaran (Kuorum)
+  onSelectAiChat: () => void;           // Membuka panel AI chat parser
+  onNavigateTab?: (tab: NavTab) => void;// Callback opsional navigasi cepat antar tab
 }
 
 export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
@@ -30,11 +45,20 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
   onSelectAiChat,
   onNavigateTab,
 }) => {
+  // ---------------------------------------------------------------------------
+  // CONTEXT & ROLE-BASED ACCESS CONTROL (RBAC)
+  // ---------------------------------------------------------------------------
   const { activeWallet } = useWallet();
+  
+  // Evaluasi hak akses pengurus (Admin atau Pengelola)
   const isManagerOrAdmin = activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
+  
+  // Evaluasi jika pengguna merupakan anggota biasa (Warga)
   const isWarga = activeWallet?.myRole === 'WARGA';
 
-  // Handle ESC key to close
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Menutup lembar aksi menggunakan tombol keyboard 'Escape'
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -45,25 +69,31 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Jika status isOpen bernilai false, jangan render apapun ke DOM
   if (!isOpen) return null;
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI: Bottom Sheet Responsif (Bottom-sheet di HP, Modal Tengah di Desktop)
+  // ---------------------------------------------------------------------------
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      {/* Dimmed Blurred Backdrop */}
+      
+      {/* Latar Belakang Gelap Transparan (Backdrop Blur) */}
       <div
         className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sheet / Modal Container */}
+      {/* Kontainer Lembar Aksi */}
       <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl border border-slate-300 dark:border-slate-700 z-10 overflow-hidden transform transition-all duration-300 animate-in slide-in-from-bottom sm:zoom-in-95">
-        {/* Mobile Drag Handle */}
+        
+        {/* Batang Pegangan Geser Mobile (Mobile Drag Indicator) */}
         <div className="flex sm:hidden justify-center pt-3 pb-1">
           <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
         </div>
 
-        {/* Header */}
+        {/* Header Lembar Aksi: Judul & Tombol Tutup */}
         <div className="p-5 pb-3 sm:p-6 sm:pb-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2">
@@ -89,9 +119,10 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
           </button>
         </div>
 
-        {/* 3 Main Action Cards */}
+        {/* DAFTAR 3 KARTU AKSI UTAMA */}
         <div className="p-5 sm:p-6 space-y-3">
-          {/* Action 1: Catat Pemasukan / Lapor Iuran */}
+          
+          {/* AKSI 1: Catat Pemasukan Kas / Lapor Setoran Mandiri Warga */}
           <button
             type="button"
             onClick={onSelectIncome}
@@ -118,7 +149,8 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
             <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all shrink-0" />
           </button>
 
-          {/* Action 2: Ajukan Pengeluaran Kas */}
+          {/* AKSI 2: Ajukan Pengeluaran Kas (Wajib Kuorum M-of-N) */}
+          {/* Dilindungi RBAC: Hanya aktif untuk Pengurus (Admin / Pengelola) */}
           {isManagerOrAdmin ? (
             <button
               type="button"
@@ -144,6 +176,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
               <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all shrink-0" />
             </button>
           ) : (
+            /* Tampilan Terkunci untuk Anggota Biasa (RBAC Guard) */
             <div className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 opacity-60 text-left cursor-not-allowed">
               <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-400 flex items-center justify-center shrink-0">
                 <Lock className="w-5 h-5" />
@@ -164,7 +197,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
             </div>
           )}
 
-          {/* Action 3: Chatting / Parser Chat AI */}
+          {/* AKSI 3: Parser Obrolan Berbasis Kecerdasan Buatan (AI Chat Parser) */}
           <button
             type="button"
             onClick={onSelectAiChat}
@@ -190,9 +223,10 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
           </button>
         </div>
 
-        {/* Extra Shortcuts Navigation Row */}
+        {/* BARIS TAUTAN PINTAS KE FITUR TERKAIT (Shortcut Navigation Row) */}
         {onNavigateTab && (
           <div className="px-5 py-3 sm:px-6 sm:py-3.5 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-around gap-2">
+            {/* Shortcut: Kantong Kas */}
             <button
               type="button"
               onClick={() => onNavigateTab('kantong')}
@@ -204,6 +238,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
 
             <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
 
+            {/* Shortcut: Rekonsiliasi Bank */}
             <button
               type="button"
               onClick={() => onNavigateTab('rekonsiliasi')}
@@ -215,6 +250,7 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
 
             <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
 
+            {/* Shortcut: Kelola Anggota */}
             <button
               type="button"
               onClick={() => onNavigateTab('anggota')}

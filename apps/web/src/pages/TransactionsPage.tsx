@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * HALAMAN DAFTAR TRANSAKSI KAS BERSAMA (TRANSACTIONSPAGE.TSX)
+ * ============================================================================
+ * Komponen ini menyediakan manajemen dan eksplorasi data mutasi keuangan:
+ * 1. Filter Multidimensi: Tipe (Pemasukan, Pengeluaran, Reservasi), Periode Bulan,
+ *    Kategori pos kas, dan Status State Machine (DRAFT s/d COMPLETED).
+ * 2. Pencarian Instan Lintas Kolom (Deskripsi, Catatan, Nama Pencatat, Nominal).
+ * 3. Tampilan Responsif Ganda: Tabel Data Komprehensif (Desktop) dan Kartu Ringkas (Mobile).
+ * 4. Paginasi Sisi Klien untuk kenyamanan navigasi data dalam jumlah besar.
+ * 5. Integrasi Modal Pencatatan Cepat & Inspeksi Detail Rantai Transaksi.
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
@@ -17,8 +30,13 @@ import {
   Eye,
 } from 'lucide-react';
 
+// ----------------------------------------------------------------------------
+// TIPE DATA & PROPS KOMPONEN
+// ----------------------------------------------------------------------------
 interface TransactionsPageProps {
+  /** Callback untuk memicu form pencatatan transaksi dari parent */
   onOpenRecordModal?: (type: TransactionType) => void;
+  /** Trigger penyegaran data ketika terjadi perubahan mutasi di tempat lain */
   refreshTrigger?: number;
 }
 
@@ -26,35 +44,63 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
   onOpenRecordModal,
   refreshTrigger,
 }) => {
+  // --------------------------------------------------------------------------
+  // STATE & HOOKS: Konteks Autentikasi & Dompet Aktif
+  // --------------------------------------------------------------------------
   const { token } = useAuth();
   const { activeWallet } = useWallet();
 
+  // --------------------------------------------------------------------------
+  // STATE: Data Transaksi, Status Pemuatan, & Pesan Error
+  // --------------------------------------------------------------------------
+  /** Daftar mentah seluruh transaksi kas yang ditarik dari backend */
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  /** Status indikator pemuatan data */
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  /** Pesan kegagalan koneksi atau error validasi dari server */
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Filters
+  // --------------------------------------------------------------------------
+  // STATE: Filter Multidimensi & Pencarian
+  // --------------------------------------------------------------------------
+  /** Filter tab utama arus kas: SEMUA, PEMASUKAN, PENGELUARAN, atau RESERVASI AKTIF */
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'RESERVATION'>('ALL');
+  /** Kata kunci pencarian bebas (teks nama, kategori, nominal, nomor ID) */
   const [searchQuery, setSearchQuery] = useState<string>('');
+  /** Filter pilihan kategori pos anggaran (misal: "Iuran Bulanan", "Konsumsi") */
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  /** Filter status State Machine transaksi */
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  /** Filter periode tahun-bulan (format: "YYYY-MM") */
   const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
 
-  // Pagination
+  // --------------------------------------------------------------------------
+  // STATE: Paginasi Tabel Data
+  // --------------------------------------------------------------------------
+  /** Halaman aktif saat ini */
   const [currentPage, setCurrentPage] = useState<number>(1);
+  /** Batas jumlah baris transaksi per halaman */
   const pageSize = 15;
 
-  // Modals
+  // --------------------------------------------------------------------------
+  // STATE: Kontrol Visibilitas Modal
+  // --------------------------------------------------------------------------
+  /** Transaksi yang sedang dipilih untuk diinspeksi secara mendalam di modal */
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  /** Modal pencatatan lokal jika callback dari parent tidak disediakan */
   const [localRecordModalOpen, setLocalRecordModalOpen] = useState<boolean>(false);
   const [localRecordType, setLocalRecordType] = useState<TransactionType>('INCOME');
 
+  // --------------------------------------------------------------------------
+  // QUERY & DATA FETCHING: Pengambilan Daftar Riwayat Transaksi dari API
+  // --------------------------------------------------------------------------
   const fetchTransactions = useCallback(async () => {
     if (!token || !activeWallet) return;
     setIsLoading(true);
     setErrorMsg(null);
 
     try {
+      // Memuat hingga 100 entri transaksi kas terbaru milik dompet aktif
       const res = await fetch(`/api/v1/wallets/${activeWallet.id}/transactions?limit=100`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -71,11 +117,16 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     }
   }, [token, activeWallet]);
 
+  // --------------------------------------------------------------------------
+  // EFEK SAMPING: Sinkronisasi Saat Dompet Berganti atau Trigger Eksternal Terpicu
+  // --------------------------------------------------------------------------
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions, refreshTrigger]);
 
-  // Derived filter options
+  // --------------------------------------------------------------------------
+  // MEMOISASI FILTER: Ekstraksi Kategori Unik dari Data Transaksi
+  // --------------------------------------------------------------------------
   const categories = useMemo(() => {
     const set = new Set<string>();
     transactions.forEach((tx) => {
@@ -84,16 +135,21 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     return Array.from(set);
   }, [transactions]);
 
+  // --------------------------------------------------------------------------
+  // MEMOISASI FILTER: Ekstraksi Periode Bulan (YYYY-MM) Unik secara Terurut
+  // --------------------------------------------------------------------------
   const months = useMemo(() => {
     const set = new Set<string>();
     transactions.forEach((tx) => {
-      const key = tx.createdAt.slice(0, 7); // YYYY-MM
+      const key = tx.createdAt.slice(0, 7); // Format: YYYY-MM
       set.add(key);
     });
     return Array.from(set).sort().reverse();
   }, [transactions]);
 
-  // Count badges
+  // --------------------------------------------------------------------------
+  // MEMOISASI STATISTIK: Perhitungan Jumlah Badge per Kategori Filter
+  // --------------------------------------------------------------------------
   const counts = useMemo(() => {
     const all = transactions.length;
     const income = transactions.filter((tx) => tx.type === 'INCOME').length;
@@ -104,10 +160,12 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     return { all, income, expense, reservation };
   }, [transactions]);
 
-  // Filtered list
+  // --------------------------------------------------------------------------
+  // MEMOISASI LOGIKA FILTERING: Menerapkan Kriteria Pencarian & Filter Berlapis
+  // --------------------------------------------------------------------------
   const filteredList = useMemo(() => {
     return transactions.filter((tx) => {
-      // Type / Reservation filter
+      // 1. Filter Arus Kas / Status Reservasi
       if (typeFilter === 'INCOME' && tx.type !== 'INCOME') return false;
       if (typeFilter === 'EXPENSE' && tx.type !== 'EXPENSE') return false;
       if (
@@ -119,16 +177,16 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         return false;
       }
 
-      // Category filter
+      // 2. Filter Kategori Anggaran
       if (categoryFilter !== 'ALL' && tx.category !== categoryFilter) return false;
 
-      // Status filter
+      // 3. Filter Status State Machine
       if (statusFilter !== 'ALL' && tx.state !== statusFilter) return false;
 
-      // Month filter
+      // 4. Filter Periode Bulan
       if (selectedMonth !== 'ALL' && !tx.createdAt.startsWith(selectedMonth)) return false;
 
-      // Search query
+      // 5. Pencarian Kata Kunci Multi-Kolom
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchCategory = tx.category.toLowerCase().includes(q);
@@ -144,13 +202,18 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     });
   }, [transactions, typeFilter, categoryFilter, statusFilter, selectedMonth, searchQuery]);
 
-  // Paginated list
+  // --------------------------------------------------------------------------
+  // MEMOISASI PAGINASI: Pemotongan Baris Data Sesuai Halaman Aktif
+  // --------------------------------------------------------------------------
   const totalPages = Math.ceil(filteredList.length / pageSize) || 1;
   const paginatedList = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredList.slice(start, start + pageSize);
   }, [filteredList, currentPage, pageSize]);
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Pembukaan Form Pencatatan Transaksi Baru
+  // --------------------------------------------------------------------------
   const handleOpenRecord = (type: TransactionType) => {
     if (onOpenRecordModal) {
       onOpenRecordModal(type);
@@ -160,6 +223,9 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     }
   };
 
+  // --------------------------------------------------------------------------
+  // HELPER FORMAT: Lencana Indikator Status Transaksi State Machine
+  // --------------------------------------------------------------------------
   const getStatusBadge = (state: TransactionState, type?: TransactionType) => {
     switch (state) {
       case 'DRAFT':
@@ -215,9 +281,12 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     }
   };
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Tampilan Halaman Transaksi Kas
+  // --------------------------------------------------------------------------
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Header */}
+      {/* 1. Header Judul & Tombol Aksi Tambah Transaksi */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
@@ -229,7 +298,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
           </p>
         </div>
 
-        {/* Primary Action Button */}
+        {/* Tombol Buat Transaksi Baru */}
         <button
           type="button"
           onClick={() => handleOpenRecord('INCOME')}
@@ -240,7 +309,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         </button>
       </div>
 
-      {/* Filter Tabs (Semua, Pemasukan, Pengeluaran, Reservasi) */}
+      {/* 2. Tombol Tab Filter Arus Kas (Semua, Pemasukan, Pengeluaran, Reservasi) */}
       <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl max-w-xl">
         <button
           onClick={() => {
@@ -296,9 +365,9 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         </button>
       </div>
 
-      {/* Filter Bar Controls (Month, Category, Status, Search) */}
+      {/* 3. Bar Kontrol Filter Komprehensif (Bulan, Kategori, Status, Input Cari) */}
       <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Month Selector */}
+        {/* Dropdown Pemilihan Periode Bulan */}
         <div className="relative">
           <select
             value={selectedMonth}
@@ -322,7 +391,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
           <Calendar className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
         </div>
 
-        {/* Category Selector */}
+        {/* Dropdown Kategori Anggaran */}
         <div className="relative">
           <select
             value={categoryFilter}
@@ -342,7 +411,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
           <Filter className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
         </div>
 
-        {/* Status Selector */}
+        {/* Dropdown Status Alur Transaksi */}
         <div className="relative">
           <select
             value={statusFilter}
@@ -363,7 +432,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
           <Filter className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
         </div>
 
-        {/* Search Input */}
+        {/* Kolom Pencarian Kata Kunci */}
         <div className="relative">
           <input
             type="text"
@@ -387,14 +456,14 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         </div>
       </div>
 
-      {/* Error Banner */}
+      {/* 4. Banner Pesan Kesalahan Jaringan/Server */}
       {errorMsg && (
         <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 shadow-xs">
           {errorMsg}
         </div>
       )}
 
-      {/* Table & Feed Card */}
+      {/* 5. Wadah Utama Tabel Desktop & Kartu Seluler */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center text-xs text-slate-400 animate-pulse">
@@ -411,7 +480,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
           </div>
         ) : (
           <>
-            {/* Desktop / Tablet Table */}
+            {/* Tampilan Tabel Data Lengkap untuk Desktop & Tablet */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -433,7 +502,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                         onClick={() => setSelectedTx(tx)}
                         className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
                       >
-                        {/* Tanggal */}
+                        {/* Kolom Tanggal Pembuatan */}
                         <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
                           {new Date(tx.createdAt).toLocaleDateString('id-ID', {
                             day: 'numeric',
@@ -442,7 +511,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                           })}
                         </td>
 
-                        {/* Deskripsi & Pelapor */}
+                        {/* Kolom Uraian & Profil Pelapor Transaksi */}
                         <td className="px-6 py-4">
                           <div className="font-semibold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                             <span
@@ -457,14 +526,14 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                           </div>
                         </td>
 
-                        {/* Kategori */}
+                        {/* Kolom Kategori Pos Keuangan */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2.5 py-1 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                             {tx.category}
                           </span>
                         </td>
 
-                        {/* Jumlah */}
+                        {/* Kolom Nominal Rupiah Masuk/Keluar */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div
                             className={`font-extrabold text-sm ${
@@ -478,12 +547,12 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                           </div>
                         </td>
 
-                        {/* Status */}
+                        {/* Kolom Lencana Status Siklus Transaksi */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getStatusBadge(tx.state, tx.type)}
                         </td>
 
-                        {/* Aksi */}
+                        {/* Kolom Tombol Aksi Inspeksi Rincian */}
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <button
                             type="button"
@@ -504,7 +573,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
               </table>
             </div>
 
-            {/* Mobile Cards View */}
+            {/* Tampilan Kartu Ringkas Responsif untuk Layar Seluler */}
             <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
               {paginatedList.map((tx) => {
                 const isIncome = tx.type === 'INCOME';
@@ -560,7 +629,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
           </>
         )}
 
-        {/* Pagination Footer */}
+        {/* 6. Bilah Navigasi Paginasi Baris Data */}
         {filteredList.length > pageSize && (
           <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>
@@ -590,7 +659,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         )}
       </div>
 
-      {/* Transaction Detail Modal */}
+      {/* 7. Modal Detail & Rekam Jejak Audit Transaksi */}
       {selectedTx && (
         <TransactionDetailModal
           transaction={selectedTx}
@@ -599,7 +668,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         />
       )}
 
-      {/* Record Transaction Modal */}
+      {/* 8. Modal Pencatatan Transaksi Baru (Fallback Lokal) */}
       {localRecordModalOpen && (
         <RecordTransactionModal
           isOpen={localRecordModalOpen}
@@ -612,3 +681,4 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
     </div>
   );
 };
+

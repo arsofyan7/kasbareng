@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * ManageDuesConfigModal.tsx - Modal Pengaturan Nominal & Skema Iuran Kas
+ * ============================================================================
+ * Komponen modal untuk memperbarui konfigurasi iuran pada dompet kas yang sedang berjalan:
+ * 1. Mengubah Skema Iuran: Fleksibilitas beralih antara Rutin Bulanan (MONTHLY),
+ *    Target Termin (TARGET_INSTALLMENTS), atau Sukarela Bebas (FREEFORM).
+ * 2. Penyesuaian Tarif Nominal: Mengubah nominal acuan (misal naik dari Rp 50.000 ke Rp 75.000).
+ * 3. Prinsip Integritas Data Multi-Tahun: Perubahan nominal hanya berlaku ke depan
+ *    (forward-looking); catatan transaksi dan setoran masa lalu tidak berubah secara retroaktif.
+ * 4. Pencatatan Audit Trail: Setiap pembaruan konfigurasi otomatis disegel ke rantai hash SHA-256.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../../context/WalletContext';
 import { DuesType } from '../../types';
@@ -15,10 +28,13 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
+/**
+ * Interface properti ManageDuesConfigModal
+ */
 interface ManageDuesConfigModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess?: () => void;
+  isOpen: boolean;                      // Status visibilitas modal
+  onClose: () => void;                  // Callback penutupan modal
+  onSuccess?: () => void;               // Callback opsional saat konfigurasi berhasil disimpan
 }
 
 export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
@@ -26,16 +42,24 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  // ---------------------------------------------------------------------------
+  // CONTEXT
+  // ---------------------------------------------------------------------------
   const { activeWallet, updateWalletSettings } = useWallet();
 
-  const [duesType, setDuesType] = useState<DuesType>('MONTHLY');
-  const [duesAmountStr, setDuesAmountStr] = useState<string>('');
-  const [targetInstallmentsCount, setTargetInstallmentsCount] = useState<number>(10);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successToast, setSuccessToast] = useState(false);
+  // ---------------------------------------------------------------------------
+  // STATE MANAGEMENT FORM
+  // ---------------------------------------------------------------------------
+  const [duesType, setDuesType] = useState<DuesType>('MONTHLY');          // Tipe skema iuran terpilih
+  const [duesAmountStr, setDuesAmountStr] = useState<string>('');        // String nominal rupiah terformat
+  const [targetInstallmentsCount, setTargetInstallmentsCount] = useState<number>(10); // Target termin
+  const [isSubmitting, setIsSubmitting] = useState(false);              // Indikator loading penyimpanan
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);         // Pesan kesalahan
+  const [successToast, setSuccessToast] = useState(false);              // Notifikasi visual sukses
 
-  // Sync state when modal opens or activeWallet changes
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Sinkronisasi Form dengan Nilai Dompet Kas yang Sedang Aktif
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (activeWallet && isOpen) {
       setDuesType(activeWallet.duesType || 'MONTHLY');
@@ -48,19 +72,26 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
     }
   }, [activeWallet, isOpen]);
 
+  // Jika modal ditutup atau belum ada dompet aktif, hentikan render
   if (!isOpen || !activeWallet) return null;
 
+  // Nilai nominal kas saat ini sebelum diubah
   const currentAmount = activeWallet.duesAmount ? Number(activeWallet.duesAmount) : 0;
+  // Nilai nominal baru yang diparsing dari input pengguna
   const parsedNewAmount = duesAmountStr.trim()
     ? parseFloat(duesAmountStr.replace(/[^0-9]/g, ''))
     : null;
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Simpan Perubahan Pengaturan Skema Iuran (/settings)
+  // ---------------------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMsg(null);
 
     try {
+      // Memanggil fungsi mutasi dari WalletContext
       await updateWalletSettings(activeWallet.id, {
         duesType,
         duesAmount: parsedNewAmount,
@@ -68,6 +99,7 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
       });
 
       setSuccessToast(true);
+      // Jeda singkat sebelum menutup modal agar pengguna melihat toast sukses
       setTimeout(() => {
         onSuccess?.();
         onClose();
@@ -79,10 +111,14 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI MODAL
+  // ---------------------------------------------------------------------------
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
-        {/* Header */}
+        
+        {/* HEADER MODAL */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
@@ -105,6 +141,7 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
           </button>
         </div>
 
+        {/* NOTIFIKASI ERROR */}
         {errorMsg && (
           <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 flex items-center gap-2.5 text-xs text-rose-700 dark:text-rose-300">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -112,6 +149,7 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
           </div>
         )}
 
+        {/* NOTIFIKASI SUKSES */}
         {successToast && (
           <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 flex items-center gap-2.5 text-xs text-emerald-800 dark:text-emerald-200">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -119,14 +157,17 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
           </div>
         )}
 
+        {/* FORMULIR PENGATURAN */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Section 1: Skema / Tipe Iuran */}
+          
+          {/* SEKSI 1: Pemilihan Tipe Skema Iuran */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 space-y-3">
             <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               Tipe Skema Iuran
             </label>
 
+            {/* Pilihan 3 Model Iuran */}
             <div className="grid grid-cols-3 gap-2 text-xs">
               <button
                 type="button"
@@ -171,6 +212,7 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
               </button>
             </div>
 
+            {/* Input Tambahan: Jumlah Target Termin jika Mode TARGET_INSTALLMENTS */}
             {duesType === 'TARGET_INSTALLMENTS' && (
               <div className="pt-2">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -188,7 +230,7 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
             )}
           </div>
 
-          {/* Section 2: Nominal Iuran Baru */}
+          {/* SEKSI 2: Nominal Acuan Baru */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -218,7 +260,7 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
               />
             </div>
 
-            {/* Difference indicator */}
+            {/* Indikator Selisih Perubahan Nominal */}
             {parsedNewAmount !== null && parsedNewAmount !== currentAmount && (
               <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-xl border border-emerald-300 dark:border-emerald-800/80">
                 <TrendingUp className="w-4 h-4" />
@@ -229,7 +271,7 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
             )}
           </div>
 
-          {/* Section 3: Educational Integrity Notice */}
+          {/* SEKSI 3: Catatan Integritas Data Multi-Tahun */}
           <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 space-y-2">
             <div className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300">
               <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
@@ -249,7 +291,7 @@ export const ManageDuesConfigModal: React.FC<ManageDuesConfigModalProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* TOMBOL AKSI SIMPAN & BATAL */}
           <div className="pt-2 flex items-center justify-end gap-2.5">
             <button
               type="button"

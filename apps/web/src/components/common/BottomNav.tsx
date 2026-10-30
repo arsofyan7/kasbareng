@@ -1,3 +1,19 @@
+/**
+ * ============================================================================
+ * BottomNav.tsx - Komponen Navigasi Bawah Khusus Tampilan Ponsel (Mobile PWA)
+ * ============================================================================
+ * Komponen ini menghadirkan pengalaman navigasi bawah (bottom navigation bar) ala aplikasi
+ * e-wallet modern (seperti GoPay / OVO) untuk pengguna layar ponsel pintar (viewport < md).
+ *
+ * Struktur Desain:
+ * 1. 5 Kolom Simetris (Grid 5 Kolom).
+ * 2. Tab Kiri: Beranda Kas dan Papan Iuran.
+ * 3. Tombol Tengah Menonjol (Protruding FAB): Tombol Aksi Cepat kas (+ Aksi).
+ * 4. Tab Kanan: Persetujuan Kuorum Kas dan Profil Pengguna.
+ * 5. Indikator Titik Aktif (Active Indicator Dot) di bawah tab yang sedang dipilih.
+ * 6. Dukungan `pb-safe` untuk area aman perangkat iOS / Android notch bar.
+ */
+
 import React from 'react';
 import { NavTab } from './Sidebar';
 import {
@@ -8,10 +24,13 @@ import {
   Plus,
 } from 'lucide-react';
 
+/**
+ * Interface properti BottomNav
+ */
 interface BottomNavProps {
-  currentTab: NavTab;
-  onSelectTab: (tab: NavTab) => void;
-  onOpenQuickAction: () => void;
+  currentTab: NavTab;                   // Tab yang saat ini sedang aktif
+  onSelectTab: (tab: NavTab) => void;   // Callback fungsi saat pengguna mengetuk tab
+  onOpenQuickAction: () => void;       // Callback fungsi untuk membuka Quick Action Sheet
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -19,20 +38,30 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onSelectTab,
   onOpenQuickAction,
 }) => {
+  // ---------------------------------------------------------------------------
+  // DEFINISI TAB SISI KIRI (Beranda & Iuran)
+  // ---------------------------------------------------------------------------
   const leftTabs = [
     { id: 'beranda' as NavTab, label: 'Beranda', icon: LayoutDashboard },
     { id: 'papan-iuran' as NavTab, label: 'Iuran', icon: CalendarDays },
   ];
 
+  // ---------------------------------------------------------------------------
+  // DEFINISI TAB SISI KANAN (Persetujuan & Profil)
+  // ---------------------------------------------------------------------------
   const rightTabs = [
     { id: 'persetujuan' as NavTab, label: 'Persetujuan', icon: ShieldCheck },
     { id: 'profil' as NavTab, label: 'Profil', icon: UserCircle },
   ];
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI: Bilah Navigasi Bawah Mobile (md:hidden)
+  // ---------------------------------------------------------------------------
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-safe transition-colors shadow-lg shadow-slate-950/10">
       <div className="grid grid-cols-5 h-16 items-center px-1">
-        {/* Left Tabs */}
+        
+        {/* GRUP TAB KIRI (Beranda & Papan Iuran) */}
         {leftTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
@@ -48,6 +77,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             >
               <div className="relative">
                 <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                {/* Indikator Titik Hijau di Bawah Ikon Aktif */}
                 {isActive && (
                   <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-500" />
                 )}
@@ -57,7 +87,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           );
         })}
 
-        {/* Center Protruding Action Button (Ala E-Wallet) */}
+        {/* TOMBOL AKSI CEPAT TENGAH (Protruding FAB ala E-Wallet) */}
         <div className="flex flex-col items-center justify-center relative">
           <button
             type="button"
@@ -72,7 +102,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </span>
         </div>
 
-        {/* Right Tabs */}
+        {/* GRUP TAB KANAN (Persetujuan Kuorum & Profil Akun) */}
         {rightTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
@@ -88,6 +118,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             >
               <div className="relative">
                 <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                {/* Indikator Titik Hijau di Bawah Ikon Aktif */}
                 {isActive && (
                   <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-500" />
                 )}

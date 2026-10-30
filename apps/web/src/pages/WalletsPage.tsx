@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * WalletsPage.tsx - Halaman Manajemen Kantong Kas Bersama (Multi-Wallet Switcher)
+ * ============================================================================
+ * Komponen halaman untuk mengelola dan berpindah antar kantong kas bersama (multi-tenancy):
+ * 1. Menampilkan seluruh dompet kas tertutup (private ledger) yang diikuti atau dikelola pengguna.
+ * 2. Mengidentifikasi dompet kas yang sedang aktif dengan penanda visual (emerald ring & badge).
+ * 3. Menampilkan status peran spesifik pengguna di masing-masing dompet (Admin, Pengelola, Warga).
+ * 4. Menyediakan pintasan kode undangan (invite code) bagi pengurus kas untuk dibagikan ke anggota baru.
+ * 5. Menampilkan ringkasan tata kelola dompet: jumlah anggota, aturan kuorum persetujuan (M-of-N),
+ *    serta konfigurasi skema iuran (sukarela, termin, atau bulanan tetap).
+ * 6. Menyediakan akses langsung untuk membuat kantong kas baru atau bergabung via kode undangan.
+ */
+
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import {
@@ -16,10 +30,13 @@ import {
 } from 'lucide-react';
 import { ManageDuesConfigModal } from '../components/common/ManageDuesConfigModal';
 
+/**
+ * Interface properti komponen WalletsPage
+ */
 interface WalletsPageProps {
-  onOpenCreateWallet: () => void;
-  onOpenJoinWallet?: () => void;
-  onNavigateHome: () => void;
+  onOpenCreateWallet: () => void;  // Callback memicu pembukaan modal pembuatan dompet kas baru
+  onOpenJoinWallet?: () => void;   // Callback memicu pembukaan modal bergabung ke dompet via kode undangan
+  onNavigateHome: () => void;      // Callback navigasi kembali ke dasbor utama setelah memilih dompet
 }
 
 export const WalletsPage: React.FC<WalletsPageProps> = ({
@@ -27,10 +44,30 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
   onOpenJoinWallet,
   onNavigateHome,
 }) => {
+  // ---------------------------------------------------------------------------
+  // HOOKS & CONTEXT MANAGEMENT
+  // ---------------------------------------------------------------------------
+  // Mengambil daftar dompet kas, dompet aktif saat ini, dan fungsi pemilih dompet dari WalletContext
   const { wallets, activeWallet, selectWallet } = useWallet();
+
+  // ---------------------------------------------------------------------------
+  // STATE MANAGEMENT
+  // ---------------------------------------------------------------------------
+  // ID dompet kas yang kode undangannya sedang disalin (untuk feedback ikon centang visual)
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Status pembukaan modal pengaturan skema dan tarif iuran dompet
   const [isDuesModalOpen, setIsDuesModalOpen] = useState(false);
 
+  // ---------------------------------------------------------------------------
+  // HANDLERS & HELPER FUNCTIONS
+  // ---------------------------------------------------------------------------
+  /**
+   * Menyalin kode undangan dompet ke clipboard perangkat pengguna
+   * @param e - Event mouse untuk menghentikan bubbling ke elemen kartu
+   * @param code - String kode undangan privat
+   * @param id - UUID dompet kas
+   */
   const handleCopyCode = (e: React.MouseEvent, code?: string, id?: string) => {
     e.stopPropagation();
     if (!code || !id) return;
@@ -39,6 +76,10 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  /**
+   * Mengembalikan badge visual peran pengguna pada dompet kas terkait
+   * @param role - Peran ('ADMIN' | 'PENGELOLA' | 'WARGA')
+   */
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'ADMIN':
@@ -65,8 +106,12 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI UTAMA
+  // ---------------------------------------------------------------------------
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
+      {/* 1. Header Halaman & Tombol Aksi Global (Gabung / Buat Dompet) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
@@ -79,6 +124,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* Tombol Masukkan Kode Undangan */}
           {onOpenJoinWallet && (
             <button
               onClick={onOpenJoinWallet}
@@ -88,6 +134,8 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
               + Gabung Kode
             </button>
           )}
+
+          {/* Tombol Buat Dompet Kas Baru */}
           <button
             onClick={onOpenCreateWallet}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all"
@@ -98,10 +146,12 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
         </div>
       </div>
 
-      {/* Grid of Wallets */}
+      {/* 2. Grid Kartu Daftar Dompet Kas Pengguna */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {wallets.map((wallet) => {
+          // Menentukan apakah dompet ini sedang aktif di konteks global saat ini
           const isActive = activeWallet?.id === wallet.id;
+
           return (
             <div
               key={wallet.id}
@@ -112,6 +162,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
               }`}
             >
               <div className="space-y-3">
+                {/* Judul Dompet & Badge Peran Anggota */}
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug">
                     {wallet.name}
@@ -119,11 +170,12 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                   {getRoleBadge(wallet.myRole)}
                 </div>
 
+                {/* Deskripsi Dompet Kas */}
                 <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                   {wallet.description || 'Tidak ada deskripsi tambahan.'}
                 </p>
 
-                {/* Invite Code Pill (Khusus Pengurus & Admin) */}
+                {/* Bilah Kode Undangan (Khusus Peran Pengurus: Admin & Pengelola) */}
                 {wallet.inviteCode && (wallet.myRole === 'ADMIN' || wallet.myRole === 'PENGELOLA') && (
                   <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-[11px]">
                     <div className="flex items-center gap-1.5 text-slate-500">
@@ -148,6 +200,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                   </div>
                 )}
 
+                {/* Rincian Statistik: Jumlah Anggota & Ambang Batas Kuorum Persetujuan */}
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-slate-400 block text-[11px]">Anggota</span>
@@ -163,7 +216,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                   </div>
                 </div>
 
-                {/* Dues Rate & Scheme */}
+                {/* Skema & Tarif Iuran Kas */}
                 <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-1.5 text-slate-500">
                     <Calendar className="w-3.5 h-3.5 text-emerald-600" />
@@ -178,6 +231,8 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                         : 'Bulanan'}
                     </span>
                   </div>
+
+                  {/* Tombol Atur Skema Iuran (Hanya untuk Admin / Pengelola) */}
                   {(wallet.myRole === 'ADMIN' || wallet.myRole === 'PENGELOLA') && (
                     <button
                       type="button"
@@ -196,7 +251,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
                 </div>
               </div>
 
-              {/* Action Button */}
+              {/* 3. Tombol Aksi: Buka Beranda (Jika Aktif) atau Aktifkan Dompet */}
               <div>
                 {isActive ? (
                   <button
@@ -224,7 +279,7 @@ export const WalletsPage: React.FC<WalletsPageProps> = ({
         })}
       </div>
 
-      {/* Manage Dues Config Modal */}
+      {/* 4. Modal Pengaturan Skema & Nominal Iuran Dompet */}
       {isDuesModalOpen && (
         <ManageDuesConfigModal
           isOpen={isDuesModalOpen}

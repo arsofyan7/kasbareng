@@ -1,20 +1,47 @@
+/**
+ * ============================================================================
+ * MODUL AUTH: MIDDLEWARE OTENTIKASI & OTORISASI RBAC (auth.middleware.ts)
+ * ============================================================================
+ * File ini menyediakan middleware Express untuk:
+ * 1. Otentikasi berbasis JWT (JSON Web Token) untuk memvalidasi identitas pengguna (`requireAuth`).
+ * 2. Otorisasi berbasis peran per dompet (Wallet-level Role-Based Access Control / RBAC) (`requireWalletRole`).
+ * 
+ * Desain Keamanan:
+ * - Menggunakan skema HTTP Authorization Bearer token.
+ * - Memverifikasi status aktif pengguna di database Prisma untuk mencegah akses dari akun yang disuspend/dihapus.
+ * - Menerapkan isolasi multi-tenant pada tingkat dompet: Pengguna hanya dapat mengakses dompet jika
+ *   memiliki relasi keanggotaan (`WalletMember`) aktif dengan peran (Role) yang diizinkan.
+ */
+
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../common/prisma';
 import { sendError } from '../../common/response';
 import { WalletRole } from '@prisma/client';
 
+/**
+ * Interface `JwtPayload`:
+ * Payload yang didekode dari JWT access token.
+ */
 export interface JwtPayload {
   userId: string;
   email: string;
 }
 
+/**
+ * Interface `AuthenticatedUser`:
+ * Representasi ringkas entitas pengguna yang berhasil diotentikasi.
+ */
 export interface AuthenticatedUser {
   id: string;
   email: string;
   fullName: string;
 }
 
+/**
+ * Interface `AuthenticatedWalletMember`:
+ * Representasi entitas keanggotaan pengguna pada dompet tertentu beserta role RBAC-nya.
+ */
 export interface AuthenticatedWalletMember {
   id: string;
   walletId: string;
@@ -23,6 +50,10 @@ export interface AuthenticatedWalletMember {
   status: string;
 }
 
+/**
+ * Interface `AuthRequest`:
+ * Ekstensi dari `Request` bawaan Express yang menambahkan properti `user` dan `walletMember`.
+ */
 export interface AuthRequest extends Request {
   user?: AuthenticatedUser;
   walletMember?: AuthenticatedWalletMember;
@@ -30,6 +61,23 @@ export interface AuthRequest extends Request {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'kasbareng-super-secret-key-for-dev-2026';
 
+/**
+ * ============================================================================
+ * MIDDLEWARE: requireAuth
+ * ============================================================================
+ * Fungsi Blok:
+ * Memvalidasi apakah request membawa JWT Bearer Token yang sah, mendekode token tersebut,
+ * memverifikasi status user di database, dan melampirkan data user ke `req.user`.
+ * 
+ * Alur Kerja:
+ * 1. Periksa header `Authorization`. Jika tidak ada atau tidak diawali 'Bearer ', tolak dengan 401 UNAUTHENTICATED.
+ * 2. Ekstrak string token (menghilangkan prefix 'Bearer ').
+ * 3. Verifikasi token menggunakan kunci rahasia `JWT_SECRET`.
+ * 4. Cari pengguna di database via Prisma (`prisma.user.findUnique`).
+ * 5. Jika akun tidak ditemukan atau status bukan 'ACTIVE', tolak dengan 401 UNAUTHENTICATED.
+ * 6. Setel objek `req.user` dengan data pengguna (id, email, fullName).
+ * 7. Teruskan eksekusi ke middleware/controller berikutnya via `next()`.
+ */
 export async function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -60,9 +108,26 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
 }
 
 /**
- * Middleware to enforce per-wallet membership and RBAC.
- * Checks if req.user is a member of req.params.walletId.
- * If allowedRoles is provided, validates that member.role is one of allowedRoles.
+ * ============================================================================
+ * MIDDLEWARE FACTORY: requireWalletRole
+ * ============================================================================
+ * Fungsi Blok:
+ * Memastikan pengguna yang terotentikasi adalah anggota sah dari dompet yang diminta (`walletId`)
+ * dan memiliki salah satu dari role yang diizinkan (RBAC).
+ * 
+ * Konteks RBAC (Role-Based Access Control):
+ * - Peran yang didukung: ADMIN (Ketua/Bendahara Utama), PENGELOLA (Seksi Keuangan/Pengurus), WARGA (Anggota Komunitas).
+ * - Jika `allowedRoles` tidak diberikan atau kosong, seluruh anggota aktif (ADMIN, PENGELOLA, WARGA) diizinkan lewat.
+ * 
+ * Alur Kerja:
+ * 1. Memastikan `req.user` sudah ada (harus dijalankan setelah `requireAuth`).
+ * 2. Mendapatkan `walletId` dari URL parameter (`req.params.walletId`) atau request body (`req.body.walletId`).
+ * 3. Query relasi keanggotaan dompet pada Prisma (`prisma.walletMember.findUnique`) menggunakan composite key `walletId_userId`.
+ * 4. Tolak dengan 403 FORBIDDEN jika user bukan anggota atau status keanggotaannya bukan 'ACTIVE'.
+ * 5. Jika parameter `allowedRoles` ditentukan, periksa apakah `membership.role` termasuk di dalam array tersebut.
+ *    Jika tidak, tolak dengan 403 FORBIDDEN dengan rincian role yang disyaratkan.
+ * 6. Lampirkan informasi keanggotaan ke `req.walletMember`.
+ * 7. Lanjutkan ke handler berikutnya via `next()`.
  */
 export function requireWalletRole(allowedRoles?: WalletRole[]) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {

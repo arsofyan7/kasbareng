@@ -1,13 +1,30 @@
+/**
+ * ============================================================================
+ * JoinWalletModal.tsx - Modal Bergabung ke Kas Bersama (Private Gated)
+ * ============================================================================
+ * Komponen modal untuk masuk ke dompet kas bersama menggunakan kode undangan:
+ * 1. Mendukung input kode manual (misal: "RT05-SEJAHTERA" atau "KAS-8X92KP").
+ * 2. Ekstraksi Pintar: Jika pengguna menempelkan link lengkap WhatsApp (misal:
+ *    `kasbareng.app/join/KODE` atau `?join=KODE`), sistem otomatis mengekstrak kodenya.
+ * 3. Pratinjau Dompet Kas Real-Time (Live Preview): Mengambil info nama dompet,
+ *    mata uang, jumlah anggota aktif, dan deskripsi sebelum pengguna menekan gabung.
+ * 4. Pendaftaran Peran Otomatis: Pengguna yang bergabung melalui kode undangan
+ *    diberikan peran default sebagai `WARGA` (anggota kas).
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../../context/WalletContext';
 import { WalletPreview, ApiResponse } from '../../types';
 import { X, KeyRound, Users, ShieldCheck, AlertCircle, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 
+/**
+ * Interface properti JoinWalletModal
+ */
 interface JoinWalletModalProps {
-  isOpen: boolean;
-  initialCode?: string;
-  onClose: () => void;
-  onSuccess?: () => void;
+  isOpen: boolean;                      // Status visibilitas modal
+  initialCode?: string;                 // Kode awal opsional (jika dibuka dari tautan URL)
+  onClose: () => void;                  // Callback penutupan modal
+  onSuccess?: () => void;               // Callback setelah berhasil bergabung
 }
 
 export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
@@ -16,24 +33,37 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  // ---------------------------------------------------------------------------
+  // CONTEXT
+  // ---------------------------------------------------------------------------
   const { joinWallet } = useWallet();
-  const [code, setCode] = useState(initialCode);
-  const [preview, setPreview] = useState<WalletPreview | null>(null);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Sync initialCode when modal opens
+  // ---------------------------------------------------------------------------
+  // STATE MANAGEMENT
+  // ---------------------------------------------------------------------------
+  const [code, setCode] = useState(initialCode);                          // String kode undangan yang diinput
+  const [preview, setPreview] = useState<WalletPreview | null>(null);     // Objek ringkasan dompet yang ditemukan
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);        // Indikator loading preview kode
+  const [isSubmitting, setIsSubmitting] = useState(false);                // Indikator loading submit gabung
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);           // Pesan error validasi/API
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);       // Pesan ucapan selamat datang
+
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Sinkronisasi initialCode saat Modal Dibuka
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (initialCode) {
       handleCodeChange(initialCode);
     }
   }, [initialCode, isOpen]);
 
+  // Jika status terbuka false, jangan render ke DOM
   if (!isOpen) return null;
 
-  // Extract clean code if a URL was pasted
+  // ---------------------------------------------------------------------------
+  // HELPER: Ekstraksi Kode Bersih jika Pengguna Menempelkan URL Lengkap
+  // Menangani format ?join=KODE atau https://kasbareng.app/join/KODE
+  // ---------------------------------------------------------------------------
   const extractCode = (input: string): string => {
     let clean = input.trim();
     if (clean.includes('join=')) {
@@ -47,12 +77,16 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
     return clean.toUpperCase();
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Perubahan Input Kode & Pengecekan Pratinjau Dompet (/preview-invite)
+  // ---------------------------------------------------------------------------
   const handleCodeChange = async (val: string) => {
     const clean = extractCode(val);
     setCode(clean);
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // Ambil data pratinjau jika kode telah mencapai minimal 4 karakter
     if (clean.length >= 4) {
       setIsLoadingPreview(true);
       try {
@@ -75,6 +109,9 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Submit Bergabung ke Dompet Kas (/wallets/join)
+  // ---------------------------------------------------------------------------
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
@@ -89,6 +126,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
     try {
       const joined = await joinWallet(code.trim());
       setSuccessMsg(`Selamat datang di ${joined.name}!`);
+      // Beri jeda 1 detik agar pengguna membaca notifikasi sukses sebelum modal tertutup
       setTimeout(() => {
         onClose();
         if (onSuccess) onSuccess();
@@ -100,10 +138,14 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI MODAL
+  // ---------------------------------------------------------------------------
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
-        {/* Header */}
+        
+        {/* HEADER MODAL */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -126,6 +168,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
           </button>
         </div>
 
+        {/* NOTIFIKASI KESALAHAN */}
         {errorMsg && (
           <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center gap-2 text-xs text-rose-700 dark:text-rose-300">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -133,6 +176,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
           </div>
         )}
 
+        {/* NOTIFIKASI BERHASIL BERGABUNG */}
         {successMsg && (
           <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
             <CheckCircle className="w-4 h-4 shrink-0" />
@@ -140,6 +184,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
           </div>
         )}
 
+        {/* FORMULIR GABUNG KODE */}
         <form onSubmit={handleJoin} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -165,7 +210,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
             </p>
           </div>
 
-          {/* Live Community Preview Card */}
+          {/* KARTU PRATINJAU DOMPET KAS (Ditemukan Secara Real-Time) */}
           {preview && (
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 space-y-3 animate-in fade-in duration-200">
               <div className="flex items-start justify-between gap-2">
@@ -201,6 +246,7 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
             </div>
           )}
 
+          {/* TOMBOL BATAL & GABUNG SEKARANG */}
           <div className="pt-2 flex items-center justify-end gap-2">
             <button
               type="button"
@@ -233,3 +279,4 @@ export const JoinWalletModal: React.FC<JoinWalletModalProps> = ({
     </div>
   );
 };
+

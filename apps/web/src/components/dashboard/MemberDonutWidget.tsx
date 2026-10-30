@@ -2,34 +2,56 @@ import React from 'react';
 import { Users2, ChevronRight } from 'lucide-react';
 import { WalletMember } from '../../types';
 
+/**
+ * Interface properti untuk komponen MemberDonutWidget.
+ * @property members - Daftar seluruh anggota yang tergabung dalam dompet kas aktif.
+ * @property isLoading - Indikator status pemuatan data anggota dari server.
+ * @property onNavigateToMembers - Callback fungsi navigasi langsung ke halaman manajemen anggota.
+ */
 interface MemberDonutWidgetProps {
   members: WalletMember[];
   isLoading: boolean;
   onNavigateToMembers: () => void;
 }
 
+/**
+ * Komponen Visualisasi Distribusi Anggota (MemberDonutWidget).
+ * 
+ * Menampilkan diagram donat (SVG Donut Chart murni tanpa dependensi eksternal berat):
+ * 1. Agregasi Status Keanggotaan: Membagi anggota kas menjadi Aktif (ACTIVE),
+ *    Menunggu Persetujuan Kuorum (PENDING), dan Nonaktif (INACTIVE).
+ * 2. Geometri SVG Dinamis: Menghitung keliling lingkaran (circumference) serta proporsi panjang
+ *    goresan (stroke-dasharray & stroke-dashoffset) berdasarkan persentase anggota riil.
+ * 3. Indikator Tengah & Legenda Interaktif: Menampilkan angka total di rongga tengah donat
+ *    dan menyediakan tombol akses cepat (one-click jump) ke modul manajemen anggota.
+ */
 export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
   members,
   isLoading,
   onNavigateToMembers,
 }) => {
+  // Menghitung jumlah anggota berstatus aktif
   const activeCount = members.filter((m) => m.status === 'ACTIVE').length;
+  // Menghitung jumlah anggota berstatus nonaktif/dibekukan
   const inactiveCount = members.filter((m) => m.status === 'INACTIVE').length;
-  const pendingCount = 0; // Default placeholder for pending applicant quorum
+  // Placeholder slot untuk calon anggota yang menunggu kuorum persetujuan warga
+  const pendingCount = 0;
+  // Total keseluruhan anggota kas
   const totalCount = members.length;
 
-  // SVG Donut geometry
+  // Konfigurasi parameter geometri SVG Donut Chart
   const radius = 42;
-  const circumference = 2 * Math.PI * radius; // ~263.89
+  const circumference = 2 * Math.PI * radius; // Keliling lingkaran: ~263.89 unit
 
-  // Calculate stroke lengths
+  // Menghitung panjang busur lingkaran (stroke length) proporsional untuk tiap segmen
   const activeLength = totalCount > 0 ? (activeCount / totalCount) * circumference : circumference;
   const pendingLength = totalCount > 0 ? (pendingCount / totalCount) * circumference : 0;
   const inactiveLength = totalCount > 0 ? (inactiveCount / totalCount) * circumference : 0;
 
   return (
+    // Kontainer kartu widget donat ringkasan anggota
     <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
-      {/* Header */}
+      {/* Header Widget: Ikon Grup Warga, Judul, dan Badge Total Anggota */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-300/80 dark:border-sky-700/80 flex items-center justify-center text-sky-600 dark:text-sky-400">
@@ -45,17 +67,18 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
           </div>
         </div>
 
+        {/* Badge Pil Total Anggota */}
         <span className="text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-xl border border-sky-300 dark:border-sky-700 shadow-xs">
           {totalCount} Anggota
         </span>
       </div>
 
-      {/* Donut Chart & Legend Row */}
+      {/* Baris Visual Donut Chart SVG & Legenda Status */}
       <div className="flex items-center justify-around gap-4 py-1">
-        {/* SVG Donut Circle */}
+        {/* Lingkaran Donut SVG */}
         <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0">
           <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-            {/* Background Track */}
+            {/* Jalur Lingkaran Dasar (Background Track) */}
             <circle
               cx="60"
               cy="60"
@@ -65,7 +88,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
               className="stroke-slate-100 dark:stroke-slate-800"
             />
 
-            {/* Active Slice (Emerald) */}
+            {/* Irisan Busur Anggota Aktif (Warna Hijau Zamrud) */}
             {activeLength > 0 && (
               <circle
                 cx="60"
@@ -80,7 +103,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
               />
             )}
 
-            {/* Inactive Slice (Red/Rose) */}
+            {/* Irisan Busur Anggota Nonaktif (Warna Merah Mawar) */}
             {inactiveLength > 0 && (
               <circle
                 cx="60"
@@ -96,7 +119,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
             )}
           </svg>
 
-          {/* Center Text (Counter) */}
+          {/* Teks Penanda Tengah (Center Counter Label) */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
             <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-none">
               {isLoading ? '...' : totalCount}
@@ -107,9 +130,9 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
           </div>
         </div>
 
-        {/* Legend List */}
+        {/* Kolom Legenda Kategori Status Keanggotaan */}
         <div className="space-y-2.5 text-xs">
-          {/* Active */}
+          {/* Status Aktif */}
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
             <span className="font-semibold text-slate-700 dark:text-slate-300">
@@ -118,7 +141,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
             <span className="text-slate-500 dark:text-slate-400">Aktif</span>
           </div>
 
-          {/* Pending */}
+          {/* Status Menunggu Verifikasi */}
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
             <span className="font-semibold text-slate-700 dark:text-slate-300">
@@ -127,7 +150,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
             <span className="text-slate-500 dark:text-slate-400">Menunggu</span>
           </div>
 
-          {/* Inactive */}
+          {/* Status Nonaktif / Diberhentikan */}
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
             <span className="font-semibold text-slate-700 dark:text-slate-300">
@@ -138,7 +161,7 @@ export const MemberDonutWidget: React.FC<MemberDonutWidgetProps> = ({
         </div>
       </div>
 
-      {/* Footer Navigation Action */}
+      {/* Footer Widget: Tombol Pintas Navigasi ke Modul Manajemen Anggota */}
       <div className="pt-1 flex justify-end">
         <button
           type="button"

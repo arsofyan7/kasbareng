@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * Sidebar.tsx - Komponen Navigasi Samping Desktop
+ * ============================================================================
+ * Komponen ini merupakan bilah navigasi samping kiri untuk pengguna layar desktop (md ke atas).
+ * Fitur utama:
+ * 1. Tombol Aksi Utama desktop: "+ Transaksi Baru" untuk memunculkan Quick Action Sheet.
+ * 2. Menu Navigasi 9 Modul: Beranda, Transaksi Kas, Papan Iuran, Kantong Kas,
+ *    Persetujuan Kas (Quorum), Rekonsiliasi Bank, Parser Chat AI, Kelola Anggota, Profil & Tema.
+ * 3. Tombol Aksi Cepat: Gabung Dompet via Kode dan Buat Dompet Kas Baru.
+ * 4. Kartu Banner Edukasi Akuntabilitas Komunitas di bagian bawah bilah navigasi.
+ */
+
 import React from 'react';
 import {
   LayoutDashboard,
@@ -14,15 +27,30 @@ import {
   Plus,
 } from 'lucide-react';
 
-export type NavTab = 'beranda' | 'transaksi' | 'papan-iuran' | 'kantong' | 'persetujuan' | 'rekonsiliasi' | 'ai-parser' | 'anggota' | 'profil';
+/**
+ * Tipe union tab navigasi yang aktif di aplikasi web Kasbareng
+ */
+export type NavTab =
+  | 'beranda'
+  | 'transaksi'
+  | 'papan-iuran'
+  | 'kantong'
+  | 'persetujuan'
+  | 'rekonsiliasi'
+  | 'ai-parser'
+  | 'anggota'
+  | 'profil';
 
+/**
+ * Interface properti Sidebar
+ */
 interface SidebarProps {
-  currentTab: NavTab;
-  onSelectTab: (tab: NavTab) => void;
-  onOpenCreateWallet: () => void;
-  onOpenJoinWallet?: () => void;
-  onOpenAuditChain?: () => void;
-  onOpenQuickAction?: () => void;
+  currentTab: NavTab;                   // Tab yang saat ini sedang aktif
+  onSelectTab: (tab: NavTab) => void;   // Callback untuk berpindah tab
+  onOpenCreateWallet: () => void;       // Callback membuka modal buat dompet
+  onOpenJoinWallet?: () => void;        // Callback membuka modal gabung kode
+  onOpenAuditChain?: () => void;        // Callback opsional membuka modal rantai audit
+  onOpenQuickAction?: () => void;       // Callback membuka quick action transaksi baru
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -32,6 +60,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenJoinWallet,
   onOpenQuickAction,
 }) => {
+  // ---------------------------------------------------------------------------
+  // DAFTAR MENU NAVIGASI (9 Modul Utama Kasbareng)
+  // ---------------------------------------------------------------------------
   const navItems = [
     { id: 'beranda' as NavTab, label: 'Beranda Kas', icon: LayoutDashboard },
     { id: 'transaksi' as NavTab, label: 'Transaksi Kas', icon: ArrowLeftRight },
@@ -44,10 +75,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'profil' as NavTab, label: 'Profil & Tema', icon: UserCircle },
   ];
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI: Sidebar Layout Khusus Desktop (hidden di mobile md:flex)
+  // ---------------------------------------------------------------------------
   return (
     <aside className="w-64 shrink-0 hidden md:flex flex-col justify-between p-4 border-r border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm min-h-[calc(100vh-4rem)]">
       <div className="space-y-4">
-        {/* Primary Desktop Action Button */}
+        
+        {/* TOMBOL AKSI UTAMA: Tambah Transaksi Baru (Desktop Call-to-Action) */}
         {onOpenQuickAction && (
           <button
             type="button"
@@ -59,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         )}
 
-        {/* Navigation List */}
+        {/* DAFTAR TAUTAN NAVIGASI BERULANG (Map Loop) */}
         <nav className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -74,6 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
+                {/* Ikon menu dengan highlight warna saat status aktif */}
                 <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 {item.label}
               </button>
@@ -81,8 +117,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </nav>
 
-        {/* Action Buttons */}
+        {/* TOMBOL AKSI CEPAT DOMPET KAS */}
         <div className="pt-2 space-y-2">
+          {/* Tombol Gabung Dompet via Kode Undangan */}
           {onOpenJoinWallet && (
             <button
               onClick={onOpenJoinWallet}
@@ -93,6 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           )}
 
+          {/* Tombol Pembuatan Dompet Kas Baru */}
           <button
             onClick={onOpenCreateWallet}
             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-emerald-400 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-sm font-medium transition-colors cursor-pointer"
@@ -103,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Bottom Community Trust Banner (Desktop Mockup Parity) */}
+      {/* KARTU EDUKASI / BANNER KEPERCAYAAN KOMUNITAS (Bottom Banner) */}
       <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80">
         <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700/80 text-center space-y-1">
           <div className="flex justify-center -space-x-1 mb-1">
@@ -122,3 +160,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
+

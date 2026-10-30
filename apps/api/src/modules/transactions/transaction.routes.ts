@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * MODUL TRANSAKSI: ROUTER MANAJEMEN TRANSAKSI & PERSETUJUAN KAS (transaction.routes.ts)
+ * ============================================================================
+ * File router ini mengelola seluruh siklus hidup transaksi kas komunitas:
+ * 1. Ringkasan saldo kas aktif, dicadangkan (reserved), dan tersedia (available).
+ * 2. Daftar riwayat transaksi dengan pembatasan hak lihat (Visibility Scoping RBAC).
+ * 3. Pembuatan draf transaksi (INCOME oleh Warga/Pengurus, EXPENSE oleh Pengurus).
+ * 4. Pengajuan (Submission) draf ke tahap persetujuan / verifikasi FSM.
+ * 5. Multi-Approval M-of-N Quorum untuk pengeluaran kas (EXPENSE).
+ * 6. Verifikasi tunggal (Single-Manager Verification) untuk setoran iuran warga (INCOME).
+ * 7. Eksekusi pembayaran dan pembukuan resmi ke buku besar (Ledger DEBIT / CREDIT).
+ * 8. Pembatalan (Cancellation) draf transaksi.
+ */
+
 import { Router, Response } from 'express';
 import { TransactionService } from './transaction.service';
 import { requireAuth, requireWalletRole, AuthRequest } from '../auth/auth.middleware';
@@ -8,7 +23,19 @@ import { prisma } from '../../common/prisma';
 
 export const transactionRouter = Router();
 
-// 1. Get Wallet Balance Summary
+/**
+ * ============================================================================
+ * ENDPOINT 1: GET /api/v1/wallets/:walletId/summary
+ * ============================================================================
+ * Fungsi Blok:
+ * Menghitung dan mengembalikan posisi likuiditas kas dompet:
+ * - Saldo Buku Besar (Total Balance)
+ * - Saldo Dicadangkan (Reserved Balance) untuk pengeluaran yang sedang menunggu persetujuan
+ * - Saldo Efektif Tersedia (Available Balance = Total Balance - Reserved Balance)
+ * 
+ * Konteks Otorisasi & RBAC:
+ * - Terbuka untuk seluruh anggota aktif dompet (ADMIN, PENGELOLA, WARGA).
+ */
 transactionRouter.get(
   '/wallets/:walletId/summary',
   requireAuth,
@@ -24,7 +51,23 @@ transactionRouter.get(
   }
 );
 
-// 2. List Wallet Transactions
+/**
+ * ============================================================================
+ * ENDPOINT 2: GET /api/v1/wallets/:walletId/transactions
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengambil daftar transaksi kas dalam dompet dengan dukungan filter dan pagination.
+ * 
+ * Konteks Otorisasi & Visibility Scoping (RBAC):
+ * - ADMIN & PENGELOLA: Berwenang melihat seluruh transaksi kas (INCOME dan EXPENSE) dari seluruh anggota.
+ * - WARGA: Hanya berwenang melihat transaksi yang dilaporkan oleh dirinya sendiri (`creatorId = req.user.id`).
+ * 
+ * Alur Kerja:
+ * 1. Periksa peran pemohon melalui `req.walletMember`.
+ * 2. Tentukan parameter filter `creatorId` jika pemohon adalah WARGA.
+ * 3. Panggil `TransactionService.getWalletTransactions` dengan filter tipe, state, dan paginasi.
+ * 4. Kembalikan array transaksi dan pagination metadata.
+ */
 transactionRouter.get(
   '/wallets/:walletId/transactions',
   requireAuth,
@@ -35,9 +78,7 @@ transactionRouter.get(
       const { type, state, page, limit } = req.query;
       const member = req.walletMember!;
 
-      // Scope transaction visibility:
-      // ADMIN & PENGELOLA: can see all transactions.
-      // WARGA: can ONLY see transactions created by themselves.
+      // Pembatasan hak akses visibilitas transaksi berdasarkan RBAC
       const creatorId = member.role === WalletRole.WARGA ? req.user!.id : undefined;
 
       const result = await TransactionService.getWalletTransactions(walletId, {
@@ -57,7 +98,23 @@ transactionRouter.get(
   }
 );
 
-// 3. Create Transaction Draft (ADMIN / PENGELOLA can create any; WARGA can report INCOME only)
+/**
+ * ============================================================================
+ * ENDPOINT 3: POST /api/v1/wallets/:walletId/transactions
+ * ============================================================================
+ * Fungsi Blok:
+ * Membuat draf (DRAFT) transaksi baru di dalam sistem.
+ * 
+ * Aturan Bisnis & RBAC:
+ * - ADMIN & PENGELOLA: Dapat membuat draf pemasukan (INCOME) maupun pengeluaran kas (EXPENSE).
+ * - WARGA: Hanya diizinkan melaporkan setoran pemasukan kas/iuran (INCOME). Pengajuan EXPENSE oleh warga ditolak (403 FORBIDDEN).
+ * 
+ * Alur Kerja:
+ * 1. Ambil `walletId` dan ID user yang sedang login.
+ * 2. Cek peran anggota: Jika role WARGA dan payload bukan `INCOME`, tolak dengan 403 FORBIDDEN.
+ * 3. Panggil `TransactionService.createDraft` untuk validasi Zod dan penyimpanan draf.
+ * 4. Kembalikan respon 201 Created.
+ */
 transactionRouter.post(
   '/wallets/:walletId/transactions',
   requireAuth,
@@ -67,7 +124,7 @@ transactionRouter.post(
       const walletId = String(req.params.walletId);
       const userId = req.user!.id;
 
-      // Check role permissions: WARGA can only create INCOME
+      // Pengecekan izin peran: WARGA hanya dapat melaporkan pemasukan (INCOME)
       const member = await prisma.walletMember.findUnique({
         where: {
           walletId_userId: {
@@ -106,7 +163,17 @@ transactionRouter.post(
   }
 );
 
-// 4. Get Transaction Details (checks membership of the wallet)
+/**
+ * ============================================================================
+ * ENDPOINT 4: GET /api/v1/transactions/:transactionId
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengambil rincian lengkap sebuah transaksi (termasuk riwayat persetujuan, entri buku besar, dan lampiran struk).
+ * 
+ * Konteks Otorisasi & RBAC:
+ * - Memeriksa keanggotaan aktif pemohon pada dompet transaksi terkait.
+ * - Jika pemohon berposisi sebagai WARGA, ia hanya boleh membuka detail transaksi yang ia buat sendiri.
+ */
 transactionRouter.get(
   '/transactions/:transactionId',
   requireAuth,
@@ -115,7 +182,7 @@ transactionRouter.get(
       const transactionId = String(req.params.transactionId);
       const transaction = await TransactionService.getTransactionById(transactionId);
 
-      // Verify caller is member of this wallet
+      // Verifikasi bahwa user adalah anggota aktif dompet kas bersangkutan
       const member = await prisma.walletMember.findUnique({
         where: {
           walletId_userId: {
@@ -129,7 +196,7 @@ transactionRouter.get(
         return sendError(res, 'FORBIDDEN', 'Anda bukan anggota aktif dari dompet transaksi ini.', 403);
       }
 
-      // WARGA can only view details of transactions they created themselves
+      // WARGA hanya dapat melihat detail transaksi yang dilaporkan oleh dirinya sendiri
       if (member.role === WalletRole.WARGA && transaction.creatorId !== req.user!.id) {
         return sendError(
           res,
@@ -146,7 +213,16 @@ transactionRouter.get(
   }
 );
 
-// 5. Update Draft (ADMIN / PENGELOLA)
+/**
+ * ============================================================================
+ * ENDPOINT 5: PATCH /api/v1/transactions/:transactionId
+ * ============================================================================
+ * Fungsi Blok:
+ * Memperbarui konten draf transaksi yang masih berstatus `DRAFT`.
+ * 
+ * Konteks RBAC:
+ * - Hanya dapat dilakukan oleh ADMIN atau PENGELOLA.
+ */
 transactionRouter.patch(
   '/transactions/:transactionId',
   requireAuth,
@@ -196,7 +272,21 @@ transactionRouter.patch(
   }
 );
 
-// 6. Submit Transaction
+/**
+ * ============================================================================
+ * ENDPOINT 6: POST /api/v1/transactions/:transactionId/submit
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengajukan transaksi dari status `DRAFT` ke proses persetujuan (SUBMITTED / PENDING_APPROVAL).
+ * 
+ * Aturan Otorisasi:
+ * - EXPENSE: Hanya Admin atau Pengelola yang berwenang mengajukan pencairan/pengeluaran dana kas.
+ * - INCOME: Admin, Pengelola, atau anggota warga yang membuat draf laporan iuran tersebut berhak mengajukannya.
+ * 
+ * Penguncian Likuiditas (Reserve Balance):
+ * Untuk transaksi EXPENSE, saat disubmit sistem memvalidasi kecukupan saldo tersedia (Available Balance)
+ * dan secara otomatis mencadangkan dana tersebut agar tidak terjadi double-spending.
+ */
 transactionRouter.post(
   '/transactions/:transactionId/submit',
   requireAuth,
@@ -227,9 +317,7 @@ transactionRouter.post(
         return sendError(res, 'FORBIDDEN', 'Anda bukan anggota dompet kas ini.', 403);
       }
 
-      // Role check based on transaction type:
-      // EXPENSE: Only Admin and Pengelola can propose spending
-      // INCOME: Admin, Pengelola, or the member creator can submit their income/dues report
+      // Validasi hak pengajuan berdasarkan jenis transaksi
       if (transaction.type === TransactionType.EXPENSE) {
         if (member.role !== WalletRole.ADMIN && member.role !== WalletRole.PENGELOLA) {
           return sendError(res, 'FORBIDDEN', 'Hanya Pengelola atau Admin yang dapat mengajukan pengeluaran kas.', 403);
@@ -262,7 +350,16 @@ transactionRouter.post(
   }
 );
 
-// 7. Cancel Transaction
+/**
+ * ============================================================================
+ * ENDPOINT 7: POST /api/v1/transactions/:transactionId/cancel
+ * ============================================================================
+ * Fungsi Blok:
+ * Membatalkan draf atau pengajuan transaksi yang belum dieksekusi.
+ * 
+ * Konteks RBAC:
+ * - Hanya dapat dibatalkan oleh pembuat transaksi (creator) atau oleh ADMIN dompet.
+ */
 transactionRouter.post(
   '/transactions/:transactionId/cancel',
   requireAuth,
@@ -311,7 +408,24 @@ transactionRouter.post(
   }
 );
 
-// 8. Submit Approval / Rejection Decision (ADMIN / PENGELOLA)
+/**
+ * ============================================================================
+ * ENDPOINT 8: POST /api/v1/transactions/:transactionId/approvals
+ * ============================================================================
+ * Fungsi Blok:
+ * Merekam suara persetujuan (APPROVE) atau penolakan (REJECT) dari pengurus dompet
+ * untuk pengeluaran kas (EXPENSE) berbasis kuorum M-of-N.
+ * 
+ * Konteks Otorisasi:
+ * - Dibatasi ketat hanya untuk ADMIN dan PENGELOLA.
+ * - Menggunakan optimis locking (expectedVersion) untuk mencegah race condition persetujuan paralel.
+ * 
+ * Alur Kerja:
+ * 1. Panggil `TransactionService.processApproval`.
+ * 2. Algoritma Quorum Evaluator mengevaluasi ambang batas M suara.
+ * 3. Jika kuorum terpenuhi, status berpindah ke `APPROVED`.
+ * 4. Jika ada penolakan, status langsung menjadi `REJECTED` dan cadangan saldo dilepas.
+ */
 transactionRouter.post(
   '/transactions/:transactionId/approvals',
   requireAuth,
@@ -346,7 +460,18 @@ transactionRouter.post(
   }
 );
 
-// 9. Execute Payment & Post Ledger DEBIT (ADMIN / PENGELOLA)
+/**
+ * ============================================================================
+ * ENDPOINT 9: POST /api/v1/transactions/:transactionId/pay
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengeksekusi pembayaran pengeluaran kas yang telah disetujui kuorum (`APPROVED`),
+ * membukukan entri buku besar resmi (Ledger DEBIT), mencatat bukti transfer,
+ * dan memindahkan status transaksi ke `COMPLETED`.
+ * 
+ * Konteks Otorisasi:
+ * - Khusus ADMIN atau PENGELOLA.
+ */
 transactionRouter.post(
   ['/transactions/:transactionId/pay', '/transactions/:transactionId/payment-records'],
   requireAuth,
@@ -376,7 +501,25 @@ transactionRouter.post(
   }
 );
 
-// 10. Verify Income Report (Single-approver: ADMIN / PENGELOLA)
+/**
+ * ============================================================================
+ * ENDPOINT 10: POST /api/v1/transactions/:transactionId/verify-income
+ * ============================================================================
+ * Fungsi Blok:
+ * Memverifikasi laporan setoran kas/iuran (INCOME) mandiri dari warga.
+ * Menerapkan skema Single-Manager Verification (cukup satu pengurus ADMIN atau PENGELOLA).
+ * 
+ * Alur Kerja:
+ * 1. Validasi keputusan ('APPROVE' atau 'REJECT').
+ * 2. Jika disetujui (`APPROVE`):
+ *    - Transaksi berpindah ke `COMPLETED`.
+ *    - Sistem memposting entri buku besar resmi (Ledger CREDIT) sehingga saldo kas aktif bertambah seketika.
+ *    - Status iuran di `DuesRecord` diperbarui menjadi `PAID`.
+ * 3. Jika ditolak (`REJECT`):
+ *    - Transaksi berpindah ke `REJECTED`.
+ *    - Catatan iuran dihapus agar warga dapat melaporkan ulang dengan bukti transfer yang benar.
+ * 4. Mencatat peristiwa ke tamper-evident audit hash chain SHA-256.
+ */
 transactionRouter.post(
   '/transactions/:transactionId/verify-income',
   requireAuth,

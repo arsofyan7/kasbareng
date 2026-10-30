@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * MODUL WALLETS: ROUTER MANAJEMEN DOMPET, ANGGOTA & ATURAN KUORUM (wallet.routes.ts)
+ * ============================================================================
+ * File routing ini mengekspos endpoint manajemen dompet kas komunitas:
+ * 1. Pratinjau dompet via kode undangan terbuka (`/preview-invite/:code`).
+ * 2. Cek ketersediaan custom invite code (`/check-code/:code`).
+ * 3. Bergabung instan sebagai WARGA via invite code (`/join`).
+ * 4. Daftar dompet pengguna (`/`).
+ * 5. Pembuatan dompet baru (`/`) di mana pembuat otomatis menjadi ADMIN.
+ * 6. Manajemen kode undangan (regenerasi / kustomisasi).
+ * 7. Rincian dompet dan daftar anggota (RBAC).
+ * 8. Penambahan anggota manual dan perubahan role anggota (ADMIN only).
+ * 9. Konfigurasi aturan persetujuan kuorum M-of-N (`/:walletId/policy`).
+ * 10. Konfigurasi skema iuran kas warga (`/:walletId/settings`).
+ */
+
 import { Router, Response } from 'express';
 import {
   WalletService,
@@ -12,7 +29,19 @@ import { ZodError } from 'zod';
 
 export const walletRouter = Router();
 
-// 1. Preview wallet by invite code (open for prospective members)
+/**
+ * ============================================================================
+ * ENDPOINT 1: GET /api/v1/wallets/preview-invite/:code
+ * ============================================================================
+ * Fungsi Blok:
+ * Memberikan pratinjau publik (nama dompet, deskripsi, jumlah anggota) kepada calon anggota
+ * yang membuka tautan undangan sebelum mereka login / registrasi.
+ * 
+ * Alur Kerja:
+ * 1. Menerima parameter `code` dari URL.
+ * 2. Memanggil `WalletService.previewWalletByCode(code)`.
+ * 3. Mengembalikan 200 OK dengan ringkasan publik tanpa membocorkan data sensitif.
+ */
 walletRouter.get('/preview-invite/:code', async (req: AuthRequest, res: Response) => {
   try {
     const code = String(req.params.code);
@@ -28,7 +57,16 @@ walletRouter.get('/preview-invite/:code', async (req: AuthRequest, res: Response
   }
 });
 
-// 2. Check custom code availability (authenticated)
+/**
+ * ============================================================================
+ * ENDPOINT 2: GET /api/v1/wallets/check-code/:code
+ * ============================================================================
+ * Fungsi Blok:
+ * Memeriksa apakah suatu custom invite code masih tersedia atau sudah dipakai dompet lain.
+ * 
+ * Konteks Otorisasi:
+ * - Memerlukan otentikasi login (`requireAuth`).
+ */
 walletRouter.get('/check-code/:code', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const code = String(req.params.code);
@@ -45,7 +83,20 @@ walletRouter.get('/check-code/:code', requireAuth, async (req: AuthRequest, res:
   }
 });
 
-// 3. Join wallet via invite code (Instant Join as WARGA)
+/**
+ * ============================================================================
+ * ENDPOINT 3: POST /api/v1/wallets/join
+ * ============================================================================
+ * Fungsi Blok:
+ * Memfasilitasi pengguna yang sudah login untuk langsung bergabung (Instant Join)
+ * ke dompet kas komunitas menggunakan kode undangan dengan peran default `WARGA`.
+ * 
+ * Alur Kerja:
+ * 1. Validasi format kode undangan via `JoinWalletSchema`.
+ * 2. Panggil `WalletService.joinWalletByCode(userId, inviteCode)`.
+ * 3. Jika kode valid dan belum terdaftar, buat relasi `WalletMember` aktif (role: WARGA).
+ * 4. Kembalikan konfirmasi 200 OK.
+ */
 walletRouter.post('/join', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const validated = JoinWalletSchema.parse(req.body);
@@ -64,7 +115,13 @@ walletRouter.post('/join', requireAuth, async (req: AuthRequest, res: Response) 
   }
 });
 
-// 4. List user's wallets
+/**
+ * ============================================================================
+ * ENDPOINT 4: GET /api/v1/wallets/
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengambil daftar seluruh dompet kas yang diikuti oleh pengguna yang sedang login.
+ */
 walletRouter.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const wallets = await WalletService.getUserWallets(req.user!.id);
@@ -79,7 +136,14 @@ walletRouter.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 5. Create new wallet (caller becomes ADMIN)
+/**
+ * ============================================================================
+ * ENDPOINT 5: POST /api/v1/wallets/
+ * ============================================================================
+ * Fungsi Blok:
+ * Membuat dompet kas komunitas baru.
+ * Pembuat dompet otomatis ditetapkan sebagai ADMIN pertama dan aturan kuorum default dibuatkan.
+ */
 walletRouter.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const wallet = await WalletService.createWallet(req.user!.id, req.body);
@@ -97,7 +161,16 @@ walletRouter.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 6. Update or Regenerate Invite Code (ADMIN only)
+/**
+ * ============================================================================
+ * ENDPOINT 6: PATCH /api/v1/wallets/:walletId/invite-code
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengubah atau mengacak ulang (regenerate) kode undangan dompet.
+ * 
+ * Konteks RBAC:
+ * - Dibatasi ketat hanya untuk ADMIN dompet (`requireWalletRole([WalletRole.ADMIN])`).
+ */
 walletRouter.patch(
   '/:walletId/invite-code',
   requireAuth,
@@ -122,7 +195,14 @@ walletRouter.patch(
   }
 );
 
-// 7. Get wallet details (any active member)
+/**
+ * ============================================================================
+ * ENDPOINT 7: GET /api/v1/wallets/:walletId
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengambil detail informasi dompet kas (termasuk saldo, jumlah anggota, dan aturan kuorum).
+ * Terbuka untuk seluruh anggota aktif dompet.
+ */
 walletRouter.get('/:walletId', requireAuth, requireWalletRole(), async (req: AuthRequest, res: Response) => {
   try {
     const walletId = String(req.params.walletId);
@@ -138,7 +218,14 @@ walletRouter.get('/:walletId', requireAuth, requireWalletRole(), async (req: Aut
   }
 });
 
-// 8. Get members of a wallet (any active member)
+/**
+ * ============================================================================
+ * ENDPOINT 8: GET /api/v1/wallets/:walletId/members
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengambil daftar seluruh anggota dompet beserta perannya (ADMIN, PENGELOLA, WARGA).
+ * Terbuka untuk seluruh anggota aktif dompet.
+ */
 walletRouter.get('/:walletId/members', requireAuth, requireWalletRole(), async (req: AuthRequest, res: Response) => {
   try {
     const walletId = String(req.params.walletId);
@@ -154,7 +241,16 @@ walletRouter.get('/:walletId/members', requireAuth, requireWalletRole(), async (
   }
 });
 
-// 9. Add member manually to wallet by email (ADMIN only)
+/**
+ * ============================================================================
+ * ENDPOINT 9: POST /api/v1/wallets/:walletId/members
+ * ============================================================================
+ * Fungsi Blok:
+ * Menambahkan anggota secara manual ke dalam dompet kas menggunakan alamat email pengguna.
+ * 
+ * Konteks RBAC:
+ * - Dibatasi ketat hanya untuk ADMIN dompet.
+ */
 walletRouter.post(
   '/:walletId/members',
   requireAuth,
@@ -178,7 +274,16 @@ walletRouter.post(
   }
 );
 
-// 10. Update member role or status (ADMIN only)
+/**
+ * ============================================================================
+ * ENDPOINT 10: PATCH /api/v1/wallets/:walletId/members/:memberId
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengubah peran (promosi/demosi role) atau status keaktifan anggota dompet.
+ * 
+ * Konteks RBAC:
+ * - Dibatasi ketat hanya untuk ADMIN dompet.
+ */
 walletRouter.patch(
   '/:walletId/members/:memberId',
   requireAuth,
@@ -207,7 +312,14 @@ walletRouter.patch(
   }
 );
 
-// 11. Get M-of-N Approval Policy (Any active member)
+/**
+ * ============================================================================
+ * ENDPOINT 11: GET /api/v1/wallets/:walletId/policy
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengambil konfigurasi kebijakan kuorum persetujuan M-of-N pengeluaran kas yang sedang aktif.
+ * Terbuka untuk seluruh anggota aktif dompet.
+ */
 walletRouter.get(
   '/:walletId/policy',
   requireAuth,
@@ -228,7 +340,17 @@ walletRouter.get(
   }
 );
 
-// 12. Update M-of-N Approval Policy (ADMIN only)
+/**
+ * ============================================================================
+ * ENDPOINT 12: PUT /api/v1/wallets/:walletId/policy
+ * ============================================================================
+ * Fungsi Blok:
+ * Memperbarui kebijakan kuorum M-of-N persetujuan pengeluaran kas.
+ * 
+ * Konteks RBAC:
+ * - Dibatasi ketat hanya untuk ADMIN dompet.
+ * - Memperbarui versi kebijakan (`policyVersion`) dan merekam perubahan ke audit hash chain.
+ */
 walletRouter.put(
   '/:walletId/policy',
   requireAuth,
@@ -256,7 +378,17 @@ walletRouter.put(
   }
 );
 
-// 13. Update General Wallet Settings & Dues Config (ADMIN or PENGELOLA)
+/**
+ * ============================================================================
+ * ENDPOINT 13: PATCH /api/v1/wallets/:walletId/settings
+ * ============================================================================
+ * Fungsi Blok:
+ * Memperbarui konfigurasi skema iuran kas warga (tipe: BULANAN / TARGET TERMIN / SUKARELA,
+ * nominal iuran, target termin cicilan) dan nomor rekening bank resmi kas.
+ * 
+ * Konteks RBAC:
+ * - Terbuka untuk peran ADMIN dan PENGELOLA dompet.
+ */
 walletRouter.patch(
   '/:walletId/settings',
   requireAuth,
@@ -283,4 +415,5 @@ walletRouter.patch(
     }
   }
 );
+
 

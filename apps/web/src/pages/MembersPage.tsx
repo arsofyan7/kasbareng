@@ -1,3 +1,19 @@
+/**
+ * ============================================================================
+ * HALAMAN MANAJEMEN ANGGOTA & PERAN DOMPET KAS (MEMBERSPAGE.TSX)
+ * ============================================================================
+ * Komponen ini mengatur keanggotaan dan hak akses di tingkat dompet bersama (RBAC):
+ * 1. Manajemen Peran 3 Tingkat:
+ *    - ADMIN: Pemilik/ketua dompet dengan hak penuh (kebijakan kuorum, mutasi peran, invite code).
+ *    - PENGELOLA: Bendahara/sekretaris yang berwenang mengajukan & memverifikasi transaksi.
+ *    - WARGA: Anggota biasa yang berpartisipasi membayar iuran & memantau transparansi kas.
+ * 2. Distribusi Akses Cepat via Kode Undangan (Invite Code): Fitur salin kode,
+ *    salin tautan deep-link (?join=...), dan bagikan langsung ke WhatsApp.
+ * 3. Tambah Anggota Manual: Mengundang anggota terdaftar berdasarkan alamat email.
+ * 4. Modifikasi Hak Akses Realtime: Admin dapat menaikkan/menurunkan peran anggota
+ *    secara langsung melalui dropdown tabel tanpa reload halaman.
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
@@ -21,30 +37,54 @@ import {
 import { ManageInviteCodeModal } from '../components/common/ManageInviteCodeModal';
 
 export const MembersPage: React.FC = () => {
+  // --------------------------------------------------------------------------
+  // STATE & HOOKS: Konteks Autentikasi Pengguna & Dompet Aktif
+  // --------------------------------------------------------------------------
   const { token, user } = useAuth();
   const { activeWallet } = useWallet();
 
+  // --------------------------------------------------------------------------
+  // STATE: Data Anggota, Status Pemuatan, & Filter
+  // --------------------------------------------------------------------------
+  /** Daftar seluruh anggota aktif di dompet kas bersama */
   const [members, setMembers] = useState<WalletMember[]>([]);
+  /** Status pemuatan data dari server */
   const [isLoading, setIsLoading] = useState(false);
+  /** Pesan error jika query gagal */
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  /** Kata kunci pencarian nama atau email anggota */
   const [searchQuery, setSearchQuery] = useState('');
+  /** Filter peran anggota: SEMUA, ADMIN, PENGELOLA, atau WARGA */
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'PENGELOLA' | 'WARGA'>('ALL');
 
-  // Invite code modal & copy states
+  // --------------------------------------------------------------------------
+  // STATE: Notifikasi Visual Salin Kode Undangan & Tautan
+  // --------------------------------------------------------------------------
+  /** Modal kustomisasi kode undangan (khusus peran Admin) */
   const [manageCodeModalOpen, setManageCodeModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Add Member Modal State
+  // --------------------------------------------------------------------------
+  // STATE: Modal Tambah Anggota Manual via Email
+  // --------------------------------------------------------------------------
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<WalletRole>('WARGA');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  // --------------------------------------------------------------------------
+  // PENGECEKAN HAK AKSES PERAN
+  // --------------------------------------------------------------------------
+  /** True jika pengguna memiliki peran tertinggi ADMIN di dompet ini */
   const isAdmin = activeWallet?.myRole === 'ADMIN';
+  /** True jika pengguna adalah ADMIN atau PENGELOLA */
   const isManagerOrAdmin = activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
 
+  // --------------------------------------------------------------------------
+  // QUERY & DATA FETCHING: Pengambilan Daftar Anggota dari API
+  // --------------------------------------------------------------------------
   const fetchMembers = useCallback(async () => {
     if (!token || !activeWallet) return;
     setIsLoading(true);
@@ -66,11 +106,16 @@ export const MembersPage: React.FC = () => {
     }
   }, [token, activeWallet]);
 
+  // --------------------------------------------------------------------------
+  // EFEK SAMPING: Muat Ulang Anggota Saat Dompet Berganti
+  // --------------------------------------------------------------------------
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
 
-  // Counts
+  // --------------------------------------------------------------------------
+  // MEMOISASI STATISTIK: Perhitungan Jumlah Anggota per Peran
+  // --------------------------------------------------------------------------
   const counts = useMemo(() => {
     const all = members.length;
     const admin = members.filter((m) => m.role === 'ADMIN').length;
@@ -79,7 +124,9 @@ export const MembersPage: React.FC = () => {
     return { all, admin, pengelola, warga };
   }, [members]);
 
-  // Filtered members
+  // --------------------------------------------------------------------------
+  // MEMOISASI FILTER: Penyaringan Anggota Berdasarkan Tab Peran & Input Cari
+  // --------------------------------------------------------------------------
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
       if (roleFilter !== 'ALL' && m.role !== roleFilter) return false;
@@ -93,6 +140,9 @@ export const MembersPage: React.FC = () => {
     });
   }, [members, roleFilter, searchQuery]);
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Salin Kode Undangan ke Clipboard
+  // --------------------------------------------------------------------------
   const handleCopyCode = () => {
     if (!activeWallet?.inviteCode) return;
     navigator.clipboard.writeText(activeWallet.inviteCode);
@@ -100,6 +150,9 @@ export const MembersPage: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Salin Tautan Pendaftaran Otomatis (?join=CODE)
+  // --------------------------------------------------------------------------
   const handleCopyLink = () => {
     if (!activeWallet?.inviteCode) return;
     const shareLink = `${window.location.origin}/?join=${activeWallet.inviteCode}`;
@@ -108,6 +161,9 @@ export const MembersPage: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Bagikan Undangan Dompet Langsung ke WhatsApp
+  // --------------------------------------------------------------------------
   const handleShareWhatsApp = () => {
     if (!activeWallet?.inviteCode) return;
     const shareLink = `${window.location.origin}/?join=${activeWallet.inviteCode}`;
@@ -119,6 +175,9 @@ export const MembersPage: React.FC = () => {
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Tambah Anggota Manual Berdasarkan Email Pengguna Terdaftar
+  // --------------------------------------------------------------------------
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail.trim()) return;
@@ -151,6 +210,9 @@ export const MembersPage: React.FC = () => {
     }
   };
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Perubahan Hak Akses / Peran Anggota oleh Admin
+  // --------------------------------------------------------------------------
   const handleRoleChange = async (memberId: string, role: WalletRole) => {
     try {
       const res = await fetch(
@@ -176,6 +238,9 @@ export const MembersPage: React.FC = () => {
     }
   };
 
+  // --------------------------------------------------------------------------
+  // HELPER FORMAT: Lencana Peran Anggota (Admin, Pengelola, Anggota)
+  // --------------------------------------------------------------------------
   const getRoleBadge = (role: WalletRole) => {
     switch (role) {
       case 'ADMIN':
@@ -202,6 +267,7 @@ export const MembersPage: React.FC = () => {
     }
   };
 
+  /** Helper warna latar avatar berdasarkan tingkatan peran */
   const getAvatarBg = (role: WalletRole) => {
     switch (role) {
       case 'ADMIN':
@@ -213,9 +279,12 @@ export const MembersPage: React.FC = () => {
     }
   };
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Tampilan Halaman Anggota & Peran Kas Bersama
+  // --------------------------------------------------------------------------
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Header */}
+      {/* 1. Header Judul & Tombol Tambah Anggota */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
@@ -230,6 +299,7 @@ export const MembersPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Tombol Tambah Anggota Manual (Khusus Admin) */}
         {isAdmin && (
           <button
             onClick={() => setAddModalOpen(true)}
@@ -241,7 +311,7 @@ export const MembersPage: React.FC = () => {
         )}
       </div>
 
-      {/* Community Invite Code Share Card (Khusus Pengurus & Admin) */}
+      {/* 2. Kartu Bagikan Kode Undangan Komunitas (Khusus Pengurus & Admin) */}
       {activeWallet && isManagerOrAdmin && (
         <div className="p-5 rounded-3xl bg-slate-900 text-white dark:bg-slate-900/90 border border-slate-700/80 dark:border-slate-700 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
           <div className="space-y-1.5 z-10">
@@ -265,6 +335,7 @@ export const MembersPage: React.FC = () => {
             </p>
           </div>
 
+          {/* Tombol Aksi Salin & Bagikan */}
           <div className="flex flex-wrap items-center gap-2 z-10">
             <button
               onClick={handleCopyCode}
@@ -303,9 +374,9 @@ export const MembersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Filter Tabs & Search Controls */}
+      {/* 3. Bilah Filter Tab Peran & Kolom Pencarian */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Role Filter Tabs */}
+        {/* Tombol Tab Filter Peran */}
         <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700 max-w-lg">
           <button
             onClick={() => setRoleFilter('ALL')}
@@ -349,7 +420,7 @@ export const MembersPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Search Input */}
+        {/* Kolom Pencarian Anggota */}
         <div className="relative w-full sm:w-64">
           <input
             type="text"
@@ -370,6 +441,7 @@ export const MembersPage: React.FC = () => {
         </div>
       </div>
 
+      {/* 4. Banner Indikator Kesalahan */}
       {errorMsg && (
         <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center gap-2 text-xs text-rose-700 dark:text-rose-300">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -377,7 +449,7 @@ export const MembersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main Members Content */}
+      {/* 5. Daftar Tabel Desktop & Kartu Seluler Anggota */}
       {isLoading ? (
         <div className="p-12 text-center text-sm text-slate-400 animate-pulse bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700">
           Memuat daftar anggota kas...
@@ -393,7 +465,7 @@ export const MembersPage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Desktop Table */}
+          {/* Tampilan Tabel Desktop */}
           <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -411,7 +483,7 @@ export const MembersPage: React.FC = () => {
                   const initial = m.fullName ? m.fullName.charAt(0).toUpperCase() : 'W';
                   return (
                     <tr key={m.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                      {/* Name & Avatar */}
+                      {/* Avatar & Profil Anggota */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className={`w-9 h-9 rounded-full ${getAvatarBg(m.role)} flex items-center justify-center font-bold text-xs shrink-0 shadow-sm`}>
@@ -433,12 +505,12 @@ export const MembersPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Role Badge */}
+                      {/* Lencana Peran Anggota */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getRoleBadge(m.role)}
                       </td>
 
-                      {/* Status */}
+                      {/* Status Keaktifan Akun */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 font-medium">
                           <span className="relative flex h-2 w-2">
@@ -449,7 +521,7 @@ export const MembersPage: React.FC = () => {
                         </span>
                       </td>
 
-                      {/* Joined Date */}
+                      {/* Tanggal Bergabung */}
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
                         {m.joinedAt ? (
                           new Date(m.joinedAt).toLocaleDateString('id-ID', {
@@ -462,7 +534,7 @@ export const MembersPage: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Admin Role Selector */}
+                      {/* Dropdown Pengubah Peran (Khusus Admin Dompet) */}
                       {isAdmin && (
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <select
@@ -483,7 +555,7 @@ export const MembersPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Mobile Card View */}
+          {/* Tampilan Kartu Seluler */}
           <div className="md:hidden space-y-3">
             {filteredMembers.map((m) => {
               const isCurrentUser = m.userId === user?.id;
@@ -541,7 +613,7 @@ export const MembersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Add Member Modal */}
+      {/* 6. Modal Tambah Anggota Manual Berdasarkan Email */}
       {addModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
@@ -616,7 +688,7 @@ export const MembersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Manage Invite Code Modal */}
+      {/* 7. Modal Konfigurasi Kustomisasi Kode Undangan Dompet */}
       <ManageInviteCodeModal
         isOpen={manageCodeModalOpen}
         onClose={() => setManageCodeModalOpen(false)}

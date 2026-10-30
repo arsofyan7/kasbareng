@@ -1,9 +1,32 @@
+/**
+ * ============================================================================
+ * MODUL WALLETS: SERVICE LOGIKA BISNIS DOMPET & KEANGGOTAAN (wallet.service.ts)
+ * ============================================================================
+ * Service ini menangani siklus hidup dompet kas komunitas:
+ * 1. Pembuatan dompet baru beserta inisialisasi anggota Admin dan Genesis Audit Log.
+ * 2. Generator kode undangan acak yang higienis (menghindari karakter ambigu seperti 0/O, 1/I)
+ *    maupun kode undangan kustom (custom alias).
+ * 3. Alur bergabung instan (Instant Join) bagi warga dengan kode undangan.
+ * 4. Pengelolaan hak akses keanggotaan (RBAC: ADMIN, PENGELOLA, WARGA) serta proteksi Admin Terakhir.
+ * 5. Manajemen kebijakan kuorum persetujuan M-of-N (Approval Policy versioning).
+ * 6. Pengaturan konfigurasi skema iuran warga (Bulanan, Target Termin, Sukarela).
+ */
+
 import { prisma } from '../../common/prisma';
 import { Prisma, WalletRole, UserStatus, WalletStatus, DuesType } from '@prisma/client';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { AuditService } from '../audit/audit.service';
 
+/**
+ * Skema Validasi Zod: Pembuatan Dompet Kas Baru (CreateWalletSchema)
+ * - `name`: Nama komunitas/kas (minimal 3 karakter).
+ * - `description`: Deskripsi tujuan kas.
+ * - `requiredApprovals`: Jumlah suara kuorum M-of-N pengeluaran kas (default: 2).
+ * - `duesType`: Jenis skema iuran (FREEFORM, MONTHLY, TARGET_INSTALLMENTS).
+ * - `duesAmount`: Acuan nominal iuran per periode/termin.
+ * - `customInviteCode`: Kode kustom opsional (4-20 karakter alfanumerik).
+ */
 export const CreateWalletSchema = z.object({
   name: z.string().min(3, 'Nama dompet kas minimal 3 karakter').max(100),
   description: z.string().max(500).optional(),
@@ -21,20 +44,32 @@ export const CreateWalletSchema = z.object({
     }),
 });
 
+/**
+ * Skema Validasi Zod: Penambahan Anggota Manual oleh Admin (AddMemberSchema)
+ */
 export const AddMemberSchema = z.object({
   email: z.string().email('Format email tidak valid').toLowerCase(),
   role: z.nativeEnum(WalletRole).default(WalletRole.WARGA),
 });
 
+/**
+ * Skema Validasi Zod: Pembaruan Role / Status Anggota (UpdateMemberSchema)
+ */
 export const UpdateMemberSchema = z.object({
   role: z.nativeEnum(WalletRole).optional(),
   status: z.nativeEnum(UserStatus).optional(),
 });
 
+/**
+ * Skema Validasi Zod: Bergabung Dompet via Kode Undangan (JoinWalletSchema)
+ */
 export const JoinWalletSchema = z.object({
   inviteCode: z.string().min(3, 'Kode undangan wajib diisi').max(30),
 });
 
+/**
+ * Skema Validasi Zod: Pembaruan Kode Undangan (UpdateInviteCodeSchema)
+ */
 export const UpdateInviteCodeSchema = z.object({
   customCode: z
     .string()
@@ -45,11 +80,17 @@ export const UpdateInviteCodeSchema = z.object({
     }),
 });
 
+/**
+ * Skema Validasi Zod: Pembaruan Kebijakan Kuorum M-of-N (UpdatePolicySchema)
+ */
 export const UpdatePolicySchema = z.object({
   requiredApprovals: z.number().int().min(1, 'Jumlah persetujuan minimal adalah 1'),
   thresholdAmount: z.number().positive().optional().nullable(),
 });
 
+/**
+ * Skema Validasi Zod: Pembaruan Pengaturan Dompet & Iuran (UpdateWalletSettingsSchema)
+ */
 export const UpdateWalletSettingsSchema = z.object({
   name: z.string().min(3, 'Nama dompet kas minimal 3 karakter').max(100).optional(),
   description: z.string().max(500).optional().nullable(),
@@ -68,7 +109,18 @@ export type UpdateWalletSettingsInput = z.infer<typeof UpdateWalletSettingsSchem
 
 export class WalletService {
   /**
-   * Helper to generate unambiguous random invite code (e.g. KAS-8X92KP)
+   * ============================================================================
+   * HELPER: generateUniqueInviteCode
+   * ============================================================================
+   * Fungsi Blok:
+   * Menghasilkan kode undangan unik acak dengan alfabet tidak ambigu
+   * (menghilangkan '0', 'O', '1', 'I' agar tidak membingungkan pengguna saat diketik manual).
+   * 
+   * Alur Kerja:
+   * 1. Menggunakan kumpulan karakter: `23456789ABCDEFGHJKLMNPQRSTUVWXYZ`.
+   * 2. Menghasilkan 6 byte acak kriptografis (`crypto.randomBytes`).
+   * 3. Membentuk string dengan format `${prefix}-${rand}` (contoh: "KAS-8X92KP").
+   * 4. Memastikan kode belum terdaftar di database Prisma (hingga 10 percobaan).
    */
   static async generateUniqueInviteCode(prefix = 'KAS'): Promise<string> {
     const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -87,6 +139,18 @@ export class WalletService {
     return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
   }
 
+  /**
+   * ============================================================================
+   * METHOD: createWallet
+   * ============================================================================
+   * Fungsi Blok:
+   * Membuat komunitas kas baru secara utuh dalam transaksi database atomic Prisma:
+   * 1. Menetapkan kode undangan unik.
+   * 2. Membuat rekaman dompet di tabel `Wallet`.
+   * 3. Mendaftarkan pembuat sebagai anggota dengan peran `ADMIN`.
+   * 4. Menginisialisasi kebijakan persetujuan awal (`ApprovalPolicy` versi 1).
+   * 5. Merekam event audit awal (Genesis Event) ke tamper-evident hash chain.
+   */
   static async createWallet(userId: string, input: CreateWalletInput) {
     const validated = CreateWalletSchema.parse(input);
 
@@ -109,7 +173,7 @@ export class WalletService {
     }
 
     return await prisma.$transaction(async (tx) => {
-      // 1. Create Wallet
+      // 1. Buat rekaman dompet kas
       const wallet = await tx.wallet.create({
         data: {
           name: validated.name,
@@ -122,7 +186,7 @@ export class WalletService {
         },
       });
 
-      // 2. Add creator as ADMIN member
+      // 2. Daftarkan pembuat dompet sebagai anggota dengan peran ADMIN
       await tx.walletMember.create({
         data: {
           walletId: wallet.id,
@@ -132,7 +196,7 @@ export class WalletService {
         },
       });
 
-      // 3. Create default ApprovalPolicy for wallet
+      // 3. Buat aturan kuorum persetujuan M-of-N default untuk dompet
       const policy = await tx.approvalPolicy.create({
         data: {
           walletId: wallet.id,
@@ -142,7 +206,7 @@ export class WalletService {
         },
       });
 
-      // 4. Record Genesis Audit Event for this wallet
+      // 4. Catat Genesis Audit Event untuk dompet ini pada rantai hash SHA-256
       await AuditService.recordAuditEvent(tx, {
         walletId: wallet.id,
         actorId: userId,
@@ -163,6 +227,13 @@ export class WalletService {
     });
   }
 
+  /**
+   * ============================================================================
+   * METHOD: getUserWallets
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengambil daftar dompet yang diikuti oleh pengguna tertentu beserta peran dan metrik kas.
+   */
   static async getUserWallets(userId: string) {
     const memberships = await prisma.walletMember.findMany({
       where: {
@@ -207,6 +278,14 @@ export class WalletService {
     }));
   }
 
+  /**
+   * ============================================================================
+   * METHOD: getWalletDetails
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengambil detail dompet kas komunitas, jumlah anggota, jumlah transaksi,
+   * kebijakan kuorum aktif, dan peran pengguna pemanggil.
+   */
   static async getWalletDetails(walletId: string, userId: string) {
     const wallet = await prisma.wallet.findUnique({
       where: { id: walletId },
@@ -257,6 +336,13 @@ export class WalletService {
     };
   }
 
+  /**
+   * ============================================================================
+   * METHOD: previewWalletByCode
+   * ============================================================================
+   * Fungsi Blok:
+   * Menyediakan pratinjau publik dompet kas untuk calon warga yang mengklik link undangan.
+   */
   static async previewWalletByCode(rawCode: string) {
     if (!rawCode || typeof rawCode !== 'string') {
       throw {
@@ -302,6 +388,13 @@ export class WalletService {
     };
   }
 
+  /**
+   * ============================================================================
+   * METHOD: checkCodeAvailability
+   * ============================================================================
+   * Fungsi Blok:
+   * Memvalidasi ketersediaan dan sintaks kode undangan kustom yang diajukan admin.
+   */
   static async checkCodeAvailability(rawCode: string, excludeWalletId?: string) {
     if (!rawCode || typeof rawCode !== 'string') {
       return { available: false, message: 'Kode tidak boleh kosong.' };
@@ -332,6 +425,21 @@ export class WalletService {
     };
   }
 
+  /**
+   * ============================================================================
+   * METHOD: joinWalletByCode
+   * ============================================================================
+   * Fungsi Blok:
+   * Memproses pendaftaran bergabung instan pengguna ke dompet kas menggunakan kode undangan.
+   * 
+   * Alur Kerja:
+   * 1. Cari dompet aktif berdasarkan `inviteCode`.
+   * 2. Periksa apakah pengguna sudah pernah bergabung:
+   *    - Jika sudah aktif: tolak dengan 409 ALREADY_MEMBER.
+   *    - Jika sebelumnya dinonaktifkan: aktifkan kembali statusnya menjadi `ACTIVE`.
+   *    - Jika belum pernah: buat relasi baru `WalletMember` dengan peran default `WARGA`.
+   * 3. Kembalikan detail dompet kas.
+   */
   static async joinWalletByCode(userId: string, rawCode: string) {
     if (!rawCode || typeof rawCode !== 'string') {
       throw {
@@ -407,6 +515,13 @@ export class WalletService {
     };
   }
 
+  /**
+   * ============================================================================
+   * METHOD: updateInviteCode
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengubah kode undangan dompet (baik ke string kustom maupun regenerasi acak).
+   */
   static async updateInviteCode(walletId: string, customCode?: string) {
     let finalCode: string;
 
@@ -450,6 +565,14 @@ export class WalletService {
     return updated;
   }
 
+  /**
+   * ============================================================================
+   * METHOD: getWalletMembers
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengambil daftar seluruh anggota dompet terurut berdasarkan role (ADMIN -> PENGELOLA -> WARGA)
+   * dan tanggal bergabung.
+   */
   static async getWalletMembers(walletId: string) {
     const members = await prisma.walletMember.findMany({
       where: { walletId },
@@ -476,6 +599,13 @@ export class WalletService {
     }));
   }
 
+  /**
+   * ============================================================================
+   * METHOD: addWalletMember
+   * ============================================================================
+   * Fungsi Blok:
+   * Menambahkan pengguna yang sudah terdaftar di KasBareng ke dompet kas menggunakan alamat email.
+   */
   static async addWalletMember(walletId: string, input: AddMemberInput) {
     const validated = AddMemberSchema.parse(input);
 
@@ -536,6 +666,17 @@ export class WalletService {
     });
   }
 
+  /**
+   * ============================================================================
+   * METHOD: updateWalletMember
+   * ============================================================================
+   * Fungsi Blok:
+   * Memperbarui peran atau status keaktifan anggota dompet kas.
+   * 
+   * Proteksi Keamanan Tata Kelola (Last Admin Protection):
+   * Mencegah demosi atau penonaktifan satu-satunya Admin aktif yang tersisa di dompet kas,
+   * agar komunitas tidak kehilangan otoritas pengelolaan sistem.
+   */
   static async updateWalletMember(
     walletId: string,
     memberId: string,
@@ -555,6 +696,7 @@ export class WalletService {
       };
     }
 
+    // Proteksi Admin Terakhir
     if (
       targetMember.role === WalletRole.ADMIN &&
       ((validated.role !== undefined && validated.role !== WalletRole.ADMIN) ||
@@ -596,7 +738,12 @@ export class WalletService {
   }
 
   /**
-   * Fetches the active M-of-N approval policy and eligible approvers.
+   * ============================================================================
+   * METHOD: getWalletPolicy
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengambil kebijakan kuorum M-of-N yang sedang aktif beserta daftar seluruh
+   * pengurus yang berhak memberikan suara persetujuan (ADMIN dan PENGELOLA).
    */
   static async getWalletPolicy(walletId: string) {
     const policy = await prisma.approvalPolicy.findFirst({
@@ -644,8 +791,16 @@ export class WalletService {
   }
 
   /**
-   * Updates M-of-N approval policy (ADMIN only).
-   * Archives previous policy to maintain strict audit trail.
+   * ============================================================================
+   * METHOD: updateWalletPolicy
+   * ============================================================================
+   * Fungsi Blok:
+   * Memperbarui aturan jumlah kuorum persetujuan M-of-N pengeluaran kas.
+   * 
+   * Prinsip Audit & Immutability:
+   * Kebijakan lama tidak ditimpa, melainkan diarsipkan (`status: ARCHIVED`),
+   * lalu rekaman kebijakan baru dibuat dengan versi increment (`policyVersion + 1`)
+   * dan dicatat ke rantai audit SHA-256.
    */
   static async updateWalletPolicy(walletId: string, actorId: string, input: UpdatePolicyInput) {
     const validated = UpdatePolicySchema.parse(input);
@@ -711,8 +866,13 @@ export class WalletService {
   }
 
   /**
-   * Updates general wallet settings including dues configuration (duesType, duesAmount, targetInstallmentsCount).
-   * Automatically records a tamper-evident audit event in the SHA-256 hash chain.
+   * ============================================================================
+   * METHOD: updateWalletSettings
+   * ============================================================================
+   * Fungsi Blok:
+   * Memperbarui pengaturan dompet kas, termasuk jenis skema iuran (duesType),
+   * besaran acuan nominal iuran (duesAmount), dan target jumlah termin cicilan.
+   * Mencatat snapshot data lama vs data baru ke tamper-evident audit hash chain.
    */
   static async updateWalletSettings(walletId: string, actorId: string, input: unknown) {
     const validated = UpdateWalletSettingsSchema.parse(input);
@@ -769,3 +929,4 @@ export class WalletService {
     });
   }
 }
+

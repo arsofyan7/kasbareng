@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * AuditChainModal.tsx - Modal Inspeksi & Simulator Rantai Audit SHA-256
+ * ============================================================================
+ * Komponen modal inspeksi bukti kriptografis anti-tamper (tamper-evident hash chain):
+ * 1. Menampilkan rantai hash berurutan (Blok #1 Genesis -> Blok #N) yang mengunci
+ *    setiap mutasi data menggunakan SHA-256.
+ * 2. Verifikasi Integritas Rantai (Real-time Verifier): Menghitung ulang hash setiap blok
+ *    dari data kanonis dan mencocokkan `previousHash` terhadap `currentHash` blok sebelumnya.
+ * 3. Deteksi Titik Pelanggaran Otomatis: Jika satu karakter diubah secara ilegal di database,
+ *    sistem langsung mengidentifikasi nomor urut sequence yang rusak.
+ * 4. Panel Simulasi Tamper (Academic/Demo Drill): Memungkinkan penguji sengaja merusak data
+ *    di database untuk membuktikan sensor keamanan kriptografi bekerja 100%.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletContext';
@@ -17,38 +32,51 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
+/**
+ * Interface properti AuditChainModal
+ */
 interface AuditChainModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean;                      // Status visibilitas modal
+  onClose: () => void;                  // Callback penutupan modal
 }
 
 export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClose }) => {
+  // ---------------------------------------------------------------------------
+  // HOOKS & CONTEXT
+  // ---------------------------------------------------------------------------
   const { token } = useAuth();
   const { activeWallet } = useWallet();
 
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [verification, setVerification] = useState<AuditVerificationResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [copiedHash, setCopiedHash] = useState<string | null>(null);
-  const [expandedPayloadSeq, setExpandedPayloadSeq] = useState<number | null>(null);
+  // ---------------------------------------------------------------------------
+  // STATE MANAGEMENT
+  // ---------------------------------------------------------------------------
+  const [logs, setLogs] = useState<AuditLog[]>([]);                                // Daftar entri log rantai audit
+  const [verification, setVerification] = useState<AuditVerificationResult | null>(null); // Hasil verifikasi integritas hash
+  const [isLoading, setIsLoading] = useState(false);                              // Indikator pemuatan log audit
+  const [isVerifying, setIsVerifying] = useState(false);                          // Indikator verifikasi manual berjalan
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);                   // Pesan error jaringan/API
+  const [copiedHash, setCopiedHash] = useState<string | null>(null);              // Penampung string hash yang disalin ke clipboard
+  const [expandedPayloadSeq, setExpandedPayloadSeq] = useState<number | null>(null); // Penanda payload JSON yang sedang dibuka
 
-  // Drill states
-  const [showDrillPanel, setShowDrillPanel] = useState(false);
-  const [isTampering, setIsTampering] = useState(false);
-  const [tamperedOriginalPayload, setTamperedOriginalPayload] = useState<string | null>(null);
-  const [tamperedSeq, setTamperedSeq] = useState<number | null>(null);
+  // State Simulasi Uji Kejahatan Data (Tamper Drill)
+  const [showDrillPanel, setShowDrillPanel] = useState(false);                    // Toggle panel simulator manipulasi
+  const [isTampering, setIsTampering] = useState(false);                          // Indikator proses manipulasi data berlangsung
+  const [tamperedOriginalPayload, setTamperedOriginalPayload] = useState<string | null>(null); // Salinan payload asli sebelum dirusak
+  const [tamperedSeq, setTamperedSeq] = useState<number | null>(null);            // Nomor sequence blok yang dirusak
 
+  // Cek apakah pengguna login memiliki peran ADMIN
   const isAdmin = activeWallet?.myRole === 'ADMIN';
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Memuat Log Audit & Menjalankan Verifikasi Kriptografis
+  // ---------------------------------------------------------------------------
   const loadLogsAndVerify = useCallback(async () => {
     if (!isOpen || !activeWallet || !token) return;
 
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      // 1. Fetch audit logs
+      // 1. Ambil 50 entri peristiwa audit terbaru
       const logsRes = await fetch(`/api/v1/wallets/${activeWallet.id}/audit/events?limit=50`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -56,7 +84,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
       if (!logsRes.ok) throw new Error(logsJson.error?.message || 'Gagal memuat log audit.');
       setLogs(logsJson.data || []);
 
-      // 2. Fetch verification status
+      // 2. Jalankan algoritma verifier integritas rantai hash pada backend
       const verifyRes = await fetch(`/api/v1/wallets/${activeWallet.id}/audit/verify`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -70,14 +98,19 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
     }
   }, [isOpen, activeWallet?.id, token]);
 
+  // Pemicu fetch saat modal dibuka
   useEffect(() => {
     if (isOpen) {
       loadLogsAndVerify();
     }
   }, [isOpen, loadLogsAndVerify]);
 
+  // Jika modal ditutup, jangan render DOM
   if (!isOpen || !activeWallet) return null;
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Verifikasi Integritas Manual (Uji Ulang Secara Mandiri)
+  // ---------------------------------------------------------------------------
   const handleManualVerify = async () => {
     setIsVerifying(true);
     try {
@@ -93,30 +126,37 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Menyalin Hash SHA-256 Lengkap ke Clipboard
+  // ---------------------------------------------------------------------------
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedHash(text);
     setTimeout(() => setCopiedHash(null), 2000);
   };
 
-  // Tamper Simulation Drill
+  // ---------------------------------------------------------------------------
+  // HANDLER: Simulasi Manipulasi Data Ilegal (Academic Attack Simulation)
+  // Sengaja memodifikasi payload di database langsung untuk membuktikan alarm sensor hash
+  // ---------------------------------------------------------------------------
   const handleSimulateTamper = async () => {
     if (logs.length < 2) {
       alert('Dibutuhkan minimal 2 log audit untuk menguji simulasi manipulasi.');
       return;
     }
 
-    const targetLog = logs[logs.length - 2]; // pick second to last
+    const targetLog = logs[logs.length - 2]; // Pilih blok urutan kedua dari belakang
     setIsTampering(true);
     try {
       setTamperedOriginalPayload(JSON.stringify(targetLog.payload));
       setTamperedSeq(targetLog.sequenceNo);
 
+      // Injeksi perubahan nominal ilegal langsung ke payload
       const malicious = JSON.stringify({
         ...targetLog.payload,
         metadata: {
           ...targetLog.payload?.metadata,
-          amount: 999999999, // Altered nominal in DB directly!
+          amount: 999999999, // Ubah nominal secara liar di database!
           maliciousNote: 'ATTACKER_DIRECT_DB_INJECTION',
         },
       });
@@ -133,6 +173,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
         }),
       });
 
+      // Segera jalankan verifikasi untuk membuktikan sistem mendeteksi kerusakan data
       await handleManualVerify();
     } catch (err: any) {
       setErrorMsg(err.message);
@@ -141,6 +182,9 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Memulihkan Data Asli setelah Simulasi Serangan Selesai
+  // ---------------------------------------------------------------------------
   const handleRepairTamper = async () => {
     if (!tamperedSeq || !tamperedOriginalPayload) return;
 
@@ -168,10 +212,14 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI MODAL AUDIT CHAIN
+  // ---------------------------------------------------------------------------
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
-        {/* Header */}
+        
+        {/* HEADER MODAL */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
@@ -194,13 +242,14 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
           </button>
         </div>
 
+        {/* NOTIFIKASI ERROR JARINGAN */}
         {errorMsg && (
           <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 shrink-0">
             {errorMsg}
           </div>
         )}
 
-        {/* Verification Status Banner */}
+        {/* BANNER STATUS HASIL VERIFIKASI (Hijau: Valid / Merah: Integritas Rusak) */}
         {verification && (
           <div
             className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 ${
@@ -229,6 +278,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
               </div>
             </div>
 
+            {/* Tombol Re-Verifikasi Manual */}
             <button
               onClick={handleManualVerify}
               disabled={isVerifying}
@@ -240,7 +290,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
           </div>
         )}
 
-        {/* Drill Controls (Academic / Demo Testing) */}
+        {/* PANEL PENGUJIAN AKADEMIK / DRILL SIMULASI MANIPULASI (Admin Only) */}
         {isAdmin && (
           <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 text-xs shrink-0">
             <div className="flex items-center justify-between">
@@ -288,7 +338,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
           </div>
         )}
 
-        {/* Audit Log Chronology Feed */}
+        {/* DAFTAR BLOK KRONOLOGI RANTAI AUDIT */}
         <div className="flex-1 overflow-y-auto space-y-3 pr-1">
           <div className="flex items-center justify-between text-xs text-slate-400 px-1">
             <span>Rantai Peristiwa ({logs.length} Blok)</span>
@@ -306,6 +356,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
           ) : (
             logs.map((log) => {
               const isExpanded = expandedPayloadSeq === log.sequenceNo;
+              // Deteksi jika blok ini merupakan titik integritas yang rusak
               const isCorrupted =
                 verification &&
                 !verification.valid &&
@@ -320,6 +371,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
                       : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/80 hover:border-emerald-400 dark:hover:border-emerald-600'
                   }`}
                 >
+                  {/* Header Blok: Sequence No, Event Type, Timestamp */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold font-mono flex items-center justify-center">
@@ -344,7 +396,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
                     </span>
                   </div>
 
-                  {/* Hashes */}
+                  {/* Kriptografi Hash: Previous Hash (Hn-1) & Current Hash (Hn) */}
                   <div className="mt-2.5 space-y-1 font-mono text-[11px] bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
                       <span>Prev Hash (H<sub>n-1</sub>):</span>
@@ -374,7 +426,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
                     </div>
                   </div>
 
-                  {/* Payload toggle */}
+                  {/* Toggle Payload Kanonis JSON */}
                   <div className="mt-2 flex items-center justify-between">
                     <button
                       type="button"
@@ -393,6 +445,7 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
                     </button>
                   </div>
 
+                  {/* Tampilan Payload JSON Lengkap */}
                   {isExpanded && (
                     <pre className="mt-2 p-2.5 rounded-xl bg-slate-900 text-slate-100 text-[10px] overflow-x-auto font-mono max-h-40">
                       {JSON.stringify(log.payload, null, 2)}
@@ -407,3 +460,4 @@ export const AuditChainModal: React.FC<AuditChainModalProps> = ({ isOpen, onClos
     </div>
   );
 };
+

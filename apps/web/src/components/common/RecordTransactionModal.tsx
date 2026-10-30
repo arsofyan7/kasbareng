@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * RecordTransactionModal.tsx - Modal Pencatatan Transaksi & Setoran Iuran
+ * ============================================================================
+ * Komponen modal komprehensif untuk mencatat mutasi kas bersama:
+ * 1. Pemasukan (INCOME): Mendukung pencatatan iuran borongan multi-bulan/termin,
+ *    kalkulasi otomatis nominal, pencocokan status lunas/pending dari Papan Iuran,
+ *    dan pilihan anggota atas nama (untuk bendahara yang mencatat uang tunai warga).
+ * 2. Pengeluaran (EXPENSE): Validasi saldo kas tersedia, pengajuan ke kuorum persetujuan,
+ *    dan pencegahan defisit (overdraft).
+ * 3. Lampiran Struk/Bukti: Kompresi Base64 dan upload berkas gambar (kamera/galeri).
+ * 4. Adaptasi Peran (RBAC): Warga hanya dapat melapor setoran (INCOME) yang akan
+ *    masuk ke antrean verifikasi pengurus.
+ */
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletContext';
@@ -18,14 +33,17 @@ import {
   Clock,
 } from 'lucide-react';
 
+/**
+ * Interface properti RecordTransactionModal
+ */
 interface RecordTransactionModalProps {
-  isOpen: boolean;
-  initialType?: TransactionType;
-  availableBalance?: number;
-  initialTargetUserId?: string;
-  initialPeriods?: string[];
-  onClose: () => void;
-  onSuccess: () => void;
+  isOpen: boolean;                      // Status visibilitas modal
+  initialType?: TransactionType;        // Jenis mutasi awal ('INCOME' | 'EXPENSE')
+  availableBalance?: number;            // Saldo kas tersedia (untuk guard pengeluaran)
+  initialTargetUserId?: string;         // ID anggota yang ingin diisi otomatis
+  initialPeriods?: string[];            // Daftar periode bulan/termin awal yang dipilih
+  onClose: () => void;                  // Callback penutupan modal
+  onSuccess: () => void;                // Callback setelah transaksi sukses dicatat/diajukan
 }
 
 export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
@@ -37,37 +55,50 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  // ---------------------------------------------------------------------------
+  // CONTEXT & USER PERMISSION
+  // ---------------------------------------------------------------------------
   const { token, user } = useAuth();
   const { activeWallet } = useWallet();
 
+  // Flag apakah pengguna login memiliki peran WARGA (bukan pengurus)
   const isWarga = activeWallet?.myRole === 'WARGA';
 
+  // ---------------------------------------------------------------------------
+  // FORM STATES
+  // ---------------------------------------------------------------------------
+  // Tipe mutasi kas: Jika role WARGA dikunci ke 'INCOME' (lapor setoran mandiri)
   const [type, setType] = useState<TransactionType>(isWarga ? 'INCOME' : initialType);
-  const [amountStr, setAmountStr] = useState<string>('');
-  const [category, setCategory] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [imageFilename, setImageFilename] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [amountStr, setAmountStr] = useState<string>('');            // String format Rupiah pada input nominal
+  const [category, setCategory] = useState<string>('');              // Kategori pos kas
+  const [notes, setNotes] = useState<string>('');                    // Catatan keterangan transaksi
+  const [selectedImage, setSelectedImage] = useState<string | null>(null); // Data URL Base64 gambar
+  const [imageFilename, setImageFilename] = useState<string | null>(null); // Nama berkas bukti transfer/struk
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);  // Indikator loading submit
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);     // Pesan error validasi atau API
 
-  // Multi-period dues payment state
+  // State untuk pembayaran iuran borongan multi-periode (bulan/termin)
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>(initialPeriods || []);
-  // Target member state (for Admin/Pengelola recording cash on behalf of a warga)
+  
+  // State daftar anggota kas (khusus pengurus untuk mencatat setoran atas nama warga)
   const [members, setMembers] = useState<Array<{ userId: string; fullName: string; role: string }>>([]);
   const [targetUserId, setTargetUserId] = useState<string>(initialTargetUserId || '');
 
-  // Dues board status map to disable already paid / pending periods
+  // Peta status rekapitulasi iuran dari database (menghindari duplikasi pembayaran)
   const [duesRecordsMap, setDuesRecordsMap] = useState<Record<string, Record<string, { status: string; amount?: number }>>>({});
   const [isLoadingDues, setIsLoadingDues] = useState<boolean>(false);
 
+  // Ref elemen input file tersembunyi
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Parameter konfigurasi kas aktif
   const currentYear = new Date().getFullYear();
   const duesType = activeWallet?.duesType || 'MONTHLY';
   const duesAmount = activeWallet?.duesAmount ? Number(activeWallet.duesAmount) : null;
 
-  // Sync initial prefill props whenever modal opens
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Sinkronisasi Props Prefill saat Modal Terbuka
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (isOpen) {
       if (initialTargetUserId !== undefined) {
@@ -76,6 +107,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       if (initialPeriods && initialPeriods.length > 0) {
         setSelectedPeriods(initialPeriods);
         if (duesAmount) {
+          // Kalkulasi otomatis nominal: jumlah periode * tarif iuran
           setAmountStr((initialPeriods.length * duesAmount).toLocaleString('id-ID'));
         }
         setCategory('Iuran / Setoran Bulanan');
@@ -83,6 +115,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   }, [isOpen, initialTargetUserId, initialPeriods, duesAmount]);
 
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Mengambil Daftar Anggota Dompet (Khusus Admin/Pengelola)
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!isOpen || !activeWallet || !token) return;
     if (!isWarga) {
@@ -105,7 +140,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   }, [isOpen, activeWallet, token, isWarga]);
 
-  // Fetch dues board to get real-time payment status per member
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Mengambil Papan Iuran untuk Cek Status Lunas / Menunggu Verifikasi
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!isOpen || !activeWallet || !token) return;
     if (duesType === 'FREEFORM') return;
@@ -128,12 +165,17 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       .finally(() => setIsLoadingDues(false));
   }, [isOpen, activeWallet, token, duesType, currentYear]);
 
+  // Evaluasi ID anggota target transaksi
   const effectiveUserId = isWarga ? user?.id : (targetUserId || user?.id);
+  
+  // Riwayat status iuran anggota yang bersangkutan
   const userDuesRecords = useMemo(() => {
     return (effectiveUserId && duesRecordsMap[effectiveUserId]) || {};
   }, [effectiveUserId, duesRecordsMap]);
 
-  // Clean out any periods from selection that are already PAID or PENDING for effective target user
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Bersihkan Pilihan Periode jika Sudah Lunas / Sedang Menunggu
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!effectiveUserId || !duesRecordsMap[effectiveUserId]) return;
     const userRecs = duesRecordsMap[effectiveUserId];
@@ -154,6 +196,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     });
   }, [effectiveUserId, duesRecordsMap, duesAmount]);
 
+  // ---------------------------------------------------------------------------
+  // COMPUTED: Daftar Periode yang Tersedia Berdasarkan Skema Dompet
+  // ---------------------------------------------------------------------------
   const availablePeriods = useMemo(() => {
     if (duesType === 'FREEFORM' || !activeWallet) return [];
     if (duesType === 'TARGET_INSTALLMENTS') {
@@ -164,7 +209,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         shortLabel: `T${i + 1}`,
       }));
     }
-    // Default: MONTHLY
+    // Default: Bulanan (12 Bulan)
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     return months.map((m, i) => {
       const pad = String(i + 1).padStart(2, '0');
@@ -176,6 +221,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     });
   }, [duesType, activeWallet, currentYear]);
 
+  // Mengecek apakah seluruh periode telah tuntas dibayar
   const allPeriodsSettled = useMemo(() => {
     if (availablePeriods.length === 0) return false;
     return availablePeriods.every((p) => {
@@ -184,6 +230,10 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     });
   }, [availablePeriods, userDuesRecords]);
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Toggle Pilihan Periode Iuran (Multi-Select)
+  // Otomatis mengalikan jumlah periode terpilih dengan nominal tarif iuran
+  // ---------------------------------------------------------------------------
   const togglePeriod = (pKey: string) => {
     const st = userDuesRecords[pKey]?.status;
     if (st === 'PAID' || st === 'PENDING') return;
@@ -201,14 +251,18 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   };
 
-  if (!isOpen || !activeWallet) return null;
-
+  // ---------------------------------------------------------------------------
+  // PARSING & QUICK CATEGORIES
+  // ---------------------------------------------------------------------------
   const numericAmount = parseFloat(amountStr.replace(/[^0-9]/g, '')) || 0;
 
   const quickCategories = type === 'INCOME'
     ? ['Iuran / Setoran Bulanan', 'Tabungan Bersama', 'Sumbangan Sukarela', 'Donasi']
     : ['Operasional & Perlengkapan', 'Konsumsi & Pertemuan', 'Listrik & Kebersihan', 'Pemeliharaan Sarana', 'Sosial / Donasi'];
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Memilih Gambar / Foto Bukti Transfer (Maks. 5MB)
+  // ---------------------------------------------------------------------------
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -232,6 +286,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     reader.readAsDataURL(file);
   };
 
+  // Menghapus pilihan gambar saat ini
   const handleRemoveImage = () => {
     setSelectedImage(null);
     setImageFilename(null);
@@ -240,17 +295,29 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Submit Form Transaksi Kas (Simpan Draf vs Langsung Bukukan / Ajukan)
+  // ---------------------------------------------------------------------------
   const handleSubmit = async (directSubmit: boolean) => {
+    // Guard Dompet Kas Aktif
+    if (!activeWallet) {
+      setErrorMsg('Dompet kas aktif tidak ditemukan.');
+      return;
+    }
+
+    // Validasi nominal lebih dari nol
     if (numericAmount <= 0) {
       setErrorMsg('Nominal transaksi harus lebih besar dari 0.');
       return;
     }
 
+    // Validasi keberadaan kategori
     if (!category.trim()) {
       setErrorMsg('Pilih atau isi kategori transaksi.');
       return;
     }
 
+    // Guard Pengeluaran: Nominal tidak boleh melebihi saldo kas tersedia
     if (type === 'EXPENSE' && directSubmit && numericAmount > availableBalance) {
       setErrorMsg(
         `Nominal pengeluaran (Rp ${numericAmount.toLocaleString('id-ID')}) melebihi saldo tersedia (Rp ${availableBalance.toLocaleString('id-ID')}).`
@@ -264,7 +331,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     try {
       let uploadedAttachmentId: string | undefined = undefined;
 
-      // Step 1: Upload image attachment if provided
+      // LANGKAH 1: Upload bukti transfer / struk fisik jika ada
       if (selectedImage && imageFilename) {
         const attachRes = await fetch(`/api/v1/wallets/${activeWallet.id}/attachments`, {
           method: 'POST',
@@ -284,7 +351,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         }
       }
 
-      // Step 2: Create draft
+      // LANGKAH 2: Simpan Draf Transaksi Baru ke Database
       const draftRes = await fetch(`/api/v1/wallets/${activeWallet.id}/transactions`, {
         method: 'POST',
         headers: {
@@ -308,7 +375,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         throw new Error(draftJson.error?.message || 'Gagal menyimpan draf transaksi.');
       }
 
-      // Step 3: If directSubmit requested (or if user is WARGA), submit immediately
+      // LANGKAH 3: Ajukan langsung ke Kuorum Persetujuan atau Pemasukan Kas
       if (directSubmit || isWarga) {
         const submitRes = await fetch(`/api/v1/transactions/${draftJson.data.id}/submit`, {
           method: 'POST',
@@ -325,7 +392,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         }
       }
 
-      // Reset and close
+      // Reset form dan tutup modal
       setAmountStr('');
       setCategory('');
       setNotes('');
@@ -341,8 +408,12 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  // Jangan render modal jika status terbuka bernilai false atau tidak ada dompet aktif
+  if (!isOpen || !activeWallet) return null;
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI MODAL
+  // ---------------------------------------------------------------------------
   return (
     <div
       onClick={onClose}
@@ -352,6 +423,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto cursor-default"
       >
+        {/* HEADER MODAL */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -380,7 +452,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
           </button>
         </div>
 
-        {/* Type Toggle (Hidden for WARGA, locked to INCOME) */}
+        {/* TOGGLE TIPE TRANSAKSI (Hanya aktif untuk Admin / Pengelola) */}
         {!isWarga ? (
           <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-300 dark:border-slate-700">
             <button
@@ -428,6 +500,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
           </div>
         )}
 
+        {/* ALERT PESAN KESALAHAN */}
         {errorMsg && (
           <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -435,9 +508,10 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
           </div>
         )}
 
-        {/* Form Fields */}
+        {/* BIDANG FORMULIR INPUT */}
         <div className="space-y-4">
-          {/* Member Selector (Only for Admin/Pengelola recording INCOME cash on behalf of a resident) */}
+          
+          {/* PEMILIH ANGGOTA (Khusus Pengurus Mencatat Setoran Tunai Warga) */}
           {!isWarga && type === 'INCOME' && members.length > 0 && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
@@ -459,7 +533,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             </div>
           )}
 
-          {/* Periode Iuran Multi-Bulan / Checklist (Only for INCOME and when duesType !== FREEFORM) */}
+          {/* PERIODE IURAN MULTI-BULAN / TERMIN (Hanya Tampil pada Tipe INCOME) */}
           {type === 'INCOME' && duesType !== 'FREEFORM' && availablePeriods.length > 0 && (
             <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700/80 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -483,6 +557,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 </div>
               )}
 
+              {/* Grid Kotak Periode Bulan/Termin */}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5">
                 {availablePeriods.map((p) => {
                   const isSelected = selectedPeriods.includes(p.key);
@@ -537,7 +612,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 })}
               </div>
 
-              {/* Status Indicator Legend */}
+              {/* Legenda Penjelasan Warna Status */}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/60 text-[10px]">
                 <div className="flex flex-wrap items-center gap-2.5 text-slate-500 dark:text-slate-400">
                   <span className="flex items-center gap-1 font-medium">
@@ -564,6 +639,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 )}
               </div>
 
+              {/* Ringkasan Jumlah Periode Terpilih */}
               {selectedPeriods.length > 0 ? (
                 <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
                   Terpilih: <strong>{selectedPeriods.length} periode</strong>
@@ -577,7 +653,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             </div>
           )}
 
-          {/* Nominal */}
+          {/* INPUT NOMINAL RUPIAH */}
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -606,7 +682,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Kategori & Quick Tags */}
+          {/* INPUT KATEGORI & LABEL CEPAT */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Kategori <span className="text-rose-500">*</span>
@@ -618,6 +694,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 mb-2"
             />
+            {/* Quick Category Pills */}
             <div className="flex flex-wrap gap-1.5">
               {quickCategories.map((qc) => (
                 <button
@@ -636,7 +713,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Catatan / Keperluan */}
+          {/* INPUT CATATAN / KETERANGAN */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               {isWarga ? 'Catatan / Keterangan Pembayaran' : 'Catatan / Rincian Keperluan'}
@@ -654,12 +731,13 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             />
           </div>
 
-          {/* Foto Bukti Transfer / Kamera */}
+          {/* INPUT FOTO BUKTI TRANSFER / STRUK FISIK (KAMERA / FILE) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Foto Bukti Transfer / Struk <span className="text-slate-400 font-normal">(Disarankan)</span>
             </label>
 
+            {/* Input Berkas Gambar Asli Tersembunyi */}
             <input
               type="file"
               ref={fileInputRef}
@@ -670,6 +748,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             />
 
             {selectedImage ? (
+              /* Pratinjau Gambar Terpilih */
               <div className="p-3 rounded-2xl border border-emerald-300 dark:border-emerald-700/80 bg-emerald-50/40 dark:bg-emerald-950/20 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <img
@@ -697,6 +776,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 </button>
               </div>
             ) : (
+              /* Tombol Placeholder Ambil Foto / Pilih Berkas */
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -716,8 +796,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* TOMBOL AKSI SUBMIT */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-2 border-t border-slate-200 dark:border-slate-700">
+          {/* Tombol Batal */}
           <button
             type="button"
             onClick={onClose}
@@ -727,6 +808,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             Batal
           </button>
 
+          {/* Tombol Simpan Draf (Hanya untuk Admin / Pengelola) */}
           {!isWarga && (
             <button
               type="button"
@@ -739,6 +821,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             </button>
           )}
 
+          {/* Tombol Ajukan / Bukukan Langsung */}
           <button
             type="button"
             onClick={() => handleSubmit(true)}

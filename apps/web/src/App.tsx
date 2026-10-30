@@ -1,8 +1,21 @@
+/**
+ * ============================================================================
+ * KOMPONEN UTAMA & ORKESTRATOR TATA LETAK APLIKASI (APP.TSX)
+ * ============================================================================
+ * Komponen ini bertanggung jawab atas:
+ * 1. Penyediaan Context Global (Theme, Auth, Wallet).
+ * 2. Manajemen Navigasi Tab Utama (Routing Berbasis Tab tanpa reload).
+ * 3. Deteksi URL Deep-Link (Parameter ?join=... untuk undangan dompet).
+ * 4. Pengendalian visibilitas Modal Global (Transaksi Baru, Ganti Dompet, Rantai Audit, dll).
+ * 5. Adaptasi Antarmuka Responsif (Desktop Sidebar vs Mobile Bottom Navigation).
+ */
+
 import { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WalletProvider } from './context/WalletContext';
 import { TransactionType } from './types';
+import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
@@ -24,9 +37,27 @@ import { AlgorithmRulesModal } from './components/common/AlgorithmRulesModal';
 import { QuickActionSheet } from './components/common/QuickActionSheet';
 import { RecordTransactionModal } from './components/common/RecordTransactionModal';
 
+/**
+ * Komponen internal yang memiliki akses langsung ke konteks Auth dan Wallet.
+ * Mengatur percabangan tampilan antara Landing Page, Login, dan Dashboard Terotentikasi.
+ */
 function AppContent() {
+  // --------------------------------------------------------------------------
+  // STATE & DATA FETCHING: Autentikasi Pengguna
+  // --------------------------------------------------------------------------
   const { user, isLoading } = useAuth();
+
+  // --------------------------------------------------------------------------
+  // STATE: Kontrol Navigasi & Halaman Publik
+  // --------------------------------------------------------------------------
+  // Mengontrol apakah form login/register ditampilkan jika pengguna belum masuk
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  // Tab aktif yang sedang ditampilkan di workspace utama
   const [currentTab, setCurrentTab] = useState<NavTab>('beranda');
+
+  // --------------------------------------------------------------------------
+  // STATE: Visibilitas Modal Dompet & Tata Kelola
+  // --------------------------------------------------------------------------
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [createWalletOpen, setCreateWalletOpen] = useState(false);
   const [joinWalletOpen, setJoinWalletOpen] = useState(false);
@@ -34,24 +65,43 @@ function AppContent() {
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [algorithmModalOpen, setAlgorithmModalOpen] = useState(false);
 
-  // Quick Action Sheet & Global Transaction Modal
+  // --------------------------------------------------------------------------
+  // STATE: Aksi Cepat (Quick Action Sheet) & Pencatatan Transaksi Global
+  // --------------------------------------------------------------------------
   const [quickActionOpen, setQuickActionOpen] = useState(false);
   const [recordModalOpen, setRecordModalOpen] = useState(false);
   const [recordModalType, setRecordModalType] = useState<TransactionType>('INCOME');
+  // Trigger penyegaran data lintas komponen ketika transaksi baru berhasil disimpan
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Check URL query parameters or hash on mount (e.g. ?join=RT05-SEJAHTERA)
+  // --------------------------------------------------------------------------
+  // EFEK SAMPING (EFFECT): Penanganan Deep-Link dari URL Query Parameter
+  // Mendeteksi link undangan (misal: ?join=KAS-WARGA) atau redirect login (?login=true)
+  // --------------------------------------------------------------------------
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const joinParam = searchParams.get('join');
+    const authParam = searchParams.get('auth') || searchParams.get('login');
+    const path = window.location.pathname;
+
+    // Arahkan ke form login jika ada query auth atau URL /login
+    if (authParam === 'true' || path === '/login' || path === '/auth') {
+      setShowAuthForm(true);
+    }
+
+    // Tangani parameter kode undangan dompet
     if (joinParam) {
       setJoinInitialCode(joinParam.trim().toUpperCase());
       setJoinWalletOpen(true);
-      // Clean URL without page reload
+      setShowAuthForm(true);
+      // Bersihkan query string dari URL tanpa memicu reload halaman
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Status Pemuatan Awal (Initial Loading State)
+  // --------------------------------------------------------------------------
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
@@ -63,12 +113,22 @@ function AppContent() {
     );
   }
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Pengunjung Belum Terotentikasi (Landing Page vs Auth Form)
+  // --------------------------------------------------------------------------
   if (!user) {
-    return <AuthPage />;
+    if (showAuthForm) {
+      return <AuthPage onBackToLanding={() => setShowAuthForm(false)} />;
+    }
+    return <LandingPage onGoToLogin={() => setShowAuthForm(true)} />;
   }
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Dasbor Aplikasi Pengguna Terotentikasi
+  // --------------------------------------------------------------------------
   return (
     <div className="min-h-screen flex flex-col bg-mint-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      {/* Bar Navigasi Atas (Top Navbar) dengan Logo, Switcher Dompet, & Profil */}
       <Navbar
         onOpenCreateWallet={() => setCreateWalletOpen(true)}
         onOpenJoinWallet={() => setJoinWalletOpen(true)}
@@ -77,7 +137,7 @@ function AppContent() {
       />
 
       <div className="flex-1 flex max-w-7xl mx-auto w-full">
-        {/* Desktop & Tablet Sidebar */}
+        {/* Navigasi Bilah Sisi (Sidebar) untuk Layar Desktop & Tablet */}
         <Sidebar
           currentTab={currentTab}
           onSelectTab={setCurrentTab}
@@ -87,7 +147,7 @@ function AppContent() {
           onOpenQuickAction={() => setQuickActionOpen(true)}
         />
 
-        {/* Main Workspace Area */}
+        {/* Area Kerja Konten Utama Berdasarkan Tab yang Dipilih */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 max-w-5xl mx-auto w-full">
           {currentTab === 'beranda' && (
             <DashboardPage
@@ -128,14 +188,14 @@ function AppContent() {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar with Center Protruding Action Button */}
+      {/* Navigasi Bawah Layar Seluler (Bottom Nav) dengan Tombol Aksi Cepat Mengambang */}
       <BottomNav
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
         onOpenQuickAction={() => setQuickActionOpen(true)}
       />
 
-      {/* Quick Action Bottom Sheet (Speed Dial Ala E-Wallet) */}
+      {/* Sheet Aksi Cepat (Speed Dial Menu ala Aplikasi Finansial Modern) */}
       <QuickActionSheet
         isOpen={quickActionOpen}
         onClose={() => setQuickActionOpen(false)}
@@ -159,18 +219,19 @@ function AppContent() {
         }}
       />
 
-      {/* Global Record Transaction Modal */}
+      {/* Modal Universal Pencatatan Transaksi Pemasukan / Pengeluaran */}
       <RecordTransactionModal
         isOpen={recordModalOpen}
         initialType={recordModalType}
         onClose={() => setRecordModalOpen(false)}
         onSuccess={() => {
           setRecordModalOpen(false);
+          // Memicu re-fetch data pada widget dasbor dan tabel transaksi
           setRefreshKey((k) => k + 1);
         }}
       />
 
-      {/* Wallet Modals */}
+      {/* Modal Daftar Dompet untuk Berpindah Dompet Kas */}
       <WalletSwitcherModal
         isOpen={walletModalOpen}
         onClose={() => setWalletModalOpen(false)}
@@ -178,11 +239,13 @@ function AppContent() {
         onOpenJoinWallet={() => setJoinWalletOpen(true)}
       />
 
+      {/* Modal Pembuatan Dompet Kas Baru */}
       <CreateWalletModal
         isOpen={createWalletOpen}
         onClose={() => setCreateWalletOpen(false)}
       />
 
+      {/* Modal Bergabung ke Dompet Kas Menggunakan Kode Undangan */}
       <JoinWalletModal
         isOpen={joinWalletOpen}
         initialCode={joinInitialCode}
@@ -195,13 +258,13 @@ function AppContent() {
         }}
       />
 
-      {/* Tamper-Evident SHA-256 Audit Chain Modal */}
+      {/* Modal Inspeksi & Verifikasi Rantai Kriptografis SHA-256 (Audit Trail) */}
       <AuditChainModal
         isOpen={auditModalOpen}
         onClose={() => setAuditModalOpen(false)}
       />
 
-      {/* Fitur Algoritma & Tata Kelola Modal */}
+      {/* Modal Edukasi Aturan Algoritma & Tata Kelola Keuangan KasBareng */}
       <AlgorithmRulesModal
         isOpen={algorithmModalOpen}
         onClose={() => setAlgorithmModalOpen(false)}
@@ -214,6 +277,10 @@ function AppContent() {
   );
 }
 
+/**
+ * Komponen Root Pembungkus Aplikasi
+ * Menginjeksi seluruh Provider Konteks secara bertingkat: Tema -> Autentikasi -> Dompet Aktif
+ */
 export function App() {
   return (
     <ThemeProvider>

@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * ProfilePage.tsx - Halaman Profil Pengguna, Preferensi Tema, & Integritas Sistem
+ * ============================================================================
+ * Komponen halaman untuk mengelola identitas pengguna dan personalisasi aplikasi:
+ * 1. Menampilkan rincian profil pengguna aktif (nama lengkap, alamat email, status verifikasi).
+ * 2. Pengatur Tema Antarmuka (Theme Customizer): Mendukung Mode Terang (Light),
+ *    Mode Gelap (Dark), dan Sinkronisasi Otomatis Sistem Operasi Perangkat (System).
+ * 3. Pintasan Edukasi Tata Kelola: Memicu pembukaan modal penjelasan 6 algoritma inti
+ *    dan simulasi kuorum persetujuan M-of-N.
+ * 4. Kartu Transparansi Integritas Sistem: Menampilkan 6 algoritma kriptografis dan deterministik
+ *    yang menjaga kas bersama dari manipulasi (RFC 8785, SHA-256 Hash Chain, FSM, Quorum, Ledger, CSV Matcher).
+ * 5. Fitur Keluar Akun (Logout): Menghapus token otentikasi JWT dari penyimpanan lokal dan reset sesi.
+ */
+
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, Theme } from '../context/ThemeContext';
@@ -12,14 +27,26 @@ import {
   Cpu,
 } from 'lucide-react';
 
+/**
+ * Interface properti komponen ProfilePage
+ */
 interface ProfilePageProps {
-  onOpenAlgorithmModal?: () => void;
+  onOpenAlgorithmModal?: () => void; // Callback opsional untuk membuka modal aturan algoritma & kuorum
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }) => {
+  // ---------------------------------------------------------------------------
+  // HOOKS & CONTEXT
+  // ---------------------------------------------------------------------------
+  // Mengambil data pengguna login dan fungsi logout dari AuthContext
   const { user, logout } = useAuth();
+
+  // Mengambil state tema aktif dan fungsi pengubah tema dari ThemeContext
   const { theme, setTheme } = useTheme();
 
+  // ---------------------------------------------------------------------------
+  // KONFIGURASI PILIHAN TEMA ANTARMUKA
+  // ---------------------------------------------------------------------------
   const themeOptions: Array<{ id: Theme; label: string; desc: string; icon: any }> = [
     {
       id: 'light',
@@ -41,8 +68,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
     },
   ];
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI UTAMA
+  // ---------------------------------------------------------------------------
   return (
     <div className="space-y-6 max-w-3xl mx-auto animate-in fade-in duration-150">
+      {/* 1. Header Halaman */}
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
           <UserCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
@@ -53,12 +84,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
         </p>
       </div>
 
-      {/* User Info Card */}
+      {/* 2. Kartu Rincian Akun Pengguna */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-600 text-white font-bold text-2xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
+          {/* Avatar Inisial Nama Huruf Kapital */}
+          <div className="w-16 h-16 rounded-2xl bg-emerald-600 text-white font-bold text-2xl flex items-center justify-center shadow-lg shadow-emerald-600/20 shrink-0">
             {user?.fullName.charAt(0).toUpperCase()}
           </div>
+
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {user?.fullName}
@@ -66,6 +99,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {user?.email}
             </p>
+            {/* Penanda Status Akun Terverifikasi */}
             <span className="inline-flex items-center gap-1.5 mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               Akun Aktif & Terverifikasi
@@ -74,7 +108,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
         </div>
       </div>
 
-      {/* Theme Customizer Card */}
+      {/* 3. Kartu Pemilih Tema Antarmuka (Theme Switcher) */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
         <div>
           <h3 className="font-bold text-base text-slate-900 dark:text-white">
@@ -85,15 +119,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
           </p>
         </div>
 
+        {/* Grid Opsi Tema (Light / Dark / System) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {themeOptions.map((opt) => {
             const Icon = opt.icon;
             const isSelected = theme === opt.id;
+
             return (
               <button
                 key={opt.id}
                 onClick={() => setTheme(opt.id)}
-                className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-3 ${
+                className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-3 cursor-pointer ${
                   isSelected
                     ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 ring-2 ring-emerald-500/20'
                     : 'border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
@@ -119,7 +155,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
         </div>
       </div>
 
-      {/* Fitur Algoritma & Tata Kelola Kas Bersama */}
+      {/* 4. Kartu Fitur Algoritma & Tata Kelola Kas Bersama */}
       {onOpenAlgorithmModal && (
         <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/70 to-slate-50 dark:from-indigo-950/30 dark:to-slate-900 border border-indigo-300 dark:border-indigo-700/80 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
@@ -148,7 +184,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
         </div>
       )}
 
-      {/* System Integrity & Academic Rigor */}
+      {/* 5. Kartu Integritas Kriptografis & Rigor Akademis (6 Algoritma Inti) */}
       <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-700 space-y-3">
         <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
           <Code2 className="w-4 h-4" />
@@ -164,11 +200,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onOpenAlgorithmModal }
         </div>
       </div>
 
-      {/* Logout Action */}
+      {/* 6. Tombol Aksi Keluar Akun (Logout) */}
       <div className="pt-2">
         <button
           onClick={logout}
-          className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           Keluar dari Akun

@@ -2,40 +2,65 @@ import React, { useState } from 'react';
 import { CalendarDays, ChevronRight, CheckCircle2, Clock, ChevronDown } from 'lucide-react';
 import { DuesBoardResult } from '../../types';
 
+/**
+ * Interface properti untuk komponen MiniDuesWidget.
+ * @property duesBoard - Objek data matriks papan iuran (berisi daftar periode dan status pembayaran per anggota).
+ * @property isLoading - Indikator status pemuatan data papan iuran dari API.
+ * @property onNavigateToDues - Callback fungsi untuk berpindah ke tampilan halaman matriks iuran lengkap.
+ */
 interface MiniDuesWidgetProps {
   duesBoard: DuesBoardResult | null;
   isLoading: boolean;
   onNavigateToDues: () => void;
 }
 
+/**
+ * Komponen Widget Ringkasan Papan Iuran (MiniDuesWidget).
+ * 
+ * Menampilkan ringkasan kepatuhan pembayaran iuran warga di dashboard utama:
+ * 1. Filter Periode Cepat: Menyediakan selektor dropdown bulan/termin iuran yang fleksibel,
+ *    secara cerdas menentukan periode bulan berjalan (default fallback ke periode terkini).
+ * 2. Bar Progres Kepatuhan: Visualisasi persentase anggota yang telah melunasi kewajiban iuran
+ *    dengan gradasi warna hijau-teal yang dinamis.
+ * 3. Metrik Komparasi Ganda: Menampilkan kartu counter terpisah antara warga yang "Sudah Membayar"
+ *    dan yang "Belum Membayar" untuk memudahkan pemantauan bendahara secara sekilas.
+ */
 export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
   duesBoard,
   isLoading,
   onNavigateToDues,
 }) => {
-  // Determine current period or default to the latest period
+  // Mengambil daftar periode iuran yang terkonfigurasi di dompet kas
   const periods = duesBoard?.periods || [];
-  const currentDateKey = new Date().toISOString().slice(0, 7); // e.g. "2026-10"
+  // Format string kunci tanggal bulan saat ini (misal: "2026-10")
+  const currentDateKey = new Date().toISOString().slice(0, 7);
 
+  // Inisialisasi state periode terpilih: cari kecocokan bulan ini atau ambil periode terakhir yang ada
   const [selectedPeriodKey, setSelectedPeriodKey] = useState<string>(() => {
     if (periods.length === 0) return currentDateKey;
     const match = periods.find((p) => p.key === currentDateKey);
     return match ? match.key : periods[periods.length - 1].key;
   });
 
+  // Objek periode iuran aktif yang sedang diamati
   const activePeriod = periods.find((p) => p.key === selectedPeriodKey) || periods[0];
+  // Daftar anggota yang tercatat dalam papan iuran
   const members = duesBoard?.members || [];
   const totalMembers = members.length;
 
+  // Menghitung jumlah anggota yang telah berstatus Lunas (PAID) pada periode bersangkutan
   const paidMembers = activePeriod
     ? members.filter((m) => m.records[activePeriod.key]?.status === 'PAID').length
     : 0;
+  // Menghitung jumlah anggota yang masih menunggak (belum membayar)
   const unpaidMembers = Math.max(0, totalMembers - paidMembers);
+  // Persentase rasio kepatuhan pembayaran (dibulatkan ke bilangan bulat)
   const compliancePercent = totalMembers > 0 ? Math.round((paidMembers / totalMembers) * 100) : 0;
 
   return (
+    // Kontainer kartu widget mini papan iuran
     <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
-      {/* Header with Title and Period Dropdown */}
+      {/* Header Widget: Ikon Kalender, Judul, dan Dropdown Pemilih Periode Bulan */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300/80 dark:border-emerald-700/80 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -51,7 +76,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
           </div>
         </div>
 
-        {/* Month Selector Pill */}
+        {/* Dropdown Pemilih Periode Bulan / Termin */}
         {periods.length > 0 ? (
           <div className="relative">
             <select
@@ -74,7 +99,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
         )}
       </div>
 
-      {/* Progress Bar Section */}
+      {/* Bagian Bar Indikator Progres Kepatuhan */}
       <div className="space-y-1.5">
         <div className="flex justify-between items-center text-xs font-semibold">
           <span className="text-slate-600 dark:text-slate-400">
@@ -84,7 +109,9 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
             {compliancePercent}%
           </span>
         </div>
+        {/* Track Bar Latar Belakang */}
         <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          {/* Bar Isi Progres dengan Animasi Lebar dan Gradasi Warna */}
           <div
             className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
             style={{ width: `${compliancePercent}%` }}
@@ -92,9 +119,9 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
         </div>
       </div>
 
-      {/* 2 Status Sub-Boxes */}
+      {/* Grid 2 Kotak Metrik Status: Sudah Membayar vs Belum Membayar */}
       <div className="grid grid-cols-2 gap-3 pt-1">
-        {/* Box 1: Sudah Membayar */}
+        {/* Kotak 1: Anggota yang Sudah Melakukan Pembayaran */}
         <div className="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-700/80 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4 h-4" />
@@ -109,7 +136,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
           </div>
         </div>
 
-        {/* Box 2: Belum Membayar */}
+        {/* Kotak 2: Anggota yang Masih Belum Membayar (Menunggak) */}
         <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/80 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
             <Clock className="w-4 h-4" />
@@ -125,7 +152,7 @@ export const MiniDuesWidget: React.FC<MiniDuesWidgetProps> = ({
         </div>
       </div>
 
-      {/* Footer Navigation Action */}
+      {/* Footer Widget: Tautan Cepat Menuju Halaman Matriks Papan Iuran Penuh */}
       <div className="pt-1 flex justify-end">
         <button
           type="button"

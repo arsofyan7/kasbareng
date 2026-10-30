@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * AlgorithmRulesModal.tsx - Modal Showcase Algoritma & Tata Kelola Kasbareng
+ * ============================================================================
+ * Komponen modal edukatif yang menampilkan transparansi fondasi teknis platform:
+ * 1. Tata Kelola Kuorum M-of-N: Menampilkan jumlah persetujuan minimal pengurus aktif,
+ *    aturan anti-self approval, dan hak akses peran pengguna.
+ * 2. Rantai Audit Kriptografis SHA-256 (Hash Chain): Penjelasan audit trail anti-tamper,
+ *    status integritas hash, dan tombol pintas ke simulator inspeksi audit.
+ * 3. Buku Kas Ganda (Double-Entry Ledger): Prinsip pemisahan saldo riil (posted) vs
+ *    dana yang dicadangkan sementara (reserved balance).
+ * 4. Rekonsiliasi Bank 3-Pass: Pencocokan mutasi rekening koran secara deterministik.
+ */
+
 import React from 'react';
 import { useWallet } from '../../context/WalletContext';
 import {
@@ -11,10 +25,13 @@ import {
   FileCheck2,
 } from 'lucide-react';
 
+/**
+ * Interface properti AlgorithmRulesModal
+ */
 interface AlgorithmRulesModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onOpenAuditChain?: () => void;
+  isOpen: boolean;                      // Status visibilitas modal
+  onClose: () => void;                  // Callback penutupan modal
+  onOpenAuditChain?: () => void;        // Callback membuka modal rantai audit SHA-256
 }
 
 export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
@@ -22,14 +39,20 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
   onClose,
   onOpenAuditChain,
 }) => {
+  // Mengambil konteks dompet aktif untuk membaca parameter kuorum M-of-N
   const { activeWallet } = useWallet();
 
+  // Jika status terbuka bernilai false, jangan render ke DOM
   if (!isOpen) return null;
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI MODAL SHOWCASE ALGORITMA
+  // ---------------------------------------------------------------------------
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
       <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 sm:p-7 space-y-6 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto my-auto">
-        {/* Header */}
+        
+        {/* HEADER MODAL: Ikon CPU & Penjelasan Singkat */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-200/50 dark:border-indigo-800/40">
@@ -52,7 +75,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
           </button>
         </div>
 
-        {/* Card 1: Aturan Komunitas & Kuorum M-of-N */}
+        {/* KARTU 1: Parameter Kuorum M-of-N & Kebijakan Kas Dompet Aktif */}
         {activeWallet ? (
           <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-emerald-50 to-teal-50/60 dark:from-emerald-950/30 dark:to-teal-950/20 border border-emerald-300 dark:border-emerald-700/80 space-y-3.5 shadow-sm">
             <div className="flex items-center justify-between">
@@ -67,6 +90,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
               </span>
             </div>
 
+            {/* Grid Kartu Syarat Kuorum & Peran Pengguna */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-emerald-200 dark:border-emerald-800/60">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-0.5">
@@ -101,7 +125,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
           </div>
         )}
 
-        {/* Card 2: Audit Rantai SHA-256 (Hash Chain) */}
+        {/* KARTU 2: Rantai Audit Kriptografis SHA-256 (Hash Chain Anti-Tamper) */}
         <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-indigo-950/30 dark:to-slate-900/50 border border-indigo-300 dark:border-indigo-700/80 space-y-3.5 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -110,6 +134,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
                 Audit Rantai SHA-256 (Kriptografis)
               </span>
             </div>
+            {/* Lencana Status Validitas Rantai Hash */}
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Rantai Hash Valid
@@ -122,6 +147,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
             Manipulasi data ilegal langsung merusak integritas hash dan terdeteksi seketika.
           </p>
 
+          {/* Tombol Pemicu Membuka Modal Simulator Audit SHA-256 */}
           {onOpenAuditChain && (
             <button
               type="button"
@@ -138,12 +164,13 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
           )}
         </div>
 
-        {/* Additional Core Algorithmic Highlights */}
+        {/* KARTU 3: Algoritma Tambahan (Double-Entry Ledger & Bank Reconciliation) */}
         <div className="space-y-2 pt-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block px-1">
             Algoritma Inti Platform Lainnya
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            {/* Sorotan: Double-Entry Ledger */}
             <div className="p-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex items-start gap-2.5">
               <Scale className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
@@ -156,6 +183,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
               </div>
             </div>
 
+            {/* Sorotan: 3-Pass Bank Reconciliation */}
             <div className="p-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex items-start gap-2.5">
               <FileCheck2 className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
               <div>
@@ -170,7 +198,7 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
+        {/* FOOTER MODAL */}
         <div className="pt-2 flex justify-end border-t border-slate-200 dark:border-slate-700">
           <button
             type="button"
@@ -184,3 +212,4 @@ export const AlgorithmRulesModal: React.FC<AlgorithmRulesModalProps> = ({
     </div>
   );
 };
+

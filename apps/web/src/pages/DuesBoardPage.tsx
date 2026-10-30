@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * HALAMAN PAPAN REKAPITULASI IURAN WARGA / KOMUNITAS (DUESBOARDPAGE.TSX)
+ * ============================================================================
+ * Komponen ini menyediakan matriks transparansi finansial publik bagi anggota:
+ * 1. Papan Matriks Kisi-Kisi: Memetakan status pembayaran tiap warga (Januari - Desember
+ *    atau Termin 1 - N) secara interaktif dengan indikator warna (Lunas, Menunggu, Belum).
+ * 2. Metrik Kepatuhan Realtime: Menghitung persentase kepatuhan gotong royong, total kas
+ *    terkumpul, nominal dalam antrean verifikasi, dan jumlah penunggak.
+ * 3. Otomatisasi Pengingat WhatsApp: Membuat teks draf pesan penagihan santun secara dinamis
+ *    yang siap disalin atau dikirim langsung ke grup WA warga.
+ * 4. Aksi Cepat Setoran: Pengurus dapat mencatat setoran langsung dari sel tabel yang kosong,
+ *    dan anggota dapat mengunggah struk transfer mandiri.
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
@@ -26,31 +41,53 @@ import { ManageDuesConfigModal } from '../components/common/ManageDuesConfigModa
 import { TransactionDetailModal } from '../components/common/TransactionDetailModal';
 
 export const DuesBoardPage: React.FC = () => {
+  // --------------------------------------------------------------------------
+  // STATE & HOOKS: Konteks Global Autentikasi & Dompet Aktif
+  // --------------------------------------------------------------------------
   const { token, user } = useAuth();
   const { activeWallet } = useWallet();
 
+  // --------------------------------------------------------------------------
+  // STATE: Pemilihan Tahun Kalender & Penampung Data Matriks
+  // --------------------------------------------------------------------------
   const currentCalendarYear = new Date().getFullYear();
+  /** Tahun buku iuran yang dipilih untuk ditampilkan (default: tahun berjalan) */
   const [selectedYear, setSelectedYear] = useState<number>(currentCalendarYear);
+  /** Payload lengkap matriks data iuran (periode, anggota, ringkasan statistik) */
   const [data, setData] = useState<DuesBoardResult | null>(null);
+  /** Status pemuatan data dari server */
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  /** Pesan kesalahan jika query API gagal */
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Filter & Search
+  // --------------------------------------------------------------------------
+  // STATE: Filter Pencarian Nama Warga & Status Pelunasan
+  // --------------------------------------------------------------------------
+  /** Kata kunci pencarian nama atau email warga */
   const [searchQuery, setSearchQuery] = useState<string>('');
+  /** Filter status baris: SEMUA, HANYA YANG MENUNGGAK, atau LUNAS 100% */
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'UNPAID_ONLY' | 'FULLY_PAID'>('ALL');
 
-  // Copy notification toast
+  // --------------------------------------------------------------------------
+  // STATE: Notifikasi Visual Salin Teks Penagihan WhatsApp
+  // --------------------------------------------------------------------------
   const [copiedReminder, setCopiedReminder] = useState<boolean>(false);
 
-  // Record/Pay modal with prefilled member & period
+  // --------------------------------------------------------------------------
+  // STATE: Modal Pencatatan Setoran dengan Prefill Anggota & Periode
+  // --------------------------------------------------------------------------
   const [recordModalOpen, setRecordModalOpen] = useState<boolean>(false);
   const [prefillUserId, setPrefillUserId] = useState<string | undefined>(undefined);
   const [prefillPeriods, setPrefillPeriods] = useState<string[] | undefined>(undefined);
 
-  // Manage dues config modal (Admin / Pengelola)
+  // --------------------------------------------------------------------------
+  // STATE: Modal Konfigurasi Skema Iuran (Khusus Admin / Pengelola)
+  // --------------------------------------------------------------------------
   const [duesConfigOpen, setDuesConfigOpen] = useState<boolean>(false);
 
-  // Selected cell detail modal
+  // --------------------------------------------------------------------------
+  // STATE: Modal Detail Sel Matriks (Informasi Pembayaran Per Bulan Tertentu)
+  // --------------------------------------------------------------------------
   const [selectedCell, setSelectedCell] = useState<{
     memberName: string;
     periodLabel: string;
@@ -60,12 +97,18 @@ export const DuesBoardPage: React.FC = () => {
     receiptAttachmentId: string | null;
   } | null>(null);
 
-  // Selected transaction for detail & verification modal
+  // --------------------------------------------------------------------------
+  // STATE: Modal Inspeksi & Verifikasi Transaksi Kas
+  // --------------------------------------------------------------------------
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
+  /** Cek hak akses apakah pengguna adalah pengurus berwenang (Admin/Pengelola) */
   const isManagerOrAdmin =
     activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
 
+  // --------------------------------------------------------------------------
+  // QUERY & DATA FETCHING: Pengambilan Matriks Iuran dari API Backend
+  // --------------------------------------------------------------------------
   const fetchDuesBoard = useCallback(async () => {
     if (!token || !activeWallet) return;
     setIsLoading(true);
@@ -90,10 +133,16 @@ export const DuesBoardPage: React.FC = () => {
     }
   }, [token, activeWallet, selectedYear]);
 
+  // --------------------------------------------------------------------------
+  // EFEK SAMPING: Panggil Ulang Data Ketika Dompet atau Tahun Berubah
+  // --------------------------------------------------------------------------
   useEffect(() => {
     fetchDuesBoard();
   }, [fetchDuesBoard]);
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Salin Teks Draf Pesan Pengingat WhatsApp ke Clipboard
+  // --------------------------------------------------------------------------
   const handleCopyReminder = () => {
     if (!data?.summary?.whatsappReminderText) return;
     navigator.clipboard.writeText(data.summary.whatsappReminderText);
@@ -101,6 +150,9 @@ export const DuesBoardPage: React.FC = () => {
     setTimeout(() => setCopiedReminder(false), 2500);
   };
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Buka Langsung Aplikasi WhatsApp dengan Pesan Terformat
+  // --------------------------------------------------------------------------
   const handleSendWhatsApp = () => {
     if (!data?.summary?.whatsappReminderText) return;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(
@@ -109,7 +161,9 @@ export const DuesBoardPage: React.FC = () => {
     window.open(url, '_blank');
   };
 
-  // Filter members based on search and status
+  // --------------------------------------------------------------------------
+  // MEMOISASI FILTER: Penyaringan Anggota Berdasarkan Pencarian & Status Tunggakan
+  // --------------------------------------------------------------------------
   const filteredMembers = useMemo(() => {
     if (!data) return [];
     return data.members.filter((m) => {
@@ -128,6 +182,9 @@ export const DuesBoardPage: React.FC = () => {
     });
   }, [data, searchQuery, statusFilter]);
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Kondisi Saat Belum Ada Dompet Kas yang Dipilih
+  // --------------------------------------------------------------------------
   if (!activeWallet) {
     return (
       <div className="p-8 text-center text-slate-500">
@@ -136,9 +193,12 @@ export const DuesBoardPage: React.FC = () => {
     );
   }
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Tampilan Utama Papan Iuran
+  // --------------------------------------------------------------------------
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-200">
-      {/* Header & Main Actions */}
+      {/* 1. Header Judul & Bilah Tombol Aksi Utama */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm">
         <div>
           <div className="flex items-center gap-2.5">
@@ -161,9 +221,9 @@ export const DuesBoardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Bilah Tombol Aksi Navigasi & Operasional */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Year Navigator (only for MONTHLY dues) */}
+          {/* Tombol Pemilih Tahun (Hanya aktif untuk skema iuran bulanan berkala) */}
           {data?.summary?.duesType !== 'TARGET_INSTALLMENTS' && (
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-2xl p-1 border border-slate-300 dark:border-slate-600">
               <button
@@ -188,7 +248,7 @@ export const DuesBoardPage: React.FC = () => {
             </div>
           )}
 
-          {/* Manage Dues Config Button (Admin & Pengelola) */}
+          {/* Tombol Atur Kebijakan Iuran (Admin & Pengelola) */}
           {isManagerOrAdmin && (
             <button
               type="button"
@@ -201,7 +261,7 @@ export const DuesBoardPage: React.FC = () => {
             </button>
           )}
 
-          {/* Refresh */}
+          {/* Tombol Refresh / Muat Ulang Data */}
           <button
             type="button"
             onClick={fetchDuesBoard}
@@ -212,7 +272,7 @@ export const DuesBoardPage: React.FC = () => {
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
 
-          {/* Copy Reminder for WhatsApp */}
+          {/* Tombol Salin Teks Rekap untuk Pesan Singkat */}
           <button
             type="button"
             onClick={handleCopyReminder}
@@ -231,7 +291,7 @@ export const DuesBoardPage: React.FC = () => {
             )}
           </button>
 
-          {/* Broadcast WhatsApp */}
+          {/* Tombol Broadcast Pesan Pengingat WhatsApp */}
           <button
             type="button"
             onClick={handleSendWhatsApp}
@@ -241,7 +301,7 @@ export const DuesBoardPage: React.FC = () => {
             <span>Kirim Pengingat WA</span>
           </button>
 
-          {/* Pay / Report Dues Modal */}
+          {/* Tombol Catat / Lapor Setoran Iuran Baru */}
           <button
             type="button"
             onClick={() => {
@@ -257,6 +317,7 @@ export const DuesBoardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* 2. Banner Indikator Kesalahan Sistem */}
       {errorMsg && (
         <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center gap-3 text-xs text-rose-700 dark:text-rose-300">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -264,10 +325,10 @@ export const DuesBoardPage: React.FC = () => {
         </div>
       )}
 
-      {/* KPI Summary Cards */}
+      {/* 3. Kartu Statistik Utama KPI Iuran Komunitas */}
       {data?.summary && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Kepatuhan Iuran */}
+          {/* Kartu 1: Persentase Kepatuhan Pembayaran */}
           <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-3">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span>Tingkat Kepatuhan</span>
@@ -279,7 +340,7 @@ export const DuesBoardPage: React.FC = () => {
               </span>
               <span className="text-xs text-slate-500">lunas tepat waktu</span>
             </div>
-            {/* Progress bar */}
+            {/* Indikator Bilah Progres */}
             <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
               <div
                 className="bg-gradient-to-r from-emerald-500 to-teal-400 h-2.5 rounded-full transition-all duration-500"
@@ -288,7 +349,7 @@ export const DuesBoardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Card 2: Total Kas Terkumpul */}
+          {/* Kartu 2: Akumulasi Kas Iuran Terkumpul */}
           <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span>Total Kas Terkumpul</span>
@@ -306,7 +367,7 @@ export const DuesBoardPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Card 3: Menunggu Verifikasi */}
+          {/* Kartu 3: Nominal Menunggu Verifikasi Bendahara */}
           <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span>Menunggu Verifikasi</span>
@@ -320,7 +381,7 @@ export const DuesBoardPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Card 4: Warga Belum Melunasi */}
+          {/* Kartu 4: Status Jumlah Anggota Lunas vs Menunggak */}
           <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span>Status Anggota</span>
@@ -341,7 +402,7 @@ export const DuesBoardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Transparency Note */}
+      {/* 4. Banner Catatan Transparansi Komunitas */}
       <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-700 flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
         <div className="flex items-center gap-2">
           <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -362,8 +423,9 @@ export const DuesBoardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search & Filter Toolbar */}
+      {/* 5. Bar Pencarian & Tombol Filter Status Kepatuhan */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        {/* Kolom Pencarian Anggota */}
         <div className="relative w-full sm:w-72">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -375,6 +437,7 @@ export const DuesBoardPage: React.FC = () => {
           />
         </div>
 
+        {/* Pilihan Filter Kepatuhan Baris */}
         <div className="flex items-center gap-1.5 self-start sm:self-auto text-xs">
           <button
             type="button"
@@ -412,23 +475,27 @@ export const DuesBoardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Matrix Table */}
+      {/* 6. Tabel Matriks Papan Iuran (Grid Periode Kolom & Baris Warga) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold">
+                {/* Kolom Tetap (Sticky) Nama Anggota */}
                 <th className="py-3.5 px-4 sticky left-0 z-20 bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur-sm min-w-[180px] shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
                   Anggota Kas
                 </th>
+                {/* Kolom Periode Iuran (Bulan 1 s/d 12 atau Termin N) */}
                 {data?.periods.map((p) => (
                   <th key={p.key} className="py-3.5 px-2 text-center min-w-[56px]">
                     <span title={p.label}>{p.shortLabel}</span>
                   </th>
                 ))}
+                {/* Kolom Total Pembayaran Berhasil */}
                 <th className="py-3.5 px-4 text-right min-w-[120px]">
                   Total Masuk
                 </th>
+                {/* Kolom Status Akhir Anggota */}
                 <th className="py-3.5 px-4 text-center min-w-[100px]">
                   Status
                 </th>
@@ -454,7 +521,7 @@ export const DuesBoardPage: React.FC = () => {
                         isCurrentUser ? 'bg-emerald-50/20 dark:bg-emerald-950/10' : ''
                       }`}
                     >
-                      {/* Sticky Member Col */}
+                      {/* Sel Anggota (Sticky Column) */}
                       <td className="py-3 px-4 sticky left-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-[10px] flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700">
@@ -476,7 +543,7 @@ export const DuesBoardPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Periodic Matrix Cells */}
+                      {/* Sel Matriks Status per Periode */}
                       {data?.periods.map((p) => {
                         const rec = member.records[p.key];
                         const isPaid = rec && rec.status === 'PAID';
@@ -485,6 +552,7 @@ export const DuesBoardPage: React.FC = () => {
                         return (
                           <td key={p.key} className="py-2.5 px-1.5 text-center">
                             {isPaid ? (
+                              /* Tombol Hijau: Pembayaran Lunas */
                               <button
                                 type="button"
                                 onClick={() =>
@@ -503,6 +571,7 @@ export const DuesBoardPage: React.FC = () => {
                                 <Check className="w-4 h-4 stroke-[2.5]" />
                               </button>
                             ) : isPending ? (
+                              /* Tombol Kuning: Menunggu Verifikasi Bendahara */
                               <button
                                 type="button"
                                 onClick={() => {
@@ -532,6 +601,7 @@ export const DuesBoardPage: React.FC = () => {
                                 <Clock className="w-3.5 h-3.5" />
                               </button>
                             ) : isManagerOrAdmin ? (
+                              /* Tombol Plus Abu-abu: Pengurus Dapat Langsung Mencatat Setoran */
                               <button
                                 type="button"
                                 onClick={() => {
@@ -546,6 +616,7 @@ export const DuesBoardPage: React.FC = () => {
                                 <Plus className="w-3.5 h-3.5 hidden group-hover:block text-emerald-600 dark:text-emerald-400 stroke-[3]" />
                               </button>
                             ) : (
+                              /* Garis Strip Abu-abu: Belum Bayar */
                               <span
                                 className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600 inline-flex items-center justify-center text-xs"
                                 title={`${p.label}: Belum Bayar`}
@@ -557,12 +628,12 @@ export const DuesBoardPage: React.FC = () => {
                         );
                       })}
 
-                      {/* Total Masuk */}
+                      {/* Sel Total Nominal Pembayaran Sukses */}
                       <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-slate-100">
                         Rp {member.totalPaidAmount.toLocaleString('id-ID')}
                       </td>
 
-                      {/* Status / Progress */}
+                      {/* Sel Lencana Status Kepatuhan Anggota */}
                       <td className="py-3 px-4 text-center">
                         {member.isFullyPaid ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
@@ -583,7 +654,7 @@ export const DuesBoardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Selected Cell Modal */}
+      {/* 7. Modal Pop-up Rincian Sel Pembayaran */}
       {selectedCell && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
@@ -641,6 +712,7 @@ export const DuesBoardPage: React.FC = () => {
               )}
             </div>
 
+            {/* Link Bukti Lampiran Transfer Bank jika Ada */}
             {selectedCell.receiptAttachmentId && (
               <a
                 href={`/api/v1/attachments/${selectedCell.receiptAttachmentId}`}
@@ -653,6 +725,7 @@ export const DuesBoardPage: React.FC = () => {
               </a>
             )}
 
+            {/* Tombol Menuju Halaman Verifikasi Transaksi */}
             {selectedCell.transactionId && (
               <button
                 type="button"
@@ -688,7 +761,7 @@ export const DuesBoardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Record / Pay Modal */}
+      {/* 8. Modal Pencatatan Transaksi Setoran Iuran */}
       {recordModalOpen && (
         <RecordTransactionModal
           isOpen={recordModalOpen}
@@ -706,7 +779,7 @@ export const DuesBoardPage: React.FC = () => {
         />
       )}
 
-      {/* Manage Dues Config Modal (Admin & Pengelola) */}
+      {/* 9. Modal Konfigurasi Aturan & Nominal Iuran */}
       {duesConfigOpen && (
         <ManageDuesConfigModal
           isOpen={duesConfigOpen}
@@ -717,7 +790,7 @@ export const DuesBoardPage: React.FC = () => {
         />
       )}
 
-      {/* Transaction Detail & Verification Modal */}
+      {/* 10. Modal Inspeksi & Verifikasi Transaksi Kas Terkait */}
       {selectedTx && (
         <TransactionDetailModal
           transaction={selectedTx}
@@ -731,3 +804,4 @@ export const DuesBoardPage: React.FC = () => {
     </div>
   );
 };
+

@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * TransactionDetailModal.tsx - Modal Rincian Transaksi, FSM, & Kuorum Persetujuan
+ * ============================================================================
+ * Komponen modal terlengkap yang merepresentasikan alur Finite State Machine (FSM)
+ * tata kelola kas bersama di KASBARENG:
+ * 1. Menampilkan rincian nominal, kategori, pembuat, waktu, dan foto bukti transfer.
+ * 2. Visualisasi Kemajuan Kuorum M-of-N: Menghitung persentase suara masuk terhadap
+ *    ambang batas persetujuan yang disyaratkan dompet kas.
+ * 3. Penegakan Aturan Anti-Self Approval: Mencegah pembuat draf pengeluaran menyetujui
+ *    pengeluarannya sendiri secara sepihak.
+ * 4. Alur Verifikasi Pemasukan Warga: Pengurus (Admin/Pengelola) memverifikasi bukti setoran.
+ * 5. Eksekusi Pembayaran Kas (Posting DEBIT Ledger): Input nomor referensi bank untuk
+ *    transaksi yang telah disetujui kuorum hingga berstatus COMPLETED.
+ * 6. Kronologi Audit FSM: Menampilkan riwayat transisi status dan aktor penanggung jawab.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletContext';
@@ -22,10 +39,13 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
+/**
+ * Interface properti TransactionDetailModal
+ */
 interface TransactionDetailModalProps {
-  transaction: Transaction | null;
-  onClose: () => void;
-  onSuccess: () => void;
+  transaction: Transaction | null;     // Data transaksi awal yang dipilih untuk dilihat
+  onClose: () => void;                  // Callback fungsi penutupan modal
+  onSuccess: () => void;                // Callback setelah aksi mutasi status transaksi sukses
 }
 
 export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
@@ -33,24 +53,35 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  // ---------------------------------------------------------------------------
+  // HOOKS & CONTEXT
+  // ---------------------------------------------------------------------------
   const { user, token } = useAuth();
   const { activeWallet } = useWallet();
-  const [transaction, setTransaction] = useState<Transaction | null>(initialTransaction);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
-  // Form states for approval/rejection/payment
+  // ---------------------------------------------------------------------------
+  // STATE MANAGEMENT
+  // ---------------------------------------------------------------------------
+  // Objek transaksi aktif (disinkronkan dengan pembaruan data real-time dari backend)
+  const [transaction, setTransaction] = useState<Transaction | null>(initialTransaction);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false); // Indikator fetch rincian data
+  const [isSubmitting, setIsSubmitting] = useState(false);         // Indikator loading saat submit aksi
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);    // Penampung pesan kesalahan
+  const [successNotice, setSuccessNotice] = useState<string | null>(null); // Penampung notifikasi sukses
+
+  // State untuk form persetujuan / penolakan kuorum
   const [showApprovalForm, setShowApprovalForm] = useState(false);
   const [approvalDecision, setApprovalDecision] = useState<'APPROVE' | 'REJECT'>('APPROVE');
   const [approvalComment, setApprovalComment] = useState('');
 
+  // State untuk form eksekusi pembayaran kas (posting resmi ke ledger)
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentRef, setPaymentRef] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
 
-  // Sync transaction state whenever initialTransaction prop changes
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Sinkronisasi State saat Props initialTransaction Berubah
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     setTransaction(initialTransaction);
     if (!initialTransaction) {
@@ -61,7 +92,10 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
   }, [initialTransaction]);
 
-  // Fetch fresh detailed transaction data on open
+  // ---------------------------------------------------------------------------
+  // EFEK SAMPING: Mengambil Rincian Terkini dari Server saat Modal Terbuka
+  // Memastikan data persetujuan kuorum, lampiran, dan event log selalu up-to-date
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!initialTransaction?.id || !token) return;
 
@@ -87,6 +121,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     };
   }, [initialTransaction?.id, token]);
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Menutup Modal & Reset Seluruh Form Internal
+  // ---------------------------------------------------------------------------
   const handleClose = () => {
     setTransaction(null);
     setErrorMsg(null);
@@ -96,8 +133,10 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     onClose();
   };
 
+  // Jangan render jika tidak ada transaksi yang dipilih
   if (!initialTransaction) return null;
 
+  // Tampilan loading spinner jika data transaksi belum selesai diambil dari server
   if (isLoadingDetails && (!transaction || transaction.amount === undefined || !transaction.type)) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
@@ -115,6 +154,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
   if (!transaction) return null;
 
+  // ---------------------------------------------------------------------------
+  // COMPUTED VARIABLES & STATE FLAGS (Evaluasi Aturan Bisnis)
+  // ---------------------------------------------------------------------------
   const isIncome = transaction.type === 'INCOME';
   const isDraft = transaction.state === 'DRAFT';
   const isPending = transaction.state === 'PENDING_APPROVAL' || transaction.state === 'SUBMITTED';
@@ -122,27 +164,35 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   const isCompleted = transaction.state === 'COMPLETED';
   const isRejected = transaction.state === 'REJECTED';
 
+  // Cek apakah pengguna login adalah pembuat transaksi
   const isCreator = user?.id === transaction.creatorId;
+  
+  // Cek apakah pengguna login memiliki peran pengurus (Admin atau Pengelola)
   const isEligibleRole =
     activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
 
-  // Approvals on current transaction version
+  // Daftar persetujuan yang sah pada versi transaksi saat ini (mencegah replay attack versi lama)
   const currentVersionApprovals = (transaction.approvals || []).filter(
     (a) => a.transactionVersion === transaction.version
   );
   const validApprovals = currentVersionApprovals.filter((a) => a.decision === 'APPROVE');
   const hasUserApproved = currentVersionApprovals.some((a) => a.approverId === user?.id);
 
+  // Ambang batas persetujuan yang disyaratkan oleh kebijakan dompet (M-of-N Quorum)
   const requiredApprovals =
     transaction.wallet?.approvalPolicies?.[0]?.requiredApprovals ||
     activeWallet?.requiredApprovals ||
     2;
 
+  // Persentase capaian kuorum (0 - 100%)
   const quorumPercentage = Math.min(
     100,
     Math.round((validApprovals.length / requiredApprovals) * 100)
   );
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Mengajukan Draf Transaksi ke Kuorum Persetujuan (/submit)
+  // ---------------------------------------------------------------------------
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setErrorMsg(null);
@@ -170,6 +220,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Membatalkan Transaksi Kas (/cancel)
+  // ---------------------------------------------------------------------------
   const handleCancel = async () => {
     if (!confirm('Apakah Anda yakin ingin membatalkan transaksi ini?')) return;
 
@@ -199,6 +252,10 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Memproses Persetujuan / Penolakan Kuorum (/approvals)
+  // Dilindungi oleh aturan Anti-Self Approval pada server backend
+  // ---------------------------------------------------------------------------
   const handleProcessApproval = async () => {
     setIsSubmitting(true);
     setErrorMsg(null);
@@ -229,7 +286,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       setShowApprovalForm(false);
       onSuccess();
 
-      // Refresh detail
+      // Refresh data rincian transaksi setelah keputusan dicatat
       const refreshed = await fetch(`/api/v1/transactions/${transaction.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json());
@@ -241,6 +298,10 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Eksekusi Pembayaran Kas (/pay)
+  // Memposting entri DEBIT ke buku kas ganda dan merilis saldo cadangan
+  // ---------------------------------------------------------------------------
   const handleExecutePayment = async () => {
     setIsSubmitting(true);
     setErrorMsg(null);
@@ -267,7 +328,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       setShowPaymentForm(false);
       onSuccess();
 
-      // Refresh detail
+      // Refresh data transaksi
       const refreshed = await fetch(`/api/v1/transactions/${transaction.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json());
@@ -279,6 +340,10 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Verifikasi Laporan Setoran Iuran Warga (/verify-income)
+  // Pengurus memvalidasi mutasi rekening atau struk transfer warga
+  // ---------------------------------------------------------------------------
   const handleVerifyIncome = async (decision: 'APPROVE' | 'REJECT') => {
     let reason: string | undefined = undefined;
     if (decision === 'REJECT') {
@@ -316,6 +381,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HELPER: Render Lencana Status FSM (State Badge)
+  // ---------------------------------------------------------------------------
   const getStateBadge = (state: TransactionState) => {
     switch (state) {
       case 'DRAFT':
@@ -390,6 +458,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI MODAL
+  // ---------------------------------------------------------------------------
   return (
     <div
       onClick={handleClose}
@@ -399,7 +470,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto cursor-default"
       >
-        {/* Header */}
+        {/* HEADER MODAL */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -423,7 +494,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </button>
         </div>
 
-        {/* Alerts & Notifications */}
+        {/* NOTIFIKASI ERROR & SUKSES */}
         {errorMsg && (
           <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -438,7 +509,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         )}
 
-        {/* Nominal & Status Hero */}
+        {/* HERO KARTU NOMINAL & LENCANA STATUS */}
         <div
           className={`p-5 rounded-2xl border flex items-center justify-between ${
             isIncome
@@ -462,7 +533,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           <div>{getStateBadge(transaction.state)}</div>
         </div>
 
-        {/* Receipt Attachment Card */}
+        {/* KARTU LAMPIRAN STRUK / BUKTI TRANSFER */}
         {transaction.receiptAttachmentId && (
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -489,7 +560,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         )}
 
-        {/* M-of-N Quorum Progress Card (For EXPENSE) */}
+        {/* KARTU KEMAJUAN KUORUM M-OF-N (Khusus Transaksi Pengeluaran Kas) */}
         {!isIncome && !isDraft && !isRejected && (
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 space-y-3">
             <div className="flex items-center justify-between">
@@ -502,7 +573,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               </span>
             </div>
 
-            {/* Progress bar */}
+            {/* Bilah Kemajuan Suara Kuorum */}
             <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all duration-300 rounded-full ${
@@ -514,7 +585,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               />
             </div>
 
-            {/* Approvers who have signed */}
+            {/* Daftar Pengurus yang Telah Menandatangani Persetujuan */}
             {validApprovals.length > 0 && (
               <div className="pt-1">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">
@@ -534,7 +605,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               </div>
             )}
 
-            {/* Anti-Self Approval Notice */}
+            {/* Peringatan Penegakan Aturan Anti-Self Approval */}
             {isPending && isCreator && (
               <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
                 <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
@@ -546,7 +617,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         )}
 
-        {/* Payment Verification Card (When COMPLETED or APPROVED) */}
+        {/* KARTU CATATAN EKSEKUSI PEMBAYARAN KAS */}
         {(isCompleted || isApproved) && transaction.paymentRecords && transaction.paymentRecords.length > 0 && (
           <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-700/80 space-y-1.5 text-xs">
             <div className="flex items-center gap-1.5 font-semibold text-emerald-800 dark:text-emerald-300">
@@ -559,7 +630,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         )}
 
-        {/* Approval Form (Modal inline) */}
+        {/* FORM INLINE: Persetujuan / Penolakan Pengeluaran Kas */}
         {showApprovalForm && (
           <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 space-y-3 animate-in fade-in">
             <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -602,7 +673,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         )}
 
-        {/* Payment Form (Modal inline) */}
+        {/* FORM INLINE: Eksekusi Pembayaran Kas (Posting DEBIT ke Ledger) */}
         {showPaymentForm && (
           <div className="p-4 rounded-2xl bg-sky-50/70 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-700/80 space-y-3 animate-in fade-in">
             <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -649,7 +720,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         )}
 
-        {/* Key Attributes */}
+        {/* RINCIAN ATRIBUT UTAMA TRANSAKSI */}
         <div className="space-y-3 text-xs">
           <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400">Kategori</span>
@@ -689,7 +760,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Audit Timeline / Events */}
+        {/* KRONOLOGI AUDIT FSM (Event Log Rantai Perubahan Status) */}
         {transaction.events && transaction.events.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
@@ -724,7 +795,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         )}
 
-        {/* Action Buttons Bar */}
+        {/* BILAH TOMBOL AKSI DINAMIS SESUAI STATUS TRANSAKSI & ROLE */}
         <div className="pt-3 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 dark:border-slate-700">
           <button
             type="button"
@@ -734,7 +805,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             Tutup
           </button>
 
-          {/* DRAFT: Ajukan or Batalkan */}
+          {/* AKSI STATUS DRAFT: Ajukan atau Batalkan */}
           {isDraft && (
             <>
               <button
@@ -758,20 +829,23 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </>
           )}
 
-          {/* PENDING APPROVAL: Setujui & Tolak for eligible non-creator approvers */}
+          {/* AKSI STATUS PENDING APPROVAL: Setujui & Tolak (Dengan Anti-Self Approval Guard) */}
           {isPending && !isIncome && isEligibleRole && !showApprovalForm && (
             <>
               {isCreator ? (
+                /* Guard Anti-Self Approval: Pembuat draf dilarang menyetujui pengeluarannya sendiri */
                 <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-medium">
                   <Lock className="w-3.5 h-3.5" />
                   Anti-Self Approval (Menunggu Pengelola Lain)
                 </span>
               ) : hasUserApproved ? (
+                /* User sudah memberikan suara persetujuan */
                 <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Anda Sudah Menyetujui
                 </span>
               ) : (
+                /* Pengurus yang sah dan belum memberikan suara */
                 <>
                   <button
                     type="button"
@@ -800,7 +874,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </>
           )}
 
-          {/* APPROVED: Eksekusi Pembayaran Kas */}
+          {/* AKSI STATUS APPROVED: Eksekusi Pembayaran Kas ke Penerima */}
           {isApproved && isEligibleRole && !showPaymentForm && (
             <button
               type="button"
@@ -812,7 +886,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </button>
           )}
 
-          {/* INCOME SUBMITTED: Verifikasi Laporan Pemasukan Warga (Single Manager) */}
+          {/* AKSI STATUS INCOME SUBMITTED: Verifikasi Laporan Setoran Warga */}
           {isIncome && transaction.state === 'SUBMITTED' && (
             <>
               {isEligibleRole ? (

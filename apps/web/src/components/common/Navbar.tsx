@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * Navbar.tsx - Komponen Navigasi Utama Bagian Atas (Header Bar)
+ * ============================================================================
+ * Komponen ini merupakan header navigasi aplikasi KASBARENG yang selalu sticky di atas.
+ * Elemen-elemen penting:
+ * 1. Logo Brand & Identitas PWA Kasbareng.
+ * 2. Tombol Pemilih Dompet Aktif (Wallet Switcher Pill) dengan lencana peran (Role Badge).
+ * 3. Tombol Cepat Gabung Dompet via Kode Undangan (khusus tampilan desktop).
+ * 4. Pengubah Mode Gelap/Terang (Theme Toggle).
+ * 5. Dropdown Profil Pengguna (Akses ke Modal Fitur Algoritma, Buat Dompet, dan Logout).
+ */
+
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletContext';
@@ -16,11 +29,15 @@ import {
   Cpu,
 } from 'lucide-react';
 
+/**
+ * Properti komponen Navbar:
+ * Menerima callback fungsi untuk membuka berbagai modal operasional.
+ */
 interface NavbarProps {
-  onOpenCreateWallet: () => void;
-  onOpenJoinWallet?: () => void;
-  onOpenWalletModal: () => void;
-  onOpenAlgorithmModal?: () => void;
+  onOpenCreateWallet: () => void;       // Callback membuka modal buat dompet baru
+  onOpenJoinWallet?: () => void;        // Callback membuka modal gabung via kode
+  onOpenWalletModal: () => void;        // Callback membuka modal switcher daftar dompet
+  onOpenAlgorithmModal?: () => void;   // Callback membuka modal showcase algoritma & aturan sistem
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -29,14 +46,24 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenWalletModal,
   onOpenAlgorithmModal,
 }) => {
+  // ---------------------------------------------------------------------------
+  // HOOKS & CONTEXT
+  // ---------------------------------------------------------------------------
   const { user, logout } = useAuth();
   const { activeWallet } = useWallet();
   const { theme, toggleTheme } = useTheme();
+
+  // State lokal untuk mengontrol visibilitas dropdown menu profil
   const [profileOpen, setProfileOpen] = useState(false);
 
+  // ---------------------------------------------------------------------------
+  // HELPER: Render Lencana Hak Akses / Peran (Role Badge)
+  // Menampilkan badge warna-warni sesuai tingkat otoritas pengguna pada dompet aktif
+  // ---------------------------------------------------------------------------
   const getRoleBadge = (role?: string) => {
     switch (role) {
       case 'ADMIN':
+        // Role ADMIN: Otoritas penuh atas pengaturan kuorum dan dompet kas
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -44,6 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         );
       case 'PENGELOLA':
+        // Role PENGELOLA: Hak persetujuan kuorum transaksi dan pencatatan kas
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/20">
             <UserCheck className="w-3.5 h-3.5" />
@@ -51,6 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         );
       default:
+        // Role WARGA: Anggota biasa (read-only audit, verifikasi kas, bayar iuran)
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20">
             <Users className="w-3.5 h-3.5" />
@@ -60,10 +89,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI: Header Navbar Sticky
+  // ---------------------------------------------------------------------------
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Left: Brand Logo & Title */}
+        
+        {/* BAGIAN KIRI: Logo Brand, Nama Aplikasi & Tagline */}
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-md shadow-emerald-500/20">
             <WalletIcon className="w-5 h-5" />
@@ -83,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Center: Active Wallet Switcher Pill */}
+        {/* BAGIAN TENGAH: Tombol Pemilih Dompet Aktif (Wallet Switcher) */}
         {user && (
           <div className="flex items-center gap-2">
             <button
@@ -102,6 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform" />
             </button>
 
+            {/* Lencana Peran Pengguna pada Dompet Aktif */}
             {activeWallet && (
               <div className="hidden sm:flex items-center">
                 {getRoleBadge(activeWallet.myRole)}
@@ -110,9 +144,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         )}
 
-        {/* Right: Actions (Theme Toggle, Join/Create, & Profile) */}
+        {/* BAGIAN KANAN: Aksi Cepat, Toggle Tema, dan Menu Profil Pengguna */}
         <div className="flex items-center gap-2">
-          {/* Quick Join Button for Desktop */}
+          
+          {/* Tombol Gabung Kode Cepat (Hanya Desktop) */}
           {user && onOpenJoinWallet && (
             <button
               onClick={onOpenJoinWallet}
@@ -124,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Theme Toggle Button */}
+          {/* Tombol Toggle Tema (Dark Mode / Light Mode) */}
           <button
             onClick={toggleTheme}
             className="hidden md:flex p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -138,9 +173,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* User Profile / Menu */}
+          {/* Menu Dropdown Profil Pengguna */}
           {user && (
             <div className="relative hidden md:block">
+              {/* Trigger Tombol Avatar Profil */}
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-2 p-1 pl-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -153,9 +189,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </button>
 
-              {/* Profile Dropdown */}
+              {/* Panel Menu Dropdown */}
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  {/* Header Dropdown: Identitas Nama & Email */}
                   <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-800">
                     <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                       {user.fullName}
@@ -165,8 +202,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </p>
                   </div>
 
+                  {/* Menu Item: Aksi & Navigasi Cepat */}
                   <div className="py-1">
-                    {/* Fitur Algoritma Menu Item */}
+                    {/* Item Menu: Showcase Fitur Algoritma Kasbareng */}
                     <button
                       onClick={() => {
                         setProfileOpen(false);
@@ -183,6 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </span>
                     </button>
 
+                    {/* Item Menu: Gabung Dompet Kas via Kode */}
                     {onOpenJoinWallet && (
                       <button
                         onClick={() => {
@@ -195,6 +234,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         Gabung Kas Bersama (Kode)
                       </button>
                     )}
+
+                    {/* Item Menu: Buat Dompet Kas Baru */}
                     <button
                       onClick={() => {
                         setProfileOpen(false);
@@ -205,6 +246,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <PlusCircle className="w-4 h-4 text-emerald-500" />
                       Buat Dompet Baru
                     </button>
+
+                    {/* Item Menu: Keluar Sesi Akun (Logout) */}
                     <button
                       onClick={() => {
                         setProfileOpen(false);
@@ -225,3 +268,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+

@@ -1,25 +1,51 @@
+/**
+ * ============================================================================
+ * CreateWalletModal.tsx - Modal Pembuatan Dompet Kas Bersama Baru
+ * ============================================================================
+ * Komponen modal untuk menginisialisasi entitas kas bersama (multi-treasury workspace):
+ * 1. Informasi Dasar: Nama dompet kas dan deskripsi peruntukan dana.
+ * 2. Skema & Tipe Iuran Kas:
+ *    - Rutin Bulanan (MONTHLY): Iuran wajib tiap bulan (misal kas RT/lingkungan).
+ *    - Target Termin (TARGET_INSTALLMENTS): Tabungan dengan jumlah termin terbatas (qurban, liburan).
+ *    - Sukarela (FREEFORM): Tanpa tagihan tetap, sumbangan bebas.
+ * 3. Kode Undangan Komunitas (Gated Access): Opsi kode acak sistem (AUTO) atau
+ *    kode kustom (CUSTOM) dengan pengecekan ketersediaan real-time ke backend.
+ * 4. Syarat Kuorum M-of-N: Menentukan ambang batas persetujuan pengeluaran awal (1, 2, atau 3).
+ * 5. Pembuat dompet otomatis ditetapkan sebagai ADMIN dengan hak veto penuh.
+ */
+
 import React, { useState } from 'react';
 import { useWallet } from '../../context/WalletContext';
 import { ApiResponse, DuesType } from '../../types';
 import { X, ShieldCheck, AlertCircle, KeyRound, Loader2, Sparkles, Dices, Calendar, Layers, HeartHandshake, Banknote, Info } from 'lucide-react';
 
+/**
+ * Interface properti CreateWalletModal
+ */
 interface CreateWalletModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean;                      // Status visibilitas modal
+  onClose: () => void;                  // Callback fungsi penutupan modal
 }
 
 export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, onClose }) => {
+  // ---------------------------------------------------------------------------
+  // CONTEXT
+  // ---------------------------------------------------------------------------
   const { createWallet } = useWallet();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [requiredApprovals, setRequiredApprovals] = useState(2);
 
-  // Dues configuration (Bulanan / Termin / Bebas)
-  const [duesType, setDuesType] = useState<DuesType>('MONTHLY');
-  const [duesAmountStr, setDuesAmountStr] = useState<string>('50000');
-  const [targetInstallmentsCount, setTargetInstallmentsCount] = useState<number>(10);
+  // ---------------------------------------------------------------------------
+  // STATE MANAGEMENT FORM
+  // ---------------------------------------------------------------------------
+  const [name, setName] = useState('');                                   // Nama dompet kas
+  const [description, setDescription] = useState('');                     // Deskripsi peruntukan
+  const [requiredApprovals, setRequiredApprovals] = useState(2);          // Ambang batas kuorum (default 2 suara)
 
-  // Invite code mode: 'AUTO' vs 'CUSTOM'
+  // Konfigurasi Skema Papan Iuran
+  const [duesType, setDuesType] = useState<DuesType>('MONTHLY');          // Pilihan tipe iuran
+  const [duesAmountStr, setDuesAmountStr] = useState<string>('50000');    // Nilai nominal default Rp 50.000
+  const [targetInstallmentsCount, setTargetInstallmentsCount] = useState<number>(10); // Target termin jika bertahap
+
+  // Konfigurasi Kode Undangan Warga (AUTO vs CUSTOM)
   const [codeMode, setCodeMode] = useState<'AUTO' | 'CUSTOM'>('AUTO');
   const [customCode, setCustomCode] = useState('');
   const [checkStatus, setCheckStatus] = useState<{
@@ -28,16 +54,23 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
     message?: string;
   }>({ loading: false });
 
+  // Status proses submit dan penanganan error
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Jika modal ditutup, jangan render apapun ke DOM
   if (!isOpen) return null;
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Input Kode Kustom & Cek Ketersediaan Real-Time (/check-code)
+  // ---------------------------------------------------------------------------
   const handleCustomCodeChange = async (val: string) => {
+    // Normalisasi input: ubah ke kapital dan izinkan huruf, angka, underscore, strip
     const formatted = val.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
     setCustomCode(formatted);
     setErrorMsg(null);
 
+    // Jalankan validasi ke backend jika panjang karakter sudah mencukupi (>= 4)
     if (formatted.length >= 4) {
       setCheckStatus({ loading: true });
       try {
@@ -64,6 +97,9 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // HANDLER: Submit Pembuatan Dompet Kas Baru
+  // ---------------------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -84,10 +120,12 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
+      // Parsing string nominal menjadi nilai numerik murni
       const parsedAmount = duesAmountStr.trim()
         ? parseFloat(duesAmountStr.replace(/[^0-9]/g, ''))
         : undefined;
 
+      // Panggil fungsi createWallet dari WalletContext
       await createWallet(
         name.trim(),
         description.trim() || undefined,
@@ -99,6 +137,8 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
           targetInstallmentsCount: duesType === 'TARGET_INSTALLMENTS' ? targetInstallmentsCount : undefined,
         }
       );
+
+      // Reset state formulir ke kondisi semula
       setName('');
       setDescription('');
       setRequiredApprovals(2);
@@ -115,9 +155,14 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // RENDER UI MODAL
+  // ---------------------------------------------------------------------------
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+        
+        {/* HEADER MODAL */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -135,6 +180,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
           </button>
         </div>
 
+        {/* NOTIFIKASI ERROR VALIDASI */}
         {errorMsg && (
           <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center gap-2 text-xs text-rose-700 dark:text-rose-300">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -142,7 +188,10 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
           </div>
         )}
 
+        {/* FORMULIR INPUT */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* INPUT NAMA DOMPET */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Nama Dompet Kas <span className="text-rose-500">*</span>
@@ -157,6 +206,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
             />
           </div>
 
+          {/* INPUT DESKRIPSI KAS */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Deskripsi / Tujuan Kas (Opsional)
@@ -170,7 +220,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
             />
           </div>
 
-          {/* Dues Configuration (Tipe Iuran Kas) */}
+          {/* KONFIGURASI SKEMA PAPAN IURAN */}
           <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-700/80 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -182,6 +232,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               </span>
             </div>
 
+            {/* Pilihan 3 Skema Iuran */}
             <div className="grid grid-cols-3 gap-1.5 text-xs">
               <button
                 type="button"
@@ -226,7 +277,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               </button>
             </div>
 
-            {/* Catatan Edukasi: Satu Dompet Berlaku Selamanya */}
+            {/* Banner Penjelasan Arsitektur: Dompet Berlaku Selamanya */}
             {duesType === 'MONTHLY' && (
               <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 flex items-start gap-2.5 text-[11px] text-slate-700 dark:text-slate-300 shadow-xs">
                 <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
@@ -236,6 +287,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               </div>
             )}
 
+            {/* Input Jumlah Termin jika Target Termin dipilih */}
             {duesType === 'TARGET_INSTALLMENTS' && (
               <div className="pt-1">
                 <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -253,6 +305,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               </div>
             )}
 
+            {/* Input Nominal Tarif Acuan per Periode */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
                 <span className="flex items-center gap-1">
@@ -282,7 +335,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
             </div>
           </div>
 
-          {/* Private Community Invite Code Section */}
+          {/* BAGIAN KODE UNDANGAN AKSES TERTUTUP (PRIVATE GATED) */}
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 space-y-2.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -291,6 +344,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
               </label>
             </div>
 
+            {/* Pilihan Acak Otomatis vs Kode Kustom */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
@@ -340,6 +394,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
                     </div>
                   )}
                 </div>
+                {/* Indikator Status Ketersediaan Kode */}
                 {checkStatus.available !== undefined && !checkStatus.loading && (
                   <span
                     className={`block text-[11px] font-semibold ${
@@ -353,6 +408,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
             )}
           </div>
 
+          {/* PILIHAN SYARAT KUORUM M-OF-N AWAL */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -379,6 +435,7 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
             </p>
           </div>
 
+          {/* TOMBOL AKSI SUBMIT / BATAL */}
           <div className="pt-2 flex items-center justify-end gap-2">
             <button
               type="button"
@@ -401,3 +458,4 @@ export const CreateWalletModal: React.FC<CreateWalletModalProps> = ({ isOpen, on
     </div>
   );
 };
+

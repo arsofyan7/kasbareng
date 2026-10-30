@@ -1,14 +1,33 @@
+/**
+ * ============================================================================
+ * MODUL DUES: SERVICE REKAPITULASI & STATUS IURAN WARGA (dues.service.ts)
+ * ============================================================================
+ * Service ini menangani logika bisnis pengelolaan iuran kas komunitas:
+ * 1. Pembangkitan periode iuran (bulanan 12 bulan atau cicilan berbasis target termin).
+ * 2. Agregasi matriks kepatuhan iuran (Dues Board grid: siapa sudah bayar, menunggu verifikasi, atau nunggak).
+ * 3. Sinkronisasi status iuran saat transaksi income/setoran dibuat, disetujui (PAID), atau ditolak (dihapus).
+ * 4. Pembuatan template teks pengingat WhatsApp yang siap dibagikan ke grup warga.
+ */
+
 import { prisma } from '../../common/prisma';
 import { DuesType, DuesPaymentStatus, UserStatus, Prisma } from '@prisma/client';
 
+/**
+ * Interface `DuesPeriod`:
+ * Representasi satu kolom periode tagihan dalam papan iuran (contoh: "2026-01" atau "TERMIN-1").
+ */
 export interface DuesPeriod {
-  key: string;       // e.g. "2026-01" or "TERMIN-1"
-  label: string;     // e.g. "Januari 2026" or "Setoran 1"
-  shortLabel: string;// e.g. "Jan" or "T1"
+  key: string;       // Kunci unik periode, contoh: "2026-01" atau "TERMIN-1"
+  label: string;     // Label tampilan panjang, contoh: "Januari 2026" atau "Setoran ke-1"
+  shortLabel: string;// Label ringkas untuk tabel, contoh: "Jan" atau "T1"
   monthNumber?: number;
   year?: number;
 }
 
+/**
+ * Interface `DuesBoardMemberRow`:
+ * Baris data kepatuhan satu orang anggota warga pada papan iuran.
+ */
 export interface DuesBoardMemberRow {
   userId: string;
   fullName: string;
@@ -32,6 +51,10 @@ export interface DuesBoardMemberRow {
   isFullyPaid: boolean;
 }
 
+/**
+ * Interface `DuesBoardSummary`:
+ * Ringkasan statistik dan metrik keuangan papan iuran pada dompet kas.
+ */
 export interface DuesBoardSummary {
   walletId: string;
   walletName: string;
@@ -52,6 +75,10 @@ export interface DuesBoardSummary {
   whatsappReminderText: string;
 }
 
+/**
+ * Interface `DuesBoardResult`:
+ * Payload lengkap papan iuran yang dikembalikan ke antarmuka web/mobile.
+ */
 export interface DuesBoardResult {
   periods: DuesPeriod[];
   members: DuesBoardMemberRow[];
@@ -60,7 +87,18 @@ export interface DuesBoardResult {
 
 export class DuesService {
   /**
-   * Generates periodic keys and display labels.
+   * ============================================================================
+   * METHOD: getPeriodsForWallet
+   * ============================================================================
+   * Fungsi Blok:
+   * Menghasilkan daftar periode pembayaran yang berlaku untuk dompet berdasarkan tipe iuran.
+   * 
+   * Alur Kerja:
+   * 1. Jika tipe `duesType === TARGET_INSTALLMENTS`:
+   *    Buat N elemen termin (contoh: Setoran ke-1 s/d Setoran ke-10) dengan key "TERMIN-X".
+   * 2. Jika tipe `MONTHLY` atau default:
+   *    Buat 12 periode bulan kalender (Januari s/d Desember) untuk tahun yang diminta
+   *    dengan format key "YYYY-MM" (misal: "2026-01").
    */
   static getPeriodsForWallet(
     duesType: DuesType,
@@ -85,7 +123,7 @@ export class DuesService {
       }));
     }
 
-    // Default: MONTHLY (or FREEFORM calendar view)
+    // Default: Bulanan (MONTHLY) atau tampilan kalender sukarela (FREEFORM)
     return monthNames.map((name, i) => {
       const monthStr = String(i + 1).padStart(2, '0');
       return {
@@ -99,7 +137,29 @@ export class DuesService {
   }
 
   /**
-   * Fetches full dues board with members grid and compliance metrics.
+   * ============================================================================
+   * METHOD: getDuesBoard
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengumpulkan data komprehensif seluruh anggota dompet kas, riwayat setoran iuran,
+   * persentase kepatuhan warga, dan menyusun pesan otomatis WhatsApp reminder.
+   * 
+   * Alur Kerja:
+   * 1. Menentukan tahun target (menggunakan parameter `filterYear` atau tahun sistem berjalan).
+   * 2. Query data dompet kas beserta seluruh anggotanya yang berstatus `ACTIVE` dari Prisma ORM.
+   * 3. Jika dompet tidak ditemukan, lemparkan error 404 NOT_FOUND.
+   * 4. Hasilkan daftar periode kolom iuran via `getPeriodsForWallet`.
+   * 5. Query semua rekaman `DuesRecord` untuk dompet dan periode tersebut,
+   *    lengkap dengan lampiran kwitansi transaksi (`receiptAttachmentId`).
+   * 6. Bangun `recordMap` hash map dengan kunci `${userId}:${periodKey}` untuk lookup instan O(1).
+   * 7. Iterasi setiap anggota:
+   *    - Cek status setiap periode (PAID, PENDING, atau UNPAID).
+   *    - Akumulasikan nominal iuran lunas dan tertunda.
+   *    - Catat daftar periode yang belum dilunasi warga tersebut.
+   * 8. Hitung persentase kepatuhan (compliance rate) = (slot terbayar / total slot target) * 100%.
+   * 9. Susun string pesan WhatsApp pengingat iuran yang memuat ringkasan kas, persentase,
+   *    daftar penunggak, dan link undangan bergabung KasBareng.
+   * 10. Kembalikan payload terstruktur `DuesBoardResult`.
    */
   static async getDuesBoard(
     walletId: string,
@@ -131,7 +191,7 @@ export class DuesService {
     const periods = this.getPeriodsForWallet(wallet.duesType, currentYear, installmentsCount);
     const periodKeys = periods.map((p) => p.key);
 
-    // Fetch existing records for these periods in this wallet
+    // Ambil semua rekaman pembayaran iuran yang sudah ada untuk periode yang relevan
     const existingRecords = await prisma.duesRecord.findMany({
       where: {
         walletId,
@@ -144,7 +204,7 @@ export class DuesService {
       },
     });
 
-    // Build lookup by `${userId}:${periodKey}`
+    // Indeks rekaman menggunakan Map dengan key `${userId}:${periodKey}`
     const recordMap = new Map<string, typeof existingRecords[0]>();
     for (const rec of existingRecords) {
       recordMap.set(`${rec.userId}:${rec.periodKey}`, rec);
@@ -154,6 +214,7 @@ export class DuesService {
     let totalPending = 0;
     const unpaidMembers: DuesBoardSummary['unpaidMembers'] = [];
 
+    // Bentuk baris data untuk setiap anggota warga
     const memberRows: DuesBoardMemberRow[] = wallet.members.map((m) => {
       const recordsRow: DuesBoardMemberRow['records'] = {};
       let totalPaidAmount = 0;
@@ -225,7 +286,7 @@ export class DuesService {
     const complianceRatePercent = totalSlots > 0 ? Math.round((totalPaidSlots / totalSlots) * 100) : 0;
     const totalTargetPotential = duesAmountNumber ? totalSlots * duesAmountNumber : 0;
 
-    // Generate neat WhatsApp Reminder text
+    // Susun format pesan WhatsApp pengingat iuran otomatis
     const periodHeader =
       wallet.duesType === DuesType.TARGET_INSTALLMENTS
         ? `Target ${installmentsCount} Termin (${duesAmountNumber ? `Rp ${duesAmountNumber.toLocaleString('id-ID')} / termin` : 'Sukarela'})`
@@ -279,7 +340,18 @@ export class DuesService {
   }
 
   /**
-   * Synchronizes dues payment records for a transaction.
+   * ============================================================================
+   * METHOD: syncTransactionDues
+   * ============================================================================
+   * Fungsi Blok:
+   * Menyinkronkan catatan pembayaran iuran (`DuesRecord`) ketika suatu transaksi pemasukan dibuat
+   * atau diajukan dalam transaksi database Prisma (`tx`).
+   * 
+   * Alur Kerja:
+   * 1. Memeriksa apakah ada `periodKeys` yang dicakup oleh transaksi.
+   * 2. Untuk setiap periode, jalankan operasi `tx.duesRecord.upsert`:
+   *    - Jika rekaman belum ada, buat baru dengan status yang sesuai (biasanya PENDING atau PAID).
+   *    - Jika sudah ada, perbarui `transactionId` dan statusnya.
    */
   static async syncTransactionDues(
     tx: Prisma.TransactionClient,
@@ -322,7 +394,19 @@ export class DuesService {
   }
 
   /**
-   * Updates dues status when a transaction is verified or rejected.
+   * ============================================================================
+   * METHOD: onTransactionStateChanged
+   * ============================================================================
+   * Fungsi Blok:
+   * Memperbarui status rekaman iuran ketika status transaksi pemasukan berubah
+   * (misalnya disetujui / diverifikasi oleh pengurus, atau ditolak).
+   * 
+   * Alur Kerja:
+   * 1. Jika `decision === 'APPROVE'`:
+   *    Perbarui seluruh baris `DuesRecord` yang terafiliasi dengan `transactionId` menjadi `PAID`.
+   * 2. Jika `decision === 'REJECT'`:
+   *    Hapus baris `DuesRecord` terafiliasi (`deleteMany`) agar periode tagihan tersebut
+   *    kembali terbuka dan dapat dibayarkan kembali oleh anggota.
    */
   static async onTransactionStateChanged(
     tx: Prisma.TransactionClient,
@@ -335,10 +419,11 @@ export class DuesService {
         data: { status: DuesPaymentStatus.PAID },
       });
     } else {
-      // On reject, remove the dues records so the periods become available again for payment
+      // Pada penolakan, hapus rekaman iuran agar periode kembali menjadi belum bayar
       await tx.duesRecord.deleteMany({
         where: { transactionId },
       });
     }
   }
 }
+

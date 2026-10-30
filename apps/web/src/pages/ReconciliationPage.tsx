@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * HALAMAN REKONSILIASI MUTASI BANK OTOMATIS (RECONCILIATIONPAGE.TSX)
+ * ============================================================================
+ * Komponen ini merupakan antarmuka bagi mesin pencocokan mutasi bank (Reconciliation Engine):
+ * 1. Impor Mutasi Rekening Koran (CSV Parser): Mendukung parsing otomatis multi-bank
+ *    (BCA, Mandiri, BRI, BNI, dan CSV generik) dengan deteksi cerdas kolom & arah dana.
+ * 2. Algoritma Pencocokan 4 Lapisan (4-Tier Matching Algorithm):
+ *    - Lapisan 1: Nomor Referensi Unik (Exact Match).
+ *    - Lapisan 2: Kesesuaian Nominal, Arah Dana (Kredit/Debit), & Rentang Tanggal (±3 Hari).
+ *    - Lapisan 3: Deteksi Ambiguitas & Duplikasi untuk Mencegah Salah Pasang.
+ *    - Lapisan 4: Pencocokan Manual Berbasis Jejak Audit Kriptografis SHA-256.
+ * 3. Pembuatan Transaksi Instan: Mengonversi mutasi bank yang belum tercatat menjadi
+ *    entri pembukuan kas resmi dengan satu klik.
+ * 4. Metrik Akurasi Rekonsiliasi: Memantau persentase ketepatan pencocokan otomatis (Precision Auto-Match).
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
@@ -23,36 +40,68 @@ import {
 } from 'lucide-react';
 
 export const ReconciliationPage: React.FC = () => {
+  // --------------------------------------------------------------------------
+  // STATE & HOOKS: Konteks Autentikasi Pengguna & Dompet Aktif
+  // --------------------------------------------------------------------------
   const { token } = useAuth();
   const { activeWallet } = useWallet();
 
+  // --------------------------------------------------------------------------
+  // STATE: Data Ringkasan Hasil Rekonsiliasi & Indikator Status
+  // --------------------------------------------------------------------------
+  /** Ringkasan hasil pemrosesan rekonsiliasi per batch impor */
   const [summary, setSummary] = useState<ReconciliationSummary | null>(null);
+  /** Status pemuatan data dari server */
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  /** Pesan error validasi atau kegagalan jaringan */
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  /** Filter tab tampilan: SEMUA, COCOK, PERLU DITINJAU, BANK BELUM DICATAT, KAS TANPA BANK */
   const [activeTab, setActiveTab] = useState<'ALL' | 'MATCHED' | 'AMBIGUOUS' | 'UNMATCHED_BANK' | 'UNMATCHED_INTERNAL'>('ALL');
+  /** Kata kunci pencarian mutasi (deskripsi, nominal, atau nomor referensi) */
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // CSV Import State
+  // --------------------------------------------------------------------------
+  // STATE: Panel Impor Berkas Rekening Koran (CSV Import)
+  // --------------------------------------------------------------------------
+  /** Kontrol buka/tutup accordion panel input teks CSV */
   const [showImportCard, setShowImportCard] = useState<boolean>(false);
+  /** Teks mentah CSV yang ditempelkan pengguna */
   const [csvText, setCsvText] = useState<string>('');
+  /** Status proses pengunggahan dan pencocokan otomatis */
   const [isImporting, setIsImporting] = useState<boolean>(false);
+  /** Pesan keberhasilan impor dan jumlah baris tercocokkan */
   const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
 
-  // Manual Match Modal State
+  // --------------------------------------------------------------------------
+  // STATE: Modal Pencocokan Manual (Manual Match Modal)
+  // --------------------------------------------------------------------------
+  /** Item baris mutasi bank yang sedang dipilih untuk dipasangkan secara manual */
   const [selectedBankItem, setSelectedBankItem] = useState<BankStatementItem | null>(null);
+  /** ID transaksi kas internal yang dipilih sebagai pasangan mutasi */
   const [selectedTxId, setSelectedTxId] = useState<string>('');
+  /** Alasan justifikasi manual match (wajib diisi untuk audit trail) */
   const [manualMatchReason, setManualMatchReason] = useState<string>('');
+  /** Status proses submit pasangan manual */
   const [isSubmittingMatch, setIsSubmittingMatch] = useState<boolean>(false);
 
-  // Create Transaction From Mutation Modal State
+  // --------------------------------------------------------------------------
+  // STATE: Modal Pembuatan Transaksi Baru dari Mutasi Bank
+  // --------------------------------------------------------------------------
+  /** Item baris mutasi bank yang belum tercatat di kas dan akan dibuatkan transaksinya */
   const [createTxBankItem, setCreateTxBankItem] = useState<BankStatementItem | null>(null);
+  /** Kategori pos transaksi yang akan dibuat */
   const [newTxCategory, setNewTxCategory] = useState<string>('');
+  /** Catatan rincian operasional transaksi baru */
   const [newTxNotes, setNewTxNotes] = useState<string>('');
+  /** Status proses penyimpanan transaksi baru */
   const [isCreatingTx, setIsCreatingTx] = useState<boolean>(false);
 
+  /** Cek hak otorisasi peran pengurus (Admin atau Pengelola) */
   const isManagerOrAdmin = activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
 
-  // Fetch summary
+  // --------------------------------------------------------------------------
+  // QUERY & DATA FETCHING: Pengambilan Laporan Ringkasan Rekonsiliasi Bank
+  // --------------------------------------------------------------------------
   const fetchSummary = useCallback(async () => {
     if (!token || !activeWallet) return;
     setIsLoading(true);
@@ -73,11 +122,16 @@ export const ReconciliationPage: React.FC = () => {
     }
   }, [token, activeWallet]);
 
+  // --------------------------------------------------------------------------
+  // EFEK SAMPING: Sinkronisasi Data Saat Komponen Dimuat
+  // --------------------------------------------------------------------------
   useEffect(() => {
     fetchSummary();
   }, [fetchSummary]);
 
-  // Handle CSV Import
+  // --------------------------------------------------------------------------
+  // AKSI USER: Pengunggahan & Parsing Berkas CSV Mutasi Bank
+  // --------------------------------------------------------------------------
   const handleImportCsv = async () => {
     if (!token || !activeWallet || !csvText.trim()) return;
     setIsImporting(true);
@@ -111,7 +165,9 @@ export const ReconciliationPage: React.FC = () => {
     }
   };
 
-  // Sample CSV Templates for instant demonstration
+  // --------------------------------------------------------------------------
+  // HELPER TEMPLATE: Contoh Muatan Sampel Format CSV Mutasi BCA
+  // --------------------------------------------------------------------------
   const loadBcaSample = () => {
     const today = new Date().toISOString().split('T')[0];
     const sample = `Tanggal,Keterangan,Cabang,Jumlah,Tipe,Saldo
@@ -122,6 +178,9 @@ ${today},TRANSFER DARI HAMBA ALLAH 998811,0123,"50.000,00",CR,"1.250.000,00"`;
     setCsvText(sample);
   };
 
+  // --------------------------------------------------------------------------
+  // HELPER TEMPLATE: Contoh Muatan Sampel Format CSV Mutasi Mandiri
+  // --------------------------------------------------------------------------
   const loadMandiriSample = () => {
     const today = new Date().toISOString().split('T')[0];
     const sample = `Tanggal Transaksi,No Referensi,Keterangan,Debet,Kredit,Saldo
@@ -131,7 +190,10 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
     setCsvText(sample);
   };
 
-  // Handle Manual Match Submit
+  // --------------------------------------------------------------------------
+  // AKSI USER: Simpan Pencocokan Manual Mutasi Bank dengan Transaksi Internal
+  // Menyimpan alasan ke rantai hash SHA-256 untuk pemenuhan kepatuhan audit
+  // --------------------------------------------------------------------------
   const handleManualMatchSubmit = async () => {
     if (!token || !activeWallet || !selectedBankItem || !selectedTxId || !manualMatchReason.trim()) return;
     setIsSubmittingMatch(true);
@@ -165,7 +227,9 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
     }
   };
 
-  // Handle Create Transaction Submit
+  // --------------------------------------------------------------------------
+  // AKSI USER: Konversi Mutasi Bank Langsung Menjadi Transaksi Kas Resmi
+  // --------------------------------------------------------------------------
   const handleCreateTxSubmit = async () => {
     if (!token || !activeWallet || !createTxBankItem || !newTxCategory.trim()) return;
     setIsCreatingTx(true);
@@ -199,14 +263,16 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
     }
   };
 
-  // Filter bank statements based on tab and search
+  // --------------------------------------------------------------------------
+  // LOGIKA FILTERING: Penyaringan Baris Mutasi Berdasarkan Tab & Input Cari
+  // --------------------------------------------------------------------------
   const filteredBankStatements = (summary?.bankStatements || []).filter((b) => {
-    // Tab filter
+    // Filter status tab
     if (activeTab === 'MATCHED' && b.matchStatus !== 'MATCHED') return false;
     if (activeTab === 'AMBIGUOUS' && b.matchStatus !== 'AMBIGUOUS' && b.matchStatus !== 'DUPLICATE_POTENTIAL') return false;
     if (activeTab === 'UNMATCHED_BANK' && b.matchStatus !== 'UNMATCHED') return false;
 
-    // Search query
+    // Filter teks pencarian bebas
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchDesc = b.description.toLowerCase().includes(q);
@@ -218,6 +284,9 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
     return true;
   });
 
+  // --------------------------------------------------------------------------
+  // HELPER FORMAT: Lencana Indikator Visual Status Rekonsiliasi
+  // --------------------------------------------------------------------------
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'MATCHED':
@@ -251,6 +320,9 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
     }
   };
 
+  // --------------------------------------------------------------------------
+  // HELPER FORMAT: Lencana Aturan Algoritma yang Berhasil Memasangkan Transaksi
+  // --------------------------------------------------------------------------
   const getRuleBadge = (rule: string) => {
     switch (rule) {
       case 'EXACT_REFERENCE':
@@ -266,9 +338,12 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
     }
   };
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Tampilan Halaman Rekonsiliasi Bank
+  // --------------------------------------------------------------------------
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Top Header */}
+      {/* 1. Bar Atas: Judul & Tombol Pemicu Impor CSV */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -285,6 +360,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Tombol Muat Ulang Data */}
           <button
             onClick={fetchSummary}
             disabled={isLoading}
@@ -294,6 +370,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
 
+          {/* Tombol Buka/Tutup Accordion Impor CSV */}
           {isManagerOrAdmin && (
             <button
               onClick={() => setShowImportCard(!showImportCard)}
@@ -306,7 +383,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
       </div>
 
-      {/* Notifications */}
+      {/* 2. Banner Notifikasi Status (Error & Sukses) */}
       {errorMsg && (
         <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -331,7 +408,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
       )}
 
-      {/* CSV Import Panel (Accordion / Toggle) */}
+      {/* 3. Panel Formulir Tempel Berkas CSV Mutasi Bank */}
       {showImportCard && isManagerOrAdmin && (
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-800 shadow-md space-y-4 animate-in slide-in-from-top-3 duration-200">
           <div className="flex items-center justify-between">
@@ -341,6 +418,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                 Impor Mutasi Rekening Bank (CSV)
               </h3>
             </div>
+            {/* Tombol Contoh CSV Bank Nasional */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -365,6 +443,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
             Format yang didukung otomatis: <strong>BCA</strong>, <strong>Mandiri</strong>, <strong>BRI</strong>, <strong>BNI</strong>, atau <strong>Standar KasBareng</strong>. Sistem otomatis mendeteksi header, pemisah desimal, nomor referensi, serta arah kredit/debit.
           </p>
 
+          {/* Area Input Teks CSV */}
           <textarea
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
@@ -392,9 +471,9 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
       )}
 
-      {/* Key Metrics Bar */}
+      {/* 4. Kartu Indikator Metrik Kunci Hasil Rekonsiliasi */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {/* Metric 1: Precision Match Rate */}
+        {/* Metrik 1: Persentase Akurasi Pencocokan Otomatis */}
         <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-md shadow-indigo-600/10 col-span-2 md:col-span-1">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-indigo-100">
             Akurasi Match
@@ -407,7 +486,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
           </div>
         </div>
 
-        {/* Metric 2: Cocok (Matched) */}
+        {/* Metrik 2: Jumlah Mutasi Cocok Pasti (Matched) */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Cocok</span>
@@ -421,7 +500,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
           </div>
         </div>
 
-        {/* Metric 3: Ambiguitas (Perlu Ditinjau) */}
+        {/* Metrik 3: Ambiguitas & Duplikasi (Perlu Peninjauan Pengurus) */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Perlu Ditinjau</span>
@@ -435,7 +514,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
           </div>
         </div>
 
-        {/* Metric 4: Mutasi Bank Belum Dicatat */}
+        {/* Metrik 4: Mutasi Bank yang Belum Tercatat di Kas */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Bank Tanpa Kas</span>
@@ -449,7 +528,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
           </div>
         </div>
 
-        {/* Metric 5: Kas Belum Masuk Rekening */}
+        {/* Metrik 5: Transaksi Kas Internal yang Belum Muncul di Bank */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold uppercase tracking-wider">Kas Tanpa Bank</span>
@@ -464,11 +543,11 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
       </div>
 
-      {/* Main Tabs and Content Feed */}
+      {/* 5. Wadah Utama Tab Navigasi & Feed Daftar Mutasi */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm space-y-4">
-        {/* Navigation Tabs and Search */}
+        {/* Bilah Tab Kategori Status Mutasi & Input Pencarian */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
-          {/* Tab Pills */}
+          {/* Tombol Tab Pilihan Status */}
           <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold">
             <button
               onClick={() => setActiveTab('ALL')}
@@ -522,7 +601,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
             </button>
           </div>
 
-          {/* Search bar */}
+          {/* Kolom Pencarian Kata Kunci */}
           <div className="relative w-full md:w-64">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -535,7 +614,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
           </div>
         </div>
 
-        {/* Tab 5: Unmatched Internal Transactions */}
+        {/* Tab 5: Transaksi Kas Internal yang Belum Memiliki Pasangan Mutasi Bank */}
         {activeTab === 'UNMATCHED_INTERNAL' ? (
           <div>
             {(summary?.unmatchedInternalTransactions || []).length === 0 ? (
@@ -580,7 +659,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
             )}
           </div>
         ) : (
-          /* Bank Statement List */
+          /* Daftar Baris Mutasi Rekening Koran Bank */
           <div>
             {isLoading ? (
               <div className="text-center py-12 text-xs text-slate-400 animate-pulse">
@@ -610,7 +689,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                   return (
                     <div key={b.id} className="py-4 space-y-2.5">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        {/* Left: Mutation Info */}
+                        {/* Informasi Mutasi Bank */}
                         <div className="flex items-start gap-3">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
                             isCredit
@@ -640,7 +719,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                           </div>
                         </div>
 
-                        {/* Right: Amount & Status */}
+                        {/* Nominal & Status Pencocokan */}
                         <div className="text-right space-y-1">
                           <div className={`font-extrabold text-sm ${
                             isCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
@@ -655,7 +734,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                         </div>
                       </div>
 
-                      {/* Matched Transaction Card */}
+                      {/* Kartu Transaksi Kas yang Berhasil Tercocokkan */}
                       {b.matchStatus === 'MATCHED' && b.transaction && (
                         <div className="ml-12 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
@@ -672,7 +751,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                         </div>
                       )}
 
-                      {/* Ambiguous Candidates Alert & Action */}
+                      {/* Peringatan Kandidat Ambiguitas & Tombol Tindakan Manual */}
                       {(b.matchStatus === 'AMBIGUOUS' || b.matchStatus === 'DUPLICATE_POTENTIAL') && (
                         <div className="ml-12 p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/80 space-y-2">
                           <div className="flex items-center justify-between">
@@ -702,7 +781,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
                         </div>
                       )}
 
-                      {/* Unmatched Bank Mutation Action */}
+                      {/* Aksi Tambah Transaksi untuk Mutasi yang Belum Ada di Kas */}
                       {b.matchStatus === 'UNMATCHED' && isManagerOrAdmin && (
                         <div className="ml-12 flex items-center justify-between text-xs text-slate-500 pt-1">
                           <span className="text-slate-400">
@@ -729,7 +808,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         )}
       </div>
 
-      {/* Manual Match Modal */}
+      {/* 6. Modal Interaktif Pencocokan Manual (Manual Match Modal) */}
       {selectedBankItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 space-y-4 shadow-2xl border border-slate-300 dark:border-slate-700">
@@ -811,7 +890,7 @@ ${today},,KAS MASUK SPONTAN,,75000.00,255000.00`;
         </div>
       )}
 
-      {/* Create Transaction From Mutation Modal */}
+      {/* 7. Modal Pembuatan Transaksi Baru dari Mutasi Bank */}
       {createTxBankItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800">

@@ -1,7 +1,9 @@
 ﻿# Dependencies
 node_modules/
+scripts/
 .pnp
 .pnp.js
+
 
 # Environment Variables
 .env
@@ -27,6 +29,8 @@ test-results/
 # Editor / OS
 .DS_Store
 Thumbs.db
+*.pptx
+*.docx
 .idea/
 .vscode/*
 !.vscode/settings.json

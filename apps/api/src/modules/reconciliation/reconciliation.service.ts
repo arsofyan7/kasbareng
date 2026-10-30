@@ -1,3 +1,19 @@
+/**
+ * ============================================================================
+ * MODUL REKONSILIASI: SERVICE REKONSILIASI BANK (reconciliation.service.ts)
+ * ============================================================================
+ * Service ini menangani siklus hidup rekonsiliasi antara mutasi rekening bank dan
+ * pembukuan kas internal komunitas KasBareng:
+ * 1. Impor batch mutasi bank CSV dan penyimpanan persisten ke database.
+ * 2. Eksekusi algoritma 3-Pass Deterministic Matching:
+ *    - Pass 1 (Exact Match): Pencocokan presisi nomor referensi bank, nominal, dan arah mutasi.
+ *    - Pass 2 (Date Window & Amount Match): Pencocokan nominal, arah, dan jendela waktu tanggal (toleransi 3 hari).
+ *    - Pass 3 (Fuzzy Description & Amount): Pencocokan deskripsi transfer dan nominal.
+ * 3. Deteksi anomali: Transaksi ambigu (multiple candidate) dan potensi duplikasi referensi bank.
+ * 4. Resolusi pencocokan manual dengan audit logging ke SHA-256 hash chain.
+ * 5. Pembuatan instan transaksi kas dari mutasi bank yang belum tercatat (misal: bunga/biaya admin).
+ */
+
 import crypto from 'crypto';
 import { prisma } from '../../common/prisma';
 import { AppError } from '../../common/errors';
@@ -17,6 +33,10 @@ import {
 import { parseBankStatementCsv, CsvParseResult } from './csv-parser';
 import { AuditService } from '../audit/audit.service';
 
+/**
+ * Interface `ReconciliationSummaryDto`:
+ * DTO ringkasan hasil rekonsiliasi bank untuk presentasi di antarmuka web/mobile.
+ */
 export interface ReconciliationSummaryDto {
   importBatchId?: string;
   totalBankMutations: number;
@@ -69,7 +89,16 @@ export interface ReconciliationSummaryDto {
 
 export class ReconciliationService {
   /**
-   * Helper to verify if user has manager/admin permissions for a wallet.
+   * ============================================================================
+   * HELPER: assertManagerOrAdmin
+   * ============================================================================
+   * Fungsi Blok:
+   * Memvalidasi bahwa pengguna yang melakukan operasi rekonsiliasi memiliki hak akses
+   * tingkat pengurus (ADMIN atau PENGELOLA) pada dompet kas terkait.
+   * 
+   * Alur Kerja:
+   * 1. Query tabel `WalletMember` berdasarkan composite key `walletId_userId`.
+   * 2. Jika bukan anggota atau role bukan ADMIN/PENGELOLA, lemparkan AppError 403 FORBIDDEN.
    */
   private static async assertManagerOrAdmin(walletId: string, actorId: string): Promise<void> {
     const membership = await prisma.walletMember.findUnique({
@@ -91,7 +120,22 @@ export class ReconciliationService {
   }
 
   /**
-   * Imports a bank statement CSV and executes deterministic reconciliation.
+   * ============================================================================
+   * METHOD: importBankStatementCsv
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengimpor file CSV rekening koran bank, menyimpan mutasi secara persisten,
+   * mencatat event audit impor, dan menjalankan algoritma pencocokan rekonsiliasi otomatis.
+   * 
+   * Alur Kerja:
+   * 1. Verifikasi hak akses pengguna (ADMIN / PENGELOLA) via `assertManagerOrAdmin`.
+   * 2. Validasi teks CSV tidak kosong.
+   * 3. Urai string CSV menjadi baris terstruktur via `parseBankStatementCsv`.
+   * 4. Hasilkan batch UUID unik (`importBatchId`).
+   * 5. Simpan seluruh baris mutasi bank ke tabel `BankStatement` dalam transaksi database Prisma.
+   * 6. Rekam event `BANK_STATEMENT_IMPORTED` ke rantai audit SHA-256 via `AuditService.recordAuditEvent`.
+   * 7. Eksekusi algoritma rekonsiliasi deterministik via `executeReconciliation`.
+   * 8. Ambil ringkasan statistik rekonsiliasi dan kembalikan ke pemanggil.
    */
   static async importBankStatementCsv(
     walletId: string,
@@ -109,7 +153,7 @@ export class ReconciliationService {
       throw new AppError('VALIDATION_ERROR', 'Isi berkas CSV tidak boleh kosong.', 400);
     }
 
-    // 1. Parse CSV deterministically
+    // 1. Parsing isi CSV secara deterministik
     const parseResult = parseBankStatementCsv(csvContent);
     if (parseResult.totalRowsParsed === 0) {
       throw new AppError('VALIDATION_ERROR', 'Tidak ada baris mutasi valid yang dapat diproses dari CSV.', 400);
@@ -117,7 +161,7 @@ export class ReconciliationService {
 
     const importBatchId = crypto.randomUUID();
 
-    // 2. Insert bank statements into database in transaction
+    // 2. Simpan rekaman mutasi rekening bank ke database dalam transaksi atomic
     const createdStatements = await prisma.$transaction(async (tx) => {
       const records = [];
       for (const row of parseResult.rows) {
@@ -138,7 +182,7 @@ export class ReconciliationService {
       return records;
     });
 
-    // 3. Record Audit Log for CSV import
+    // 3. Catat audit log event atas pengunggahan berkas CSV mutasi bank
     await AuditService.recordAuditEvent(prisma, {
       walletId,
       actorId,
@@ -152,10 +196,10 @@ export class ReconciliationService {
       },
     });
 
-    // 4. Run deterministic reconciliation against current internal transactions
+    // 4. Jalankan algoritma rekonsiliasi deterministik terhadap transaksi internal saat ini
     await this.executeReconciliation(walletId, importBatchId);
 
-    // 5. Fetch and return summary
+    // 5. Muat dan kembalikan ringkasan rekonsiliasi
     const summary = await this.getReconciliationSummary(walletId, importBatchId);
 
     return {
@@ -166,10 +210,23 @@ export class ReconciliationService {
   }
 
   /**
-   * Executes deterministic 3-pass reconciliation for bank statements in a wallet.
+   * ============================================================================
+   * METHOD: executeReconciliation
+   * ============================================================================
+   * Fungsi Blok:
+   * Menjalankan algoritma murni pencocokan deterministik 3-pass antara mutasi bank
+   * yang ada di database dengan transaksi kas internal yang sudah diajukan/disetujui.
+   * 
+   * Alur Kerja:
+   * 1. Ambil mutasi bank untuk dompet dan batch impor tertentu.
+   * 2. Ambil transaksi kas internal berstatus non-draft (SUBMITTED, PENDING_APPROVAL, APPROVED, COMPLETED).
+   * 3. Transformasi entitas database ke bentuk data input algoritma murni (`matcherBankMutations` & `matcherInternalRecords`).
+   * 4. Panggil fungsi murni `reconcileStatements` dengan aturan toleransi tanggal 3 hari.
+   * 5. Ekstrak pasangan yang cocok (MATCHED), item ambigu (AMBIGUOUS), dan peringatan duplikasi (DUPLICATE_POTENTIAL).
+   * 6. Buka transaksi database Prisma: Hapus rekaman match sebelumnya lalu simpan status rekonsiliasi terbaru ke tabel `ReconciliationMatch`.
    */
   static async executeReconciliation(walletId: string, importBatchId?: string): Promise<void> {
-    // 1. Fetch bank statements for this wallet / batch
+    // 1. Ambil rekaman mutasi rekening koran bank
     const bankStatements = await prisma.bankStatement.findMany({
       where: {
         walletId,
@@ -180,7 +237,7 @@ export class ReconciliationService {
 
     if (bankStatements.length === 0) return;
 
-    // 2. Fetch internal transactions that are non-draft (SUBMITTED, APPROVED, COMPLETED)
+    // 2. Ambil transaksi kas internal non-draft
     const internalTransactions = await prisma.transaction.findMany({
       where: {
         walletId,
@@ -192,7 +249,7 @@ export class ReconciliationService {
       orderBy: { createdAt: 'asc' },
     });
 
-    // 3. Transform to Matcher algorithm input
+    // 3. Konversi ke struktur input algoritma rekonsiliasi murni
     const matcherBankMutations: BankStatementMutation[] = bankStatements.map((b) => ({
       id: b.id,
       externalReference: b.externalReference,
@@ -203,7 +260,7 @@ export class ReconciliationService {
     }));
 
     const matcherInternalRecords: InternalTransactionRecord[] = internalTransactions.map((t) => {
-      // Extract reference from payment records, notes or short id
+      // Ekstrak referensi dari pembayaran, catatan, atau ID ringkas
       const payRef = t.paymentRecords?.[0]?.paymentReference;
       const notesRefMatch = t.notes?.match(/\b(TRX-[A-Z0-9_\-]+|REF[:\s#]*[A-Z0-9_\-]+)\b/i);
       const reference = payRef || (notesRefMatch ? notesRefMatch[0] : `TX-${t.id.slice(0, 8)}`);
@@ -218,13 +275,13 @@ export class ReconciliationService {
       };
     });
 
-    // 4. Run pure deterministic reconciliation algorithm
+    // 4. Eksekusi algoritma rekonsiliasi deterministik 3-pass murni
     const reconResult = reconcileStatements(matcherBankMutations, matcherInternalRecords, {
       rulesetVersion: 'RECON_RULESET_V1_DETERMINISTIC',
       dateToleranceDays: 3,
     });
 
-    // 5. Store / update reconciliation matches
+    // 5. Susun peta indeks kecocokan
     const matchedBankMap = new Map<string, { txId: string; rule: string }>();
     for (const pair of reconResult.matchedPairs) {
       matchedBankMap.set(pair.bankMutationId, { txId: pair.internalTransactionId, rule: pair.ruleCode });
@@ -242,6 +299,7 @@ export class ReconciliationService {
       }
     }
 
+    // 6. Simpan hasil rekonsiliasi ke tabel ReconciliationMatch via Prisma transaction
     await prisma.$transaction(async (tx) => {
       for (const stmt of bankStatements) {
         let matchStatus: ReconciliationStatus = ReconciliationStatus.UNMATCHED;
@@ -264,7 +322,7 @@ export class ReconciliationService {
           reviewReason = ambiguousBankMap.get(stmt.id)!;
         }
 
-        // Delete existing match record if re-running
+        // Hapus rekaman pencocokan lama jika dilakukan re-run rekonsiliasi
         await tx.reconciliationMatch.deleteMany({
           where: { bankStatementId: stmt.id },
         });
@@ -283,13 +341,26 @@ export class ReconciliationService {
   }
 
   /**
-   * Retrieves reconciliation summary and categorized lists.
+   * ============================================================================
+   * METHOD: getReconciliationSummary
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengumpulkan ringkasan data rekonsiliasi, daftar mutasi bank dengan kandidat transaksi,
+   * dan daftar transaksi internal yang belum memiliki padanan di rekening koran.
+   * 
+   * Alur Kerja:
+   * 1. Query mutasi bank beserta relasi `matches.transaction`.
+   * 2. Query transaksi kas internal non-draft.
+   * 3. Untuk mutasi bank yang belum klop / ambigu, cari transaksi kandidat (nominal dan tipe sama dalam toleransi 5 hari).
+   * 4. Identifikasi transaksi kas internal yang belum dicocokkan dengan mutasi mana pun.
+   * 5. Hitung metrik auto-match precision percentage.
+   * 6. Kembalikan DTO `ReconciliationSummaryDto`.
    */
   static async getReconciliationSummary(
     walletId: string,
     importBatchId?: string
   ): Promise<ReconciliationSummaryDto> {
-    // 1. Fetch bank statements with matches and transaction details
+    // 1. Ambil rekaman mutasi bank beserta relasi pencocokannya
     const statements = await prisma.bankStatement.findMany({
       where: {
         walletId,
@@ -310,7 +381,7 @@ export class ReconciliationService {
       orderBy: { transactionDate: 'desc' },
     });
 
-    // 2. Fetch all non-draft internal transactions for candidate matching & unmatched list
+    // 2. Ambil transaksi internal non-draft untuk pencarian kandidat dan daftar unmatched
     const internalTransactions = await prisma.transaction.findMany({
       where: {
         walletId,
@@ -345,7 +416,7 @@ export class ReconciliationService {
         unmatchedBankCount++;
       }
 
-      // If ambiguous or unmatched, find possible candidates (same amount & direction within 5 days)
+      // Jika ambigu atau belum cocok, cari daftar transaksi kandidat potensial
       let candidateTransactions: any[] | undefined;
       if (matchStatus === ReconciliationStatus.AMBIGUOUS || matchStatus === ReconciliationStatus.UNMATCHED) {
         const bAmt = Number(b.amount);
@@ -395,7 +466,7 @@ export class ReconciliationService {
       };
     });
 
-    // Unmatched internal transactions: non-draft transactions without a matched bank mutation
+    // Transaksi internal kas yang belum memiliki padanan di mutasi bank
     const unmatchedInternalTransactions = internalTransactions
       .filter((t) => !matchedTxIds.has(t.id))
       .map((t) => ({
@@ -428,8 +499,24 @@ export class ReconciliationService {
   }
 
   /**
-   * Manually matches a bank statement item with an internal transaction.
-   * Specification Requirement 4: "Manual match wajib mencatat actor, timestamp, alasan, dan audit event."
+   * ============================================================================
+   * METHOD: resolveManualMatch
+   * ============================================================================
+   * Fungsi Blok:
+   * Menautkan secara manual satu mutasi bank dengan satu transaksi internal kas.
+   * 
+   * Persyaratan Regulasi & Audit Kas:
+   * Sesuai spesifikasi, pencocokan manual wajib mencatat identitas aktor (`reviewedBy`),
+   * timestamp review (`reviewedAt`), penjelasan rinci alasan (`reviewReason`),
+   * serta mencatat peristiwa `RECONCILIATION_MANUAL_MATCHED` ke dalam hash chain audit log.
+   * 
+   * Alur Kerja:
+   * 1. Validasi hak akses Admin/Pengelola.
+   * 2. Validasi panjang teks alasan (minimal 5 karakter).
+   * 3. Periksa keberadaan mutasi bank dan transaksi internal pada dompet kas ini.
+   * 4. Buka transaksi database: Hapus match lama dan simpan entri baru berstatus `MATCHED` (rule: `MANUAL_MATCH`).
+   * 5. Rekam event ke tamper-evident audit hash chain via `AuditService.recordAuditEvent`.
+   * 6. Kembalikan konfirmasi keberhasilan.
    */
   static async resolveManualMatch(
     walletId: string,
@@ -448,7 +535,7 @@ export class ReconciliationService {
       );
     }
 
-    // Verify bank statement exists and belongs to wallet
+    // Pastikan rekaman mutasi bank ada dan milik dompet ini
     const stmt = await prisma.bankStatement.findFirst({
       where: { id: bankStatementId, walletId },
     });
@@ -456,7 +543,7 @@ export class ReconciliationService {
       throw new AppError('NOT_FOUND', 'Mutasi rekening bank tidak ditemukan.', 404);
     }
 
-    // Verify transaction exists and belongs to wallet
+    // Pastikan transaksi kas internal ada dan milik dompet ini
     const tx = await prisma.transaction.findFirst({
       where: { id: transactionId, walletId },
     });
@@ -464,7 +551,7 @@ export class ReconciliationService {
       throw new AppError('NOT_FOUND', 'Transaksi kas internal tidak ditemukan.', 404);
     }
 
-    // Upsert ReconciliationMatch record
+    // Simpan entri pencocokan manual ke database
     const matchRecord = await prisma.$transaction(async (prismaTx) => {
       await prismaTx.reconciliationMatch.deleteMany({
         where: { bankStatementId },
@@ -483,7 +570,7 @@ export class ReconciliationService {
       });
     });
 
-    // Record Audit Log event for manual match
+    // Catat ke rantai audit SHA-256 tamper-evident
     await AuditService.recordAuditEvent(prisma, {
       walletId,
       actorId,
@@ -506,7 +593,24 @@ export class ReconciliationService {
   }
 
   /**
-   * Creates a new KasBareng internal transaction from an unmatched bank mutation.
+   * ============================================================================
+   * METHOD: createTransactionFromBankMutation
+   * ============================================================================
+   * Fungsi Blok:
+   * Mengonversi mutasi bank yang belum tercatat di sistem menjadi transaksi resmi kas internal KasBareng.
+   * Transaksi langsung berstatus `COMPLETED` karena dana sudah nyata berpindah di bank.
+   * 
+   * Alur Kerja:
+   * 1. Validasi hak akses Admin/Pengelola.
+   * 2. Temukan mutasi bank target.
+   * 3. Tentukan arah transaksi: CREDIT bank = INCOME kas; DEBIT bank = EXPENSE kas.
+   * 4. Buka transaksi database atomic:
+   *    a. Buat rekaman `Transaction` berstatus `COMPLETED`.
+   *    b. Buat entri buku besar `LedgerEntry` (CREDIT atau DEBIT) untuk memutakhirkan saldo dompet kas.
+   *    c. Buat rekaman `PaymentRecord` dengan status PAID dan referensi mutasi bank.
+   *    d. Buat tautan `ReconciliationMatch` berstatus `MATCHED` (rule: `CREATED_FROM_BANK_MUTATION`).
+   * 5. Rekam event `TRANSACTION_CREATED_FROM_BANK_MUTATION` ke audit hash chain.
+   * 6. Kembalikan ID transaksi yang baru dibuat beserta pesan sukses.
    */
   static async createTransactionFromBankMutation(
     walletId: string,
@@ -528,7 +632,7 @@ export class ReconciliationService {
     const amount = Number(stmt.amount);
 
     const newTx = await prisma.$transaction(async (tx) => {
-      // 1. Create transaction in COMPLETED state (since money already moved in bank)
+      // 1. Buat transaksi berstatus COMPLETED (karena uang sudah nyata bergerak di rekening bank)
       const transaction = await tx.transaction.create({
         data: {
           walletId,
@@ -542,7 +646,7 @@ export class ReconciliationService {
         },
       });
 
-      // 2. Post official ledger entry
+      // 2. Catat entri resmi ke buku besar (ledger)
       await tx.ledgerEntry.create({
         data: {
           walletId,
@@ -553,7 +657,7 @@ export class ReconciliationService {
         },
       });
 
-      // 3. Create payment record
+      // 3. Catat rekaman pembayaran (PaymentRecord)
       await tx.paymentRecord.create({
         data: {
           transactionId: transaction.id,
@@ -564,7 +668,7 @@ export class ReconciliationService {
         },
       });
 
-      // 4. Link match record as MATCHED
+      // 4. Tautkan rekonsiliasi mutasi bank sebagai MATCHED
       await tx.reconciliationMatch.deleteMany({
         where: { bankStatementId },
       });
@@ -584,7 +688,7 @@ export class ReconciliationService {
       return transaction;
     });
 
-    // 5. Record Audit event
+    // 5. Rekam ke rantai audit SHA-256
     await AuditService.recordAuditEvent(prisma, {
       walletId,
       actorId,
@@ -604,3 +708,4 @@ export class ReconciliationService {
     };
   }
 }
+

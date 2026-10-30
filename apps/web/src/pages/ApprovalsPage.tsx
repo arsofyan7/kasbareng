@@ -1,3 +1,19 @@
+/**
+ * ============================================================================
+ * HALAMAN PERSETUJUAN & VERIFIKASI KAS BERSAMA (APPROVALSPAGE.TSX)
+ * ============================================================================
+ * Komponen ini merupakan pusat tata kelola (governance) dan integritas transaksi:
+ * 1. Verifikasi Laporan Setoran Iuran Masuk: Pengurus memvalidasi foto struk / bukti
+ *    transfer yang diunggah oleh warga sebelum kas resmi dibukukan.
+ * 2. Konsensus Kuorum Persetujuan Pengeluaran (M-of-N): Setiap pengeluaran kas bernilai
+ *    di atas batas kebijakan wajib ditandatangani oleh M pengurus dari N total pengurus.
+ * 3. Aturan Pencegahan Mandiri (Anti-Self Approval): Pembuat transaksi dilarang keras
+ *    menyetujui pengajuan pengeluarannya sendiri guna mencegah konflik kepentingan.
+ * 4. Kunci Konkurensi Optimistik: Pengiriman persetujuan menyertakan `expectedVersion`
+ *    untuk mencegah race conditions dan perubahan data di tengah proses approval.
+ * 5. Tabulasi Alur: Setoran Masuk, Menunggu Kuorum, Disetujui (Siap Bayar), dan Riwayat Final.
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
@@ -24,30 +40,58 @@ import {
 } from 'lucide-react';
 
 export const ApprovalsPage: React.FC = () => {
+  // --------------------------------------------------------------------------
+  // STATE & HOOKS: Konteks Autentikasi Pengguna & Dompet Aktif
+  // --------------------------------------------------------------------------
   const { user, token } = useAuth();
   const { activeWallet } = useWallet();
 
+  // --------------------------------------------------------------------------
+  // STATE: Kontrol Tab Alur Persetujuan & Data Transaksi
+  // --------------------------------------------------------------------------
+  /** Tab aktif: 'incoming' (setoran iuran), 'pending' (kuorum), 'approved' (siap cair), 'history' (riwayat) */
   const [activeTab, setActiveTab] = useState<'incoming' | 'pending' | 'approved' | 'history'>('incoming');
+  /** Daftar transaksi pengeluaran (EXPENSE) berbagai state */
   const [expenseTransactions, setExpenseTransactions] = useState<Transaction[]>([]);
+  /** Daftar setoran iuran anggota yang diajukan (INCOME + SUBMITTED) */
   const [incomingReports, setIncomingReports] = useState<Transaction[]>([]);
+  /** Indikator proses pemuatan asinkron data */
   const [isLoading, setIsLoading] = useState(false);
+  /** Pesan error saat komunikasi dengan backend */
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  /** Kata kunci pencarian cepat pada daftar persetujuan */
   const [searchQuery, setSearchQuery] = useState('');
 
+  // --------------------------------------------------------------------------
+  // STATE: Visibilitas Modal & Interaksi Pengguna
+  // --------------------------------------------------------------------------
+  /** Transaksi yang dipilih untuk ditampilkan rincian audit trail-nya */
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  /** Modal konfigurasi kuorum M-of-N (khusus peran ADMIN) */
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
+  /** URL gambar struk bukti transfer untuk lightbox zoom */
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  /** ID transaksi yang sedang dalam proses submit keputusan (mencegah klik ganda) */
   const [processingTxId, setProcessingTxId] = useState<string | null>(null);
 
+  // --------------------------------------------------------------------------
+  // PERIKSA HAK AKSES PERAN PENGGUNA (ROLE CHECKS)
+  // --------------------------------------------------------------------------
+  /** True jika pengguna adalah Ketua (ADMIN) atau Bendahara (PENGELOLA) */
   const isManagerOrAdmin = activeWallet?.myRole === 'ADMIN' || activeWallet?.myRole === 'PENGELOLA';
+  /** True jika pengguna adalah pemilik tunggal tertinggi dompet (ADMIN) */
   const isAdmin = activeWallet?.myRole === 'ADMIN';
 
+  // --------------------------------------------------------------------------
+  // QUERY & DATA FETCHING: Pengambilan Transaksi Pengeluaran & Setoran Anggota
+  // --------------------------------------------------------------------------
   const fetchTransactions = useCallback(async () => {
     if (!activeWallet || !token) return;
 
     setIsLoading(true);
     setErrorMsg(null);
     try {
+      // Mengambil data pengeluaran dan laporan setoran iuran secara paralel
       const [expenseRes, incomeRes] = await Promise.all([
         fetch(`/api/v1/wallets/${activeWallet.id}/transactions?type=EXPENSE&limit=50`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -73,15 +117,21 @@ export const ApprovalsPage: React.FC = () => {
     }
   }, [activeWallet?.id, token]);
 
+  // --------------------------------------------------------------------------
+  // EFEK SAMPING: Sinkronisasi Data Transaksi Saat Dompet Aktif Berganti
+  // --------------------------------------------------------------------------
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Verifikasi Setoran Iuran Masuk (Terima / Tolak Laporan Warga)
+  // --------------------------------------------------------------------------
   const handleVerifyIncome = async (txId: string, decision: 'APPROVE' | 'REJECT') => {
     let reason: string | undefined = undefined;
     if (decision === 'REJECT') {
       const inputReason = prompt('Masukkan alasan penolakan laporan iuran (misal: Bukti transfer tidak valid/dana belum masuk):');
-      if (inputReason === null) return;
+      if (inputReason === null) return; // Pengguna menekan tombol Batal
       reason = inputReason.trim() || 'Laporan iuran ditolak oleh pengurus kas.';
     }
 
@@ -112,6 +162,10 @@ export const ApprovalsPage: React.FC = () => {
     }
   };
 
+  // --------------------------------------------------------------------------
+  // AKSI USER: Eksekusi Tanda Tangan Persetujuan Kuorum Pengeluaran Kas
+  // Membawa `expectedVersion` guna validasi konkurensi optimistik di sisi backend
+  // --------------------------------------------------------------------------
   const handleProcessExpenseApproval = async (tx: Transaction, decision: 'APPROVE' | 'REJECT') => {
     let comment: string | undefined = undefined;
     if (decision === 'REJECT') {
@@ -148,20 +202,26 @@ export const ApprovalsPage: React.FC = () => {
     }
   };
 
-  // Filtered transactions for Expense
+  // --------------------------------------------------------------------------
+  // MEMOISASI FILTER: Pengelompokan Status Siklus Pengeluaran Kas
+  // --------------------------------------------------------------------------
+  /** Pengeluaran yang sedang dalam proses pemungutan suara kuorum pengurus */
   const pendingTxs = useMemo(
     () => expenseTransactions.filter((t) => t.state === 'PENDING_APPROVAL' || t.state === 'SUBMITTED'),
     [expenseTransactions]
   );
+  /** Pengeluaran yang telah memenuhi syarat kuorum suara dan siap dicairkan bendahara */
   const approvedTxs = useMemo(
     () => expenseTransactions.filter((t) => t.state === 'APPROVED'),
     [expenseTransactions]
   );
+  /** Riwayat transaksi pengeluaran masa lampau yang sudah final dibukukan atau ditolak */
   const historyTxs = useMemo(
     () => expenseTransactions.filter((t) => t.state === 'COMPLETED' || t.state === 'REJECTED' || t.state === 'CANCELLED'),
     [expenseTransactions]
   );
 
+  /** Menentukan daftar transaksi mentah yang sesuai dengan tab yang sedang aktif */
   const rawDisplayedList =
     activeTab === 'incoming'
       ? incomingReports
@@ -171,6 +231,7 @@ export const ApprovalsPage: React.FC = () => {
       ? approvedTxs
       : historyTxs;
 
+  /** Menerapkan pencarian teks bebas (kategori, catatan, nama pelapor, nominal) */
   const displayedList = useMemo(() => {
     if (!searchQuery.trim()) return rawDisplayedList;
     const q = searchQuery.toLowerCase();
@@ -183,8 +244,12 @@ export const ApprovalsPage: React.FC = () => {
     });
   }, [rawDisplayedList, searchQuery]);
 
+  /** Total nominal dana kas yang sedang dibekukan untuk antrean transaksi persetujuan */
   const totalReservedAmount = pendingTxs.reduce((sum, t) => sum + t.amount, 0);
 
+  // --------------------------------------------------------------------------
+  // HELPER FORMAT: Lencana Indikator Visual Status Transaksi
+  // --------------------------------------------------------------------------
   const getStatusBadge = (tx: Transaction) => {
     switch (tx.state) {
       case 'SUBMITTED':
@@ -231,9 +296,12 @@ export const ApprovalsPage: React.FC = () => {
     }
   };
 
+  // --------------------------------------------------------------------------
+  // RENDER UI: Tampilan Halaman Persetujuan & Tata Kelola
+  // --------------------------------------------------------------------------
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header Bar */}
+      {/* 1. Header Halaman & Tombol Konfigurasi Kuorum */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2.5">
@@ -245,6 +313,7 @@ export const ApprovalsPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Tombol Pengaturan Aturan Kuorum Khusus Admin */}
         {isAdmin && (
           <button
             onClick={() => setPolicyModalOpen(true)}
@@ -256,8 +325,9 @@ export const ApprovalsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Info & Metrics Cards */}
+      {/* 2. Kartu Indikator Metrik Tata Kelola Finansial */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        {/* Metrik 1: Jumlah Setoran Warga Menunggu Verifikasi */}
         <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 border border-emerald-300/80 dark:border-emerald-700/80 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-emerald-800 dark:text-emerald-300">
             <span>Setoran Anggota Masuk</span>
@@ -271,6 +341,7 @@ export const ApprovalsPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Metrik 2: Total Dana yang Tertahan dalam Reservasi Kuorum */}
         <div className="p-5 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-300/80 dark:border-amber-700/80 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-amber-800 dark:text-amber-300">
             <span>Dana Dicadangkan (Reservasi)</span>
@@ -284,6 +355,7 @@ export const ApprovalsPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Metrik 3: Aturan Kuorum Aktif & Perlindungan Anti-Self Approval */}
         <div className="p-5 rounded-3xl bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/30 dark:to-indigo-950/20 border border-sky-300/80 dark:border-sky-700/80 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-sky-800 dark:text-sky-300">
             <span>Aturan Kuorum Kas Bersama</span>
@@ -298,9 +370,9 @@ export const ApprovalsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs Filter Bar & Search */}
+      {/* 3. Bilah Pemilih Tab Alur & Kolom Pencarian */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Tabs Filter matching mockup */}
+        {/* Tombol Tab Alur Persetujuan */}
         <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl max-w-xl">
           <button
             onClick={() => {
@@ -359,7 +431,7 @@ export const ApprovalsPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Search Input */}
+        {/* Kolom Pencarian Kata Kunci */}
         <div className="relative w-full md:w-64">
           <input
             type="text"
@@ -380,7 +452,7 @@ export const ApprovalsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Error alert */}
+      {/* 4. Banner Peringatan Kesalahan */}
       {errorMsg && (
         <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300 shadow-xs">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -388,7 +460,7 @@ export const ApprovalsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main Content Area */}
+      {/* 5. Tampilan Konten Utama (Status Loading, Kosong, Tabel, atau Kartu) */}
       {isLoading ? (
         <div className="p-12 text-center text-slate-400 text-xs font-semibold flex flex-col items-center gap-2">
           <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -413,9 +485,9 @@ export const ApprovalsPage: React.FC = () => {
           </p>
         </div>
       ) : activeTab === 'incoming' ? (
-        /* Tab 1: Iuran Warga (Member Income Self-Reports) */
+        /* Tab 1: Verifikasi Laporan Setoran Mandiri Anggota (Member Income) */
         <div className="space-y-4">
-          {/* Desktop Table View */}
+          {/* Tabel Desktop untuk Verifikasi Setoran */}
           <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -521,7 +593,7 @@ export const ApprovalsPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Mobile Card View */}
+          {/* Kartu Seluler Responsif untuk Verifikasi Setoran */}
           <div className="md:hidden space-y-3">
             {displayedList.map((tx) => (
               <div
@@ -620,9 +692,9 @@ export const ApprovalsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* Tabs 2, 3, 4: Pengeluaran (Expense / Quorum M-of-N) */
+        /* Tabs 2, 3, 4: Persetujuan Pengeluaran Kas (Kuorum M-of-N) */
         <div className="space-y-4">
-          {/* Desktop Table View */}
+          {/* Tabel Desktop Persetujuan Pengeluaran */}
           <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -652,7 +724,7 @@ export const ApprovalsPage: React.FC = () => {
                       onClick={() => setSelectedTx(tx)}
                       className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
                     >
-                      {/* Tanggal */}
+                      {/* Tanggal Pengajuan */}
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
                         {new Date(tx.createdAt).toLocaleDateString('id-ID', {
                           day: 'numeric',
@@ -661,7 +733,7 @@ export const ApprovalsPage: React.FC = () => {
                         })}
                       </td>
 
-                      {/* Deskripsi & Pengaju */}
+                      {/* Deskripsi & Profil Pengaju */}
                       <td className="px-6 py-4">
                         <div className="font-semibold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-rose-500" />
@@ -674,14 +746,14 @@ export const ApprovalsPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Jumlah */}
+                      {/* Nominal Pengeluaran */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-extrabold text-sm text-slate-900 dark:text-white">
                           - Rp {tx.amount.toLocaleString('id-ID')}
                         </div>
                       </td>
 
-                      {/* Kuorum M-of-N */}
+                      {/* Status Suara Kuorum M-of-N & Indikator Anti-Self Approval */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         {isPending ? (
                           <div>
@@ -707,12 +779,12 @@ export const ApprovalsPage: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Status */}
+                      {/* Lencana Status Transaksi */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(tx)}
                       </td>
 
-                      {/* Aksi */}
+                      {/* Tombol Keputusan Pengurus (Setujui / Tolak) */}
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                           {isPending && isManagerOrAdmin && !isCreator && (
@@ -753,7 +825,7 @@ export const ApprovalsPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Mobile Card View */}
+          {/* Kartu Seluler Persetujuan Pengeluaran */}
           <div className="md:hidden space-y-3">
             {displayedList.map((tx) => {
               const isCreator = user?.id === tx.creatorId;
@@ -844,7 +916,7 @@ export const ApprovalsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Transaction Detail Modal */}
+      {/* 6. Modal Detail Transaksi & Rantai Peristiwa Audit */}
       {selectedTx && (
         <TransactionDetailModal
           transaction={selectedTx}
@@ -856,7 +928,7 @@ export const ApprovalsPage: React.FC = () => {
         />
       )}
 
-      {/* Approval Policy Config Modal (Admin only) */}
+      {/* 7. Modal Konfigurasi Kebijakan Kuorum M-of-N (Khusus Admin) */}
       {isAdmin && policyModalOpen && (
         <ApprovalPolicyModal
           isOpen={policyModalOpen}
@@ -868,7 +940,7 @@ export const ApprovalsPage: React.FC = () => {
         />
       )}
 
-      {/* Image Lightbox Modal for Receipt Preview */}
+      {/* 8. Lightbox Zoom Pratinjau Foto Bukti Struk Transfer */}
       {previewImageUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in">
           <div className="relative max-w-2xl w-full bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-3">
@@ -898,3 +970,4 @@ export const ApprovalsPage: React.FC = () => {
     </div>
   );
 };
+

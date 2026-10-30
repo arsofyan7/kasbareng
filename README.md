@@ -622,45 +622,67 @@ kasbareng/
 ├── apps/
 │   ├── api/                           # Backend API Service (Express + Prisma)
 │   │   ├── prisma/
-│   │   │   ├── schema.prisma          # Skema database relasional
+│   │   │   ├── schema.prisma          # Skema database relasional (Wallets, Tx, Ledger, Audit, Dues)
 │   │   │   └── seed.ts                # Dataset demo realistis RT 05 Asri
 │   │   └── src/
 │   │       ├── algorithms/            # 6 Algoritma murni terisolasi & deterministik
-│   │       │   ├── canonicalization/  # RFC 8785 JSON canonicalizer
-│   │       │   ├── fsm/               # Finite State Machine validator
-│   │       │   ├── hash-chain/        # SHA-256 linked hash chain
-│   │       │   ├── ledger/            # Kalkulator saldo double-entry
-│   │       │   ├── quorum/            # M-of-N Quorum & Anti-self evaluator
-│   │       │   └── reconciliation/    # 3-Pass bank statement matcher
-│   │       ├── common/                # Utility, error handling, prisma client
-│   │       └── modules/               # API routes & business logic
-│   │           ├── attachments/       # Upload bukti transfer & SHA-256 checksum
-│   │           ├── audit/             # Layanan audit kriptografis & verifikasi
-│   │           ├── auth/              # Registrasi, login, & JWT
-│   │           ├── reconciliation/    # Parser CSV bank & matcher service
-│   │           ├── transactions/      # FSM transaksi & verifikasi iuran warga
-│   │           └── wallets/           # Manajemen dompet, kode akses, kuorum
+│   │       │   ├── canonicalization/  # RFC 8785 JSON canonicalizer & unit tests
+│   │       │   ├── fsm/               # Finite State Machine transition validator & tests
+│   │       │   ├── hash-chain/        # SHA-256 linked hash chain generator & tests
+│   │       │   ├── ledger/            # Kalkulator saldo double-entry & tests
+│   │       │   ├── quorum/            # M-of-N Quorum & Anti-self evaluator & tests
+│   │       │   └── reconciliation/    # 3-Pass bank statement matcher & tests
+│   │       ├── common/                # Utility respon standar, custom errors, Prisma client
+│   │       └── modules/               # API routes, business logic, & integration tests
+│   │           ├── attachments/       # Upload bukti transfer & verifikasi checksum
+│   │           ├── audit/             # Layanan audit kriptografis, verifikasi chain, & tamper drill
+│   │           ├── auth/              # Registrasi, login, JWT token, & middleware RBAC
+│   │           ├── dues/              # Manajemen skema iuran, periode, billing board, & reminder
+│   │           ├── reconciliation/    # Parser CSV bank (BCA, Mandiri, BRI, BNI) & matcher service
+│   │           ├── transactions/      # FSM transaksi kas, setoran warga, & persetujuan belanja
+│   │           └── wallets/           # Manajemen dompet multi-treasury, kode akses, & kuorum
 │   │
 │   └── web/                           # Frontend Web Client (React 18 + Vite PWA)
-│       ├── public/                    # PWA icons & manifest
+│       ├── public/                    # Aset publik & background fintech komunitas
 │       └── src/
+│           ├── assets/                # Gambar ilustrasi visual & aset statis
 │           ├── components/            # Komponen antarmuka & modal interaktif
-│           │   ├── common/            # Navbar, Sidebar, BottomNav, Modals
-│           │   └── layout/            # Layout dashboard responsif
-│           ├── contexts/              # ThemeContext (Dark/Light/System) & AuthContext
+│           │   ├── common/            # Navbar, Sidebar, BottomNav, QuickActionSheet, Modals
+│           │   │   ├── AlgorithmRulesModal.tsx   # Modal edukasi & transparansi aturan algoritma
+│           │   │   ├── ApprovalPolicyModal.tsx   # Modal konfigurasi kuorum & aturan persetujuan
+│           │   │   ├── AuditChainModal.tsx       # Modal visualisasi rantai hash & verifikasi integritas
+│           │   │   ├── ManageDuesConfigModal.tsx # Pengaturan skema & nominal iuran warga
+│           │   │   ├── ManageInviteCodeModal.tsx # Manajemen kode akses komunitas (gated access)
+│           │   │   ├── QuickActionSheet.tsx      # Modal menu aksi cepat ala e-wallet
+│           │   │   ├── RecordTransactionModal.tsx # Formulir catat transaksi / lapor iuran mandiri
+│           │   │   └── TransactionDetailModal.tsx # Modal detail transaksi, vote approval, & bukti
+│           │   └── dashboard/         # Widget modular analitik & monitoring dasbor
+│           │       ├── CashTrendWidget.tsx       # Grafik visual tren arus kas masuk & keluar
+│           │       ├── MemberDonutWidget.tsx     # Komposisi persebaran peran anggota komunitas
+│           │       ├── MiniDuesWidget.tsx        # Ringkasan progres kepatuhan iuran warga
+│           │       └── RecentActivityWidget.tsx  # Feed linimasa mutasi & aktivitas kas terkini
+│           ├── context/               # State global React (AuthContext, WalletContext, ThemeContext)
 │           ├── pages/                 # Halaman utama aplikasi
-│           │   ├── DashboardPage.tsx  # Beranda saldo & feed mutasi
-│           │   ├── DuesBoardPage.tsx  # Papan rekap iuran & matriks multi-periode
-│           │   ├── ApprovalsPage.tsx  # Manajemen persetujuan kuorum & iuran warga
-│           │   ├── ReconciliationPage.tsx # Rekonsiliasi rekening koran bank
-│           │   ├── AiParserPage.tsx   # Simulator parser obrolan grup warga
-│           │   ├── WalletsPage.tsx    # Daftar dompet & gabung kode
-│           │   ├── MembersPage.tsx    # Manajemen warga & peran komunitas
-│           │   ├── ProfilePage.tsx    # Profil, kustomisasi tema, & fitur algoritma
-│           │   └── AuthPage.tsx       # Login/Daftar dengan latar animasi 3D kas
-│           └── types/                 # Definisi tipe TypeScript terpadu
+│           │   ├── DashboardPage.tsx      # Dasbor ikhtisar kas, widget metrik, & feed aktivitas
+│           │   ├── TransactionsPage.tsx   # Pembukuan kas lengkap, filter role, & detail mutasi
+│           │   ├── DuesBoardPage.tsx      # Papan rekap matriks iuran warga & pembayaran borongan
+│           │   ├── ApprovalsPage.tsx      # Antrean persetujuan kuorum belanja & verifikasi setoran
+│           │   ├── ReconciliationPage.tsx # Rekonsiliasi mutasi rekening koran bank otomatis
+│           │   ├── MembersPage.tsx        # Manajemen warga, penugasan peran, & buku anggota
+│           │   ├── WalletsPage.tsx        # Pengelola multi-dompet kas & gabung via kode akses
+│           │   ├── AiParserPage.tsx       # Simulator parser obrolan transaksi berbasis AI
+│           │   ├── ProfilePage.tsx        # Pengaturan akun, preferensi tema, & pusat algoritma
+│           │   └── AuthPage.tsx           # Halaman masuk & pendaftaran akun
+│           └── types/                 # Definisi kontrak TypeScript terpadu (Wallets, Tx, Dues, Roles)
 │
-├── IMPLEMENTATION_STATUS.md           # Catatan pelacakan implementasi per fase
+├── docs/                              # Aset dokumentasi proyek
+│   └── screenshots/                   # Galeri tangkapan layar tampilan desktop & mobile PWA
+├── requirements/                      # Spesifikasi teknis, PRD, FSM, data model, & use cases (14 dokumen)
+├── scripts/                           # Alat bantu otomatisasi & generator presentasi
+│   ├── create_hero_showcase.py        # Generator tangkapan layar showcase desktop + mobile
+│   └── create_kasbareng_deck.py       # Script generator deck presentasi PowerPoint (.pptx)
+├── kasbareng_presentation.pptx        # Slide presentasi visual (pitch deck & tech showcase)
+├── IMPLEMENTATION_STATUS.md           # Catatan pelacakan implementasi & roadmap per fase
 ├── package.json                       # Konfigurasi npm workspaces monorepo
 └── README.md                          # Dokumentasi utama proyek
 ```

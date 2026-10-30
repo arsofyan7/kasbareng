@@ -1,32 +1,70 @@
+/**
+ * ============================================================================
+ * MODUL REKONSILIASI: PARSER REKENING KORAN CSV (csv-parser.ts)
+ * ============================================================================
+ * Modul ini bertanggung jawab mengurai (parsing), membersihkan, dan menormalisasi
+ * berkas CSV mutasi rekening bank dari berbagai perbankan di Indonesia (BCA, Mandiri,
+ * BRI, BNI, serta format generic) menjadi struktur data transaksi yang seragam.
+ * 
+ * Tantangan Format Perbankan Indonesia:
+ * 1. Delimiter CSV berbeda-beda: koma (,), titik koma (;), atau tab (\t).
+ * 2. Pemisah ribuan dan desimal terbalik: 100.000,00 (standar Indo) vs 100,000.00 (standar US).
+ * 3. Format debit/kredit: Ada yang memisahkan ke dua kolom (Debet vs Kredit), ada yang menggabungkan
+ *    ke satu kolom nominal dengan kolom penanda tipe (DB / CR atau D / K), atau angka negatif (-50.000 / (50.000)).
+ * 4. Format tanggal variatif: DD/MM/YYYY, DD-MM-YYYY, atau DD/MM (tanpa tahun seperti e-Statement BCA).
+ */
+
 import crypto from 'crypto';
 
+/**
+ * Interface `ParsedBankStatementRow`:
+ * Baris mutasi rekening bank yang telah dinormalisasi.
+ */
 export interface ParsedBankStatementRow {
-  sourceRowNumber: number;
-  transactionDate: string; // ISO date YYYY-MM-DD
-  externalReference: string | null;
-  amount: number; // Integer Rupiah
-  direction: 'CREDIT' | 'DEBIT';
-  description: string;
-  rawLine: string;
-}
-
-export interface CsvParseResult {
-  checksum: string;
-  totalRowsParsed: number;
-  rows: ParsedBankStatementRow[];
-  detectedBankFormat: 'BCA' | 'MANDIRI' | 'BRI' | 'BNI' | 'GENERIC';
-  warnings: string[];
+  sourceRowNumber: number;   // Nomor baris pada file CSV asli (1-based)
+  transactionDate: string;   // Tanggal transaksi dalam format ISO YYYY-MM-DD
+  externalReference: string | null; // Nomor referensi bank / no resi / no rekening lawan
+  amount: number;            // Nominal mutasi dalam bilangan bulat Rupiah (integer)
+  direction: 'CREDIT' | 'DEBIT'; // CREDIT (pemasukan kas) atau DEBIT (pengeluaran kas)
+  description: string;       // Uraian atau berita transfer bank
+  rawLine: string;           // Teks mentah asli baris CSV untuk auditabilitas
 }
 
 /**
- * Splits a CSV text into lines, handling CRLF and LF.
+ * Interface `CsvParseResult`:
+ * Ringkasan hasil pembacaan berkas CSV bank statement.
+ */
+export interface CsvParseResult {
+  checksum: string;          // SHA-256 hash dari konten teks berkas CSV untuk deteksi duplikasi unggahan
+  totalRowsParsed: number;   // Total baris transaksi valid yang berhasil diekstraksi
+  rows: ParsedBankStatementRow[]; // Daftar baris mutasi hasil normalisasi
+  detectedBankFormat: 'BCA' | 'MANDIRI' | 'BRI' | 'BNI' | 'GENERIC'; // Format bank yang terdeteksi
+  warnings: string[];        // Catatan peringatan jika terdapat ketidaksesuaian format
+}
+
+/**
+ * Helper: splitLines
+ * 
+ * Fungsi Blok:
+ * Memecah string teks panjang CSV menjadi array baris individual,
+ * menangani perbedaan line endings Windows (CRLF `\r\n`) dan Unix/Linux (LF `\n`).
  */
 function splitLines(text: string): string[] {
   return text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
 }
 
 /**
- * Parses a single CSV line into tokens, respecting double quotes.
+ * Helper: parseCsvLine
+ * 
+ * Fungsi Blok:
+ * Tokenizer baris CSV yang mematuhi spesifikasi RFC 4180.
+ * Mendukung field yang dibungkus tanda petik ganda (`"..."`) dan escaped quote (`""`).
+ * 
+ * Alur Kerja:
+ * 1. Iterasi karakter demi karakter.
+ * 2. Toggle status `inQuotes` saat menemukan tanda petik ganda.
+ * 3. Jika karakter adalah delimiter di luar tanda kutip, simpan token ke array dan reset buffer.
+ * 4. Jika di dalam tanda kutip, karakter delimiter diperlakukan sebagai teks biasa.
  */
 function parseCsvLine(line: string, delimiter: string): string[] {
   const tokens: string[] = [];
@@ -39,7 +77,7 @@ function parseCsvLine(line: string, delimiter: string): string[] {
     if (char === '"') {
       if (inQuotes && line[i + 1] === '"') {
         current += '"';
-        i++; // skip escaped quote
+        i++; // lewati quote yang di-escape
       } else {
         inQuotes = !inQuotes;
       }
@@ -55,7 +93,15 @@ function parseCsvLine(line: string, delimiter: string): string[] {
 }
 
 /**
- * Autodetects CSV delimiter: comma, semicolon, or tab.
+ * Helper: detectDelimiter
+ * 
+ * Fungsi Blok:
+ * Mendeteksi pembatas kolom (delimiter) CSV secara heuristik berdasarkan frekuensi kemunculan
+ * pada baris pertama.
+ * 
+ * Alur Kerja:
+ * Menghitung jumlah titik koma (;), koma (,), dan tab (\t).
+ * Memilih karakter dengan kemunculan terbanyak.
  */
 function detectDelimiter(firstLine: string): string {
   const semicolons = (firstLine.match(/;/g) || []).length;
@@ -68,8 +114,19 @@ function detectDelimiter(firstLine: string): string {
 }
 
 /**
- * Normalizes Indonesian and international numeric string representations to integer Rupiah.
- * Handles: "100.000,00", "1,000,000.00", "250000", "(50.000)", "-150000"
+ * Fungsi: normalizeAmount
+ * 
+ * Fungsi Blok:
+ * Mengonversi beragam representasi string nominal uang (Rupiah & format asing)
+ * menjadi nilai integer Rupiah absolut beserta status negatifnya.
+ * 
+ * Kasus yang Ditangani:
+ * - Format Indonesia: "100.000,00" -> 100000
+ * - Format Internasional / US: "1,000,000.50" -> 1000000
+ * - Angka murni: "250000" -> 250000
+ * - Format Akuntansi tanda kurung: "(50.000)" -> isNegative: true, amount: 50000
+ * - Tanda minus: "-150000" -> isNegative: true, amount: 150000
+ * - Prefix mata uang: "Rp 150.000", "IDR 50.000", "RP."
  */
 export function normalizeAmount(raw: string): { amount: number; isNegative: boolean } {
   if (!raw || raw.trim().length === 0) {
@@ -79,7 +136,7 @@ export function normalizeAmount(raw: string): { amount: number; isNegative: bool
   let cleaned = raw.trim();
   let isNegative = false;
 
-  // Handle accounting parentheses: "(50000)" => -50000
+  // Tangani format akuntansi tanda kurung: "(50000)" => -50000
   if (cleaned.startsWith('(') && cleaned.endsWith(')')) {
     isNegative = true;
     cleaned = cleaned.slice(1, -1).trim();
@@ -88,23 +145,23 @@ export function normalizeAmount(raw: string): { amount: number; isNegative: bool
     cleaned = cleaned.slice(1).trim();
   }
 
-  // Strip currency prefixes: "Rp", "IDR", "RP."
+  // Hapus simbol prefix mata uang: "Rp", "IDR", "RP."
   cleaned = cleaned.replace(/^(rp\.?|idr)\s*/i, '').trim();
 
-  // If both '.' and ',' exist, determine which is decimal
+  // Jika kedua tanda '.' dan ',' ada, tentukan mana pemisah desimal
   const lastDot = cleaned.lastIndexOf('.');
   const lastComma = cleaned.lastIndexOf(',');
 
   if (lastDot !== -1 && lastComma !== -1) {
     if (lastComma > lastDot) {
-      // Indonesian format: 1.000.000,50 -> remove dots, replace comma with dot
+      // Format Indonesia: 1.000.000,50 -> hapus titik ribuan, ganti koma desimal ke titik
       cleaned = cleaned.replace(/\./g, '').replace(',', '.');
     } else {
-      // US format: 1,000,000.50 -> remove commas
+      // Format US: 1,000,000.50 -> hapus koma ribuan
       cleaned = cleaned.replace(/,/g, '');
     }
   } else if (lastComma !== -1) {
-    // Only comma exists: check if comma is decimal (e.g. 500,00) or thousand (e.g. 1,000,000)
+    // Hanya ada koma: tentukan apakah koma desimal (misal 500,00) atau ribuan (1,000,000)
     const parts = cleaned.split(',');
     if (parts.length === 2 && parts[1].length <= 2) {
       cleaned = parts[0] + '.' + parts[1];
@@ -112,7 +169,7 @@ export function normalizeAmount(raw: string): { amount: number; isNegative: bool
       cleaned = cleaned.replace(/,/g, '');
     }
   } else if (lastDot !== -1) {
-    // Only dot exists: check if dot is thousand separator (e.g. 100.000 or 1.000.000)
+    // Hanya ada titik: tentukan apakah titik ribuan (100.000 atau 1.000.000)
     const parts = cleaned.split('.');
     if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
       cleaned = cleaned.replace(/\./g, '');
@@ -131,8 +188,16 @@ export function normalizeAmount(raw: string): { amount: number; isNegative: bool
 }
 
 /**
- * Normalizes diverse date formats to ISO YYYY-MM-DD.
- * Handles: "YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "DD/MM", "DD-MMM-YYYY"
+ * Fungsi: normalizeDate
+ * 
+ * Fungsi Blok:
+ * Mengubah beragam variasi format tanggal perbankan menjadi format standar ISO `YYYY-MM-DD`.
+ * 
+ * Format yang Didukung:
+ * - ISO: "YYYY-MM-DD"
+ * - Tanggal Indonesia: "DD/MM/YYYY" atau "DD-MM-YYYY"
+ * - Tanggal ringkas BCA (tanpa tahun): "DD/MM" -> menggunakan fallback tahun berjalan
+ * - Parsing fallback Javascript Date
  */
 export function normalizeDate(raw: string, fallbackYear?: number): string {
   if (!raw) return new Date().toISOString().split('T')[0];
@@ -140,12 +205,12 @@ export function normalizeDate(raw: string, fallbackYear?: number): string {
   const cleaned = raw.trim();
   const currentYear = fallbackYear || new Date().getFullYear();
 
-  // 1. YYYY-MM-DD
+  // 1. Format ISO YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(cleaned)) {
     return cleaned.slice(0, 10);
   }
 
-  // 2. DD/MM/YYYY or DD-MM-YYYY
+  // 2. Format DD/MM/YYYY atau DD-MM-YYYY
   const dmyMatch = cleaned.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   if (dmyMatch) {
     const day = dmyMatch[1].padStart(2, '0');
@@ -154,7 +219,7 @@ export function normalizeDate(raw: string, fallbackYear?: number): string {
     return `${year}-${month}-${day}`;
   }
 
-  // 3. DD/MM or DD-MM (common BCA format)
+  // 3. Format DD/MM atau DD-MM (format umum e-Statement BCA per bulan)
   const dmMatch = cleaned.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
   if (dmMatch) {
     const day = dmMatch[1].padStart(2, '0');
@@ -162,7 +227,7 @@ export function normalizeDate(raw: string, fallbackYear?: number): string {
     return `${currentYear}-${month}-${day}`;
   }
 
-  // 4. Try native Date parse
+  // 4. Fallback ke native JavaScript Date parsing
   const parsed = new Date(cleaned);
   if (!isNaN(parsed.getTime())) {
     return parsed.toISOString().split('T')[0];
@@ -172,7 +237,19 @@ export function normalizeDate(raw: string, fallbackYear?: number): string {
 }
 
 /**
- * Extracts external reference number from explicit token or transaction description.
+ * Fungsi: extractReference
+ * 
+ * Fungsi Blok:
+ * Mengekstrak nomor referensi transaksi, kode invoice, nomor resi bank,
+ * atau nomor rekening pengirim dari kolom eksplisit atau dari teks deskripsi mutasi.
+ * 
+ * Alur Kerja:
+ * 1. Jika kolom referensi eksplisit ada dan tidak kosong, gunakan nilai tersebut (uppercase).
+ * 2. Jika tidak ada, gunakan regex pattern matching pada deskripsi untuk mencari pola:
+ *    - TRX-... (contoh: TRX-20260101-001)
+ *    - REF:... atau REF #...
+ *    - INV/... (contoh: INV/2026/01/99)
+ *    - Nomor rekening 9 - 16 digit transfer bank.
  */
 export function extractReference(explicitRef: string | null, description: string): string | null {
   if (explicitRef && explicitRef.trim().length > 0) {
@@ -181,14 +258,13 @@ export function extractReference(explicitRef: string | null, description: string
 
   if (!description) return null;
 
-  // Patterns common in Indonesian banking:
-  // e.g. "TRX-123456", "REF: 998811", "INV/2026/01", "BCA 12345678"
+  // Pola referensi umum pada perbankan Indonesia
   const patterns = [
     /\b(TRX-[A-Z0-9_\-]+)\b/i,
     /\b(REF[:\s#]*([A-Z0-9_\-]+))\b/i,
     /\b(INV\/[A-Z0-9\/\-]+)\b/i,
     /\b(TRANSFER\s+(?:KE|DARI)\s+([0-9]{8,16}))\b/i,
-    /\b([0-9]{9,16})\b/, // 9-16 digit bank reference or account number
+    /\b([0-9]{9,16})\b/, // 9-16 digit nomor rekening atau nomor referensi bank
   ];
 
   for (const p of patterns) {
@@ -202,7 +278,31 @@ export function extractReference(explicitRef: string | null, description: string
 }
 
 /**
- * Parses bank statement CSV data into normalized rows.
+ * ============================================================================
+ * FUNGSI UTAMA: parseBankStatementCsv
+ * ============================================================================
+ * Fungsi Blok:
+ * Mengurai seluruh berkas CSV mutasi bank, memetakan header kolom secara cerdas (fuzzy mapping),
+ * mengenali template bank, dan menghasilkan baris transaksi ternormalisasi.
+ * 
+ * Alur Kerja:
+ * 1. Hitung SHA-256 fingerprint dari seluruh string CSV untuk audit dan deteksi re-upload file yang sama.
+ * 2. Pisahkan teks menjadi baris-baris data (`splitLines`).
+ * 3. Identifikasi baris header pada 5 baris pertama dengan mencari kata kunci tanggal dan nominal.
+ * 4. Petakan indeks kolom secara dinamis:
+ *    - dateCol: tanggal / date / tgl
+ *    - descCol: keterangan / deskripsi / uraian
+ *    - debitCol & creditCol: debet / kredit / keluar / masuk
+ *    - amountCol & typeCol: jumlah / nominal / tipe CR/DB
+ *    - refCol: no referensi / ref
+ * 5. Klasifikasikan template bank: BCA, Mandiri, BRI, BNI, atau Generic.
+ * 6. Iterasi setiap baris data transaksi:
+ *    - Abaikan baris kosong, komentar `#`, serta baris ringkasan "Saldo Awal / Saldo Akhir".
+ *    - Ekstrak tanggal ISO via `normalizeDate`.
+ *    - Ekstrak referensi via `extractReference`.
+ *    - Tentukan nominal Rupiah dan arah mutasi (`CREDIT` untuk uang masuk, `DEBIT` untuk uang keluar).
+ *    - Masukkan baris valid ke daftar `rows`.
+ * 7. Kembalikan objek `CsvParseResult`.
  */
 export function parseBankStatementCsv(csvText: string): CsvParseResult {
   const checksum = crypto.createHash('sha256').update(csvText, 'utf8').digest('hex');
@@ -219,11 +319,11 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
     };
   }
 
-  // 1. Detect header row & delimiter
+  // 1. Deteksi baris header dan delimiter
   let headerIndex = -1;
   let delimiter = ',';
 
-  // Check top 5 lines for typical header keywords
+  // Periksa 5 baris pertama untuk kata kunci header tipikal
   for (let i = 0; i < Math.min(lines.length, 5); i++) {
     const line = lines[i];
     const testDelim = detectDelimiter(line);
@@ -248,7 +348,7 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
     }
   }
 
-  // Fallback if no explicit header recognized: treat line 0 as header
+  // Fallback jika tidak ditemukan header yang eksplisit: anggap baris pertama sebagai header
   if (headerIndex === -1) {
     headerIndex = 0;
     delimiter = detectDelimiter(lines[0]);
@@ -257,7 +357,7 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
 
   const rawHeaders = parseCsvLine(lines[headerIndex], delimiter).map((h) => h.toLowerCase().trim());
 
-  // 2. Map Column Indexes
+  // 2. Petakan Indeks Kolom
   let dateCol = -1;
   let descCol = -1;
   let amountCol = -1;
@@ -285,7 +385,7 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
     }
   }
 
-  // Identify Bank Format
+  // Identifikasi format perbankan berdasarkan komposisi kolom
   let detectedBankFormat: 'BCA' | 'MANDIRI' | 'BRI' | 'BNI' | 'GENERIC' = 'GENERIC';
   const headerStr = rawHeaders.join(' ');
   if (headerStr.includes('cabang') || (amountCol !== -1 && typeCol !== -1)) {
@@ -295,35 +395,35 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
     else detectedBankFormat = 'MANDIRI';
   }
 
-  // 3. Parse Data Rows
+  // 3. Parsing Baris Data Mutasi
   const rows: ParsedBankStatementRow[] = [];
 
   for (let i = headerIndex + 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line || line.startsWith('#') || line.toLowerCase().includes('saldo awal') || line.toLowerCase().includes('saldo akhir')) {
-      continue; // Skip footer / comments
+      continue; // Lewati catatan kaki / komentar / ringkasan saldo
     }
 
     const tokens = parseCsvLine(line, delimiter);
     if (tokens.length <= 1) continue;
 
-    // Date
+    // Ekstraksi Tanggal
     const rawDate = dateCol !== -1 && tokens[dateCol] ? tokens[dateCol] : '';
     const transactionDate = normalizeDate(rawDate);
 
-    // Description
+    // Ekstraksi Deskripsi
     const description = descCol !== -1 && tokens[descCol] ? tokens[descCol] : 'Mutasi Rekening';
 
-    // External Reference
+    // Ekstraksi Nomor Referensi Eksternal
     const explicitRef = refCol !== -1 && tokens[refCol] ? tokens[refCol] : null;
     const externalReference = extractReference(explicitRef, description);
 
-    // Amount & Direction
+    // Ekstraksi Nominal dan Arah Mutasi (Debet/Kredit)
     let amount = 0;
     let direction: 'CREDIT' | 'DEBIT' = 'CREDIT';
 
     if (debitCol !== -1 && creditCol !== -1) {
-      // Split Debit / Credit column format (Mandiri, BRI)
+      // Format kolom terpisah Debet / Kredit (Mandiri, BRI)
       const debVal = normalizeAmount(tokens[debitCol] || '');
       const credVal = normalizeAmount(tokens[creditCol] || '');
 
@@ -335,7 +435,7 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
         direction = 'DEBIT';
       }
     } else if (amountCol !== -1) {
-      // Single amount column + optional Type column (BCA, BNI, Generic)
+      // Format satu kolom nominal + penanda tipe DB/CR opsional (BCA, BNI, Generic)
       const amtResult = normalizeAmount(tokens[amountCol] || '');
       amount = amtResult.amount;
 
@@ -349,7 +449,7 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
           direction = amtResult.isNegative ? 'DEBIT' : 'CREDIT';
         }
       } else {
-        // Infer from negative or description
+        // Inferensi arah dari nilai minus atau teks deskripsi
         if (amtResult.isNegative) {
           direction = 'DEBIT';
         } else if (/\b(CR)\b/i.test(description)) {
@@ -363,7 +463,7 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
     }
 
     if (amount <= 0) {
-      continue; // Skip zero-value header/footer rows
+      continue; // Abaikan baris bernilai 0
     }
 
     rows.push({
@@ -385,3 +485,4 @@ export function parseBankStatementCsv(csvText: string): CsvParseResult {
     warnings,
   };
 }
+
