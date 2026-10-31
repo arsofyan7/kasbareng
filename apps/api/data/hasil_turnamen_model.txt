@@ -1,0 +1,136 @@
+====================================================================================
+ LAPORAN HASIL TURNAMEN KOMPARASI MODEL MACHINE LEARNING (KASBARENG NLP)
+====================================================================================
+Tanggal Eksekusi : 2026-10-31 16:30:55
+Jumlah Sampel    : 10,000 percakapan kas warga
+Proporsi Label   : INCOME = 5,000 | EXPENSE = 5,000
+Jumlah Kategori  : 9 Kategori Kas Komunitas
+Metode Vektor    : TF-IDF (Unigram + Bigram, Sublinear TF Scaling)
+Rasio Split Data : 80% Training Set (8,000) : 20% Unseen Test Set (2,000)
+Validasi Silang  : 5-Fold Stratified Cross Validation
+====================================================================================
+
+[*] Tahap Ekstraksi Fitur Teks (Feature Engineering)...
+[+] Dimensi Vektor Matriks: 10,000 dokumen x 1,440 fitur n-gram.
+
+====================================================================================
+ BAGIAN 1: TURNAMEN KLASIFIKASI INTENT ARUS KAS (INCOME vs EXPENSE)
+====================================================================================
+
+[*] Melatih dan menguji model: Multinomial Naive Bayes ...
+
+[*] Melatih dan menguji model: Linear Support Vector Machine (LinearSVC) ...
+
+[*] Melatih dan menguji model: Logistic Regression ...
+
+[*] Melatih dan menguji model: Random Forest Classifier ...
+
+[*] Melatih dan menguji model: XGBoost Classifier ...
+
+------------------------------------------------------------------------------------
+ PAPAN PERINGKAT TURNAMEN INTENT (DIURUTKAN DARI ERROR TERENDAH)
+------------------------------------------------------------------------------------
+Rank  Model                                  Accuracy   Error Rate   F1-Score   Latency   
+------------------------------------------------------------------------------------
+#1    Multinomial Naive Bayes [JUARA]        100.00%     0.000%     100.00%    0.001 ms
+#2    Linear Support Vector Machine (Lin     100.00%     0.000%     100.00%    0.000 ms
+#3    Logistic Regression                    100.00%     0.000%     100.00%    0.001 ms
+#4    Random Forest Classifier               100.00%     0.000%     100.00%    0.035 ms
+#5    XGBoost Classifier                     100.00%     0.000%     100.00%    0.004 ms
+------------------------------------------------------------------------------------
+
+
+====================================================================================
+ BAGIAN 2: TURNAMEN KLASIFIKASI KATEGORI SPESIFIK (MULTICLASS 9 KELAS)
+====================================================================================
+
+[*] Melatih model Multiclass: Multinomial Naive Bayes ...
+
+[*] Melatih model Multiclass: Linear Support Vector Machine (LinearSVC) ...
+
+[*] Melatih model Multiclass: Logistic Regression ...
+
+[*] Melatih model Multiclass: Random Forest Classifier ...
+
+[*] Melatih model Multiclass: XGBoost Classifier ...
+
+------------------------------------------------------------------------------------
+ PAPAN PERINGKAT TURNAMEN KATEGORI (DIURUTKAN DARI ERROR TERENDAH)
+------------------------------------------------------------------------------------
+Rank  Model                                  Accuracy   Error Rate   F1-Score   Latency   
+------------------------------------------------------------------------------------
+#1    Multinomial Naive Bayes [JUARA]        100.00%     0.000%     100.00%    0.001 ms
+#2    Linear Support Vector Machine (Lin     100.00%     0.000%     100.00%    0.001 ms
+#3    Logistic Regression                    100.00%     0.000%     100.00%    0.001 ms
+#4    Random Forest Classifier               100.00%     0.000%     100.00%    0.039 ms
+#5    XGBoost Classifier                     100.00%     0.000%     100.00%    0.012 ms
+------------------------------------------------------------------------------------
+
+
+====================================================================================
+ BEDAH MENDALAM MODEL JUARA (CHAMPION IN-DEPTH REPORT)
+====================================================================================
+[*] JUARA TASK 1 (INTENT ARUS KAS)  : Multinomial Naive Bayes
+   • Akurasi Pengujian (Test Set) : 100.00%
+   • Tingkat Error (Error Rate)   : 0.000% (0 kesalahan dari 2,000 data uji)
+   • 5-Fold Cross Validation Mean : 100.00% (± 0.00%)
+   • Kecepatan Inferensi          : 0.0010 ms per percakapan
+   • Confusion Matrix             :
+[[1000    0]
+ [   0 1000]]
+
+   Classification Report:
+              precision    recall  f1-score   support
+
+ EXPENSE (0)     1.0000    1.0000    1.0000      1000
+  INCOME (1)     1.0000    1.0000    1.0000      1000
+
+    accuracy                         1.0000      2000
+   macro avg     1.0000    1.0000    1.0000      2000
+weighted avg     1.0000    1.0000    1.0000      2000
+
+------------------------------------------------------------------------------------
+[*] JUARA TASK 2 (KATEGORI SPESIFIK): Multinomial Naive Bayes
+   • Akurasi Pengujian (Test Set) : 100.00%
+   • Tingkat Error (Error Rate)   : 0.000%
+   • Kecepatan Inferensi          : 0.0012 ms per percakapan
+
+   Classification Report Multiclass:
+                                    precision    recall  f1-score   support
+
+         Bantuan & Santunan Sosial     1.0000    1.0000    1.0000       200
+          Biaya Acara & Perlombaan     1.0000    1.0000    1.0000       200
+              Donasi & Dana Sosial     1.0000    1.0000    1.0000       250
+          Honor & Insentif Petugas     1.0000    1.0000    1.0000       200
+           Iuran / Setoran Bulanan     1.0000    1.0000    1.0000       250
+           Konsumsi & Agenda Rapat     1.0000    1.0000    1.0000       200
+        Operasional & Perlengkapan     1.0000    1.0000    1.0000       200
+Pengembalian Sisa Anggaran Panitia     1.0000    1.0000    1.0000       250
+   Setoran Acara & Kegiatan Khusus     1.0000    1.0000    1.0000       250
+
+                          accuracy                         1.0000      2000
+                         macro avg     1.0000    1.0000    1.0000      2000
+                      weighted avg     1.0000    1.0000    1.0000      2000
+
+====================================================================================
+ KESIMPULAN ANALISIS & REKOMENDASI DEPLOYMENT PERMANEN
+====================================================================================
+
+1. EFISIENSI & AKURASI:
+   Model Linear SVM dan Naive Bayes menunjukkan tingkat error mendekati 0%
+   pada domain percakapan kas tertutup (narrow domain).
+   
+2. LATENSI ULTRA-CEPAT (< 1 milidetik):
+   Waktu inferensi per sampel di bawah 1 ms membuktikan bahwa server mini
+   mampu memproses ribuan pesan per detik tanpa beban komputasi berarti.
+   
+3. REKOMENDASI IMPLEMENTASI:
+   - Untuk performa klasifikasi teks maksimal: Linear SVM adalah champion utama.
+   - Bobot koefisien matriks model (weights & intercept) dapat diekspor ke JSON (~120 KB)
+     sehingga dapat diintegrasikan langsung pada backend API Node.js maupun client-side browser
+     tanpa membutuhkan runtime Python di lingkungan produksi.
+
+====================================================================================
+[OK] File laporan turnamen telah berhasil disimpan ke:
+     D:\Coding\kasbareng\apps\api\data\hasil_turnamen_model.txt
+====================================================================================
