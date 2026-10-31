@@ -533,45 +533,45 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </h2>
           </div>
 
-          {/* Grid 4 kartu statistik — angka besar dengan aksen warna berbeda */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Grid 4 kartu statistik — angka besar proporsional dengan aksen warna berbeda */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
             {/* Stat 1: Jumlah RT */}
-            <div className="group relative p-8 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-emerald-500/40 dark:hover:border-emerald-500/30 transition-all overflow-hidden">
+            <div className="group relative p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-emerald-500/40 dark:hover:border-emerald-500/30 transition-all overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 rounded-l-2xl" />
-              <div className="text-5xl sm:text-6xl font-black text-emerald-600 dark:text-emerald-400 mb-3 leading-none">
+              <div className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 mb-2 sm:mb-3 leading-tight">
                 {curr.stat1Val}
               </div>
-              <div className="font-bold text-slate-800 dark:text-slate-100 mb-1">{curr.stat1Lbl}</div>
+              <div className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base mb-1">{curr.stat1Lbl}</div>
               <div className="text-xs text-slate-400 dark:text-slate-500">{curr.stat1Sub}</div>
             </div>
 
             {/* Stat 2: Estimasi kas komunal */}
-            <div className="group relative p-8 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-cyan-500/40 dark:hover:border-cyan-500/30 transition-all overflow-hidden">
+            <div className="group relative p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-cyan-500/40 dark:hover:border-cyan-500/30 transition-all overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500 rounded-l-2xl" />
-              <div className="text-5xl sm:text-6xl font-black text-cyan-600 dark:text-cyan-400 mb-3 leading-none">
+              <div className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black tracking-tight text-cyan-600 dark:text-cyan-400 mb-2 sm:mb-3 leading-tight">
                 {curr.stat2Val}
               </div>
-              <div className="font-bold text-slate-800 dark:text-slate-100 mb-1">{curr.stat2Lbl}</div>
+              <div className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base mb-1">{curr.stat2Lbl}</div>
               <div className="text-xs text-slate-400 dark:text-slate-500">{curr.stat2Sub}</div>
             </div>
 
             {/* Stat 3: Masih manual */}
-            <div className="group relative p-8 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all overflow-hidden">
+            <div className="group relative p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-l-2xl" />
-              <div className="text-5xl sm:text-6xl font-black text-amber-600 dark:text-amber-400 mb-3 leading-none">
+              <div className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black tracking-tight text-amber-600 dark:text-amber-400 mb-2 sm:mb-3 leading-tight">
                 {curr.stat3Val}
               </div>
-              <div className="font-bold text-slate-800 dark:text-slate-100 mb-1">{curr.stat3Lbl}</div>
+              <div className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base mb-1">{curr.stat3Lbl}</div>
               <div className="text-xs text-slate-400 dark:text-slate-500">{curr.stat3Sub}</div>
             </div>
 
             {/* Stat 4: Anti-edit kriptografis */}
-            <div className="group relative p-8 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-teal-500/40 dark:hover:border-teal-500/30 transition-all overflow-hidden">
+            <div className="group relative p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-teal-500/40 dark:hover:border-teal-500/30 transition-all overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-teal-500 rounded-l-2xl" />
-              <div className="text-5xl sm:text-6xl font-black text-teal-600 dark:text-teal-400 mb-3 leading-none">
+              <div className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black tracking-tight text-teal-600 dark:text-teal-400 mb-2 sm:mb-3 leading-tight">
                 {curr.stat4Val}
               </div>
-              <div className="font-bold text-slate-800 dark:text-slate-100 mb-1">{curr.stat4Lbl}</div>
+              <div className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base mb-1">{curr.stat4Lbl}</div>
               <div className="text-xs text-slate-400 dark:text-slate-500">{curr.stat4Sub}</div>
             </div>
           </div>
