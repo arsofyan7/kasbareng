@@ -380,16 +380,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             {/* Ambient glow lembut di belakang gambar */}
             <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 rounded-3xl blur-2xl pointer-events-none" />
 
-            {/* Frame browser mockup responsif */}
-            <div className="relative rounded-2xl overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-[0_25px_60px_-15px_rgba(16,185,129,0.2)] dark:shadow-[0_25px_60px_-15px_rgba(16,185,129,0.3)] bg-slate-900">
+            {/* Frame browser mockup responsif dengan border berwarna tegas */}
+            <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-[0_25px_60px_-15px_rgba(16,185,129,0.25)] dark:shadow-[0_25px_60px_-15px_rgba(16,185,129,0.35)] bg-slate-900">
               {/* Browser chrome header bar */}
-              <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100/90 dark:bg-[#111a14]/90 border-b border-slate-200/80 dark:border-white/5">
+              <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100/90 dark:bg-[#111a14]/90 border-b border-emerald-500/20 dark:border-emerald-500/30">
                 <div className="flex gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-rose-400/80" />
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
                 </div>
-                <div className="flex-1 mx-3 h-5 rounded bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 flex items-center px-2.5">
+                <div className="flex-1 mx-3 h-5 rounded bg-white/60 dark:bg-white/5 border border-emerald-500/20 dark:border-emerald-500/25 flex items-center px-2.5">
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">kasbareng.app</span>
                 </div>
               </div>
@@ -432,13 +432,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </p>
           </div>
 
-          {/* Grid 2x2 pain point cards — pas dalam viewport */}
+          {/* Grid 2x2 pain point cards — pas dalam viewport dengan border tegas berwarna */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
             {/* Pain 1 */}
-            <div className="group relative p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-rose-400/40 dark:hover:border-rose-500/30 transition-all overflow-hidden shadow-sm">
-              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-rose-500/5 dark:text-rose-500/5 leading-none select-none pointer-events-none">01</div>
+            <div className="group relative p-5 sm:p-6 rounded-2xl border-2 border-rose-500/35 dark:border-rose-500/40 bg-gradient-to-br from-rose-500/[0.04] to-white dark:to-transparent hover:border-rose-500/70 hover:shadow-lg hover:shadow-rose-500/10 transition-all overflow-hidden">
+              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-rose-500/10 dark:text-rose-500/5 leading-none select-none pointer-events-none">01</div>
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mb-3">
                   <Users2 className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">{curr.pain1Title}</h3>
@@ -447,10 +447,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </div>
 
             {/* Pain 2 */}
-            <div className="group relative p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-amber-400/40 dark:hover:border-amber-500/30 transition-all overflow-hidden shadow-sm">
-              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-amber-500/5 dark:text-amber-500/5 leading-none select-none pointer-events-none">02</div>
+            <div className="group relative p-5 sm:p-6 rounded-2xl border-2 border-amber-500/35 dark:border-amber-500/40 bg-gradient-to-br from-amber-500/[0.04] to-white dark:to-transparent hover:border-amber-500/70 hover:shadow-lg hover:shadow-amber-500/10 transition-all overflow-hidden">
+              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-amber-500/10 dark:text-amber-500/5 leading-none select-none pointer-events-none">02</div>
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mb-3">
                   <BadgeAlert className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">{curr.pain2Title}</h3>
@@ -459,10 +459,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </div>
 
             {/* Pain 3 */}
-            <div className="group relative p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-cyan-400/40 dark:hover:border-cyan-500/30 transition-all overflow-hidden shadow-sm">
-              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-cyan-500/5 dark:text-cyan-500/5 leading-none select-none pointer-events-none">03</div>
+            <div className="group relative p-5 sm:p-6 rounded-2xl border-2 border-cyan-500/35 dark:border-cyan-500/40 bg-gradient-to-br from-cyan-500/[0.04] to-white dark:to-transparent hover:border-cyan-500/70 hover:shadow-lg hover:shadow-cyan-500/10 transition-all overflow-hidden">
+              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-cyan-500/10 dark:text-cyan-500/5 leading-none select-none pointer-events-none">03</div>
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center mb-3">
                   <FileText className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">{curr.pain3Title}</h3>
@@ -471,10 +471,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </div>
 
             {/* Pain 4 */}
-            <div className="group relative p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-emerald-400/40 dark:hover:border-emerald-500/30 transition-all overflow-hidden shadow-sm">
-              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-emerald-500/5 dark:text-emerald-500/5 leading-none select-none pointer-events-none">04</div>
+            <div className="group relative p-5 sm:p-6 rounded-2xl border-2 border-emerald-500/35 dark:border-emerald-500/40 bg-gradient-to-br from-emerald-500/[0.04] to-white dark:to-transparent hover:border-emerald-500/70 hover:shadow-lg hover:shadow-emerald-500/10 transition-all overflow-hidden">
+              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-emerald-500/10 dark:text-emerald-500/5 leading-none select-none pointer-events-none">04</div>
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-3">
                   <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">{curr.pain4Title}</h3>
@@ -492,11 +492,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         <div className="max-w-5xl mx-auto">
           {/* Garis pemisah tipis */}
           <div className="flex items-center gap-4 mb-8">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/20 dark:via-emerald-500/30 to-transparent" />
             <span className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 px-2">Dibangun dengan standar tertinggi</span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/20 dark:via-emerald-500/30 to-transparent" />
           </div>
-          {/* Deretan badge teknologi / jaminan */}
+          {/* Deretan badge teknologi / jaminan ber-border berwarna tegas */}
           <div className="flex flex-wrap justify-center gap-3">
             {[
               { icon: <ShieldCheck className="w-3.5 h-3.5" />, label: 'SHA-256 Cryptographic' },
@@ -508,7 +508,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             ].map((b) => (
               <div
                 key={b.label}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-white/3 text-xs font-semibold text-slate-600 dark:text-slate-400"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 border-emerald-500/30 dark:border-emerald-500/40 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] hover:border-emerald-500/70 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all shadow-sm"
               >
                 <span className="text-emerald-600 dark:text-emerald-400">{b.icon}</span>
                 {b.label}
@@ -533,11 +533,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </h2>
           </div>
 
-          {/* Grid 4 kartu statistik — angka besar proporsional dengan aksen warna berbeda */}
+          {/* Grid 4 kartu statistik — angka besar proporsional dengan border tegas berwarna */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
             {/* Stat 1: Jumlah RT */}
-            <div className="group relative p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-emerald-500/40 dark:hover:border-emerald-500/30 transition-all overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 rounded-l-2xl" />
+            <div className="group relative p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-emerald-500/[0.06] via-white to-white dark:from-emerald-500/[0.08] dark:via-transparent dark:to-transparent border-2 border-emerald-500/40 dark:border-emerald-500/50 hover:border-emerald-500/80 transition-all overflow-hidden shadow-sm hover:shadow-lg hover:shadow-emerald-500/10">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 rounded-l-2xl" />
               <div className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 mb-2 sm:mb-3 leading-tight">
                 {curr.stat1Val}
               </div>
@@ -546,8 +546,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </div>
 
             {/* Stat 2: Estimasi kas komunal */}
-            <div className="group relative p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-cyan-500/40 dark:hover:border-cyan-500/30 transition-all overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500 rounded-l-2xl" />
+            <div className="group relative p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-cyan-500/[0.06] via-white to-white dark:from-cyan-500/[0.08] dark:via-transparent dark:to-transparent border-2 border-cyan-500/40 dark:border-cyan-500/50 hover:border-cyan-500/80 transition-all overflow-hidden shadow-sm hover:shadow-lg hover:shadow-cyan-500/10">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-500 rounded-l-2xl" />
               <div className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black tracking-tight text-cyan-600 dark:text-cyan-400 mb-2 sm:mb-3 leading-tight">
                 {curr.stat2Val}
               </div>
@@ -556,8 +556,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </div>
 
             {/* Stat 3: Masih manual */}
-            <div className="group relative p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-l-2xl" />
+            <div className="group relative p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-amber-500/[0.06] via-white to-white dark:from-amber-500/[0.08] dark:via-transparent dark:to-transparent border-2 border-amber-500/40 dark:border-amber-500/50 hover:border-amber-500/80 transition-all overflow-hidden shadow-sm hover:shadow-lg hover:shadow-amber-500/10">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500 rounded-l-2xl" />
               <div className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black tracking-tight text-amber-600 dark:text-amber-400 mb-2 sm:mb-3 leading-tight">
                 {curr.stat3Val}
               </div>
@@ -566,8 +566,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </div>
 
             {/* Stat 4: Anti-edit kriptografis */}
-            <div className="group relative p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-white/3 border border-slate-200 dark:border-white/8 hover:border-teal-500/40 dark:hover:border-teal-500/30 transition-all overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-teal-500 rounded-l-2xl" />
+            <div className="group relative p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-teal-500/[0.06] via-white to-white dark:from-teal-500/[0.08] dark:via-transparent dark:to-transparent border-2 border-teal-500/40 dark:border-teal-500/50 hover:border-teal-500/80 transition-all overflow-hidden shadow-sm hover:shadow-lg hover:shadow-teal-500/10">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-teal-500 rounded-l-2xl" />
               <div className="text-3xl sm:text-4xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black tracking-tight text-teal-600 dark:text-teal-400 mb-2 sm:mb-3 leading-tight">
                 {curr.stat4Val}
               </div>
@@ -622,18 +622,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
               </ul>
             </div>
 
-            {/* Mock UI Card Kuorum */}
-            <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0d1a11] shadow-2xl shadow-emerald-950/5 dark:shadow-emerald-950/40 overflow-hidden">
+            {/* Mock UI Card Kuorum dengan border tegas berwarna */}
+            <div className="rounded-2xl border-2 border-emerald-500/40 dark:border-emerald-500/50 bg-white dark:bg-[#0d1a11] shadow-2xl shadow-emerald-950/10 dark:shadow-emerald-950/40 overflow-hidden">
               {/* Header card */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/80 dark:bg-white/[0.02]">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Pengajuan Belanja Kas RT</span>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/[0.04] dark:bg-white/[0.02]">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Pengajuan Belanja Kas RT</span>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                   Menunggu Kuorum (1/2)
                 </span>
               </div>
               <div className="p-5 space-y-4">
                 {/* Item belanja */}
-                <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-emerald-500/20 dark:border-emerald-500/30">
                   <div>
                     <div className="font-bold text-slate-900 dark:text-white text-sm">Pembelian Lampu Pos Ronda</div>
                     <div className="text-xs text-slate-400 mt-0.5">Diajukan: Ibu Ratna (Bendahara)</div>
@@ -646,16 +646,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                     <span>Progres Suara</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">50% Terpenuhi</span>
                   </div>
-                  <div className="h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden border border-emerald-500/20">
                     <div className="h-full w-1/2 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" />
                   </div>
                 </div>
                 {/* Status tiap pengurus */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-xl bg-emerald-500/8 border border-emerald-500/20 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/40 text-xs font-bold text-emerald-700 dark:text-emerald-400">
                     ✓ Bpk. Hendra (Ketua RT) — Setuju
                   </div>
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/8 text-xs font-semibold text-slate-400">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border-2 border-amber-500/30 dark:border-amber-500/40 text-xs font-semibold text-slate-600 dark:text-slate-400">
                     ⏳ Bpk. Tri (Sekretaris) — Menunggu
                   </div>
                 </div>
@@ -665,22 +665,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
 
           {/* ── Fitur 2: SHA-256 Hash Chain ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
-            {/* Mock UI Card Kriptografi — ditaruh kiri di desktop */}
-            <div className="order-2 lg:order-1 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0d1a11] shadow-2xl shadow-cyan-950/5 dark:shadow-cyan-950/40 overflow-hidden">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/80 dark:bg-white/[0.02]">
+            {/* Mock UI Card Kriptografi — ditaruh kiri di desktop dengan border tegas */}
+            <div className="order-2 lg:order-1 rounded-2xl border-2 border-cyan-500/40 dark:border-cyan-500/50 bg-white dark:bg-[#0a1510] shadow-2xl shadow-cyan-950/10 dark:shadow-cyan-950/40 overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-cyan-500/20 dark:border-cyan-500/30 bg-cyan-500/[0.04] dark:bg-white/[0.02]">
                 <Lock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Rantai Audit Kriptografis RFC 8785 SHA-256</span>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Rantai Audit Kriptografis RFC 8785 SHA-256</span>
               </div>
               <div className="p-5 space-y-4">
                 {/* Block audit */}
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#0a1510] border border-slate-100 dark:border-white/5 font-mono text-xs space-y-1.5">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#08100c] border border-cyan-500/25 dark:border-cyan-500/30 font-mono text-xs space-y-1.5">
                   <div className="text-slate-400"># Blok Audit 04 (Disahkan)</div>
                   <div className="text-emerald-600 dark:text-emerald-400 truncate">Hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4…</div>
                   <div className="text-slate-500 truncate">Prev: a5892c9b10bd82ae0ac6240d82998a4365cb91f2…</div>
                   <div className="text-cyan-600 dark:text-cyan-400">Tx: Pemasukan Iuran Rp 50.000 — 2025-07-01</div>
                 </div>
                 {/* Status integritas */}
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/40">
                   <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <div className="text-xs">
                     <div className="font-bold text-emerald-700 dark:text-emerald-300 mb-1">Status Integritas: Valid 100%</div>
@@ -742,8 +742,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                 ))}
               </ul>
             </div>
-            {/* Screenshot papan iuran */}
-            <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-white/8 shadow-2xl shadow-teal-950/5 dark:shadow-teal-950/40">
+            {/* Screenshot papan iuran dengan border tegas */}
+            <div className="rounded-2xl overflow-hidden border-2 border-teal-500/40 dark:border-teal-500/50 shadow-2xl shadow-teal-950/15 dark:shadow-teal-950/40">
               <img
                 src={duesImg}
                 alt="Papan Rekap Iuran Komunitas Kasbareng"
@@ -754,11 +754,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
 
           {/* ── Fitur 4: Rekonsiliasi Bank CSV ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Mock UI Card Rekonsiliasi CSV */}
-            <div className="order-2 lg:order-1 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0d1a11] shadow-2xl shadow-teal-950/5 dark:shadow-teal-950/40 overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/80 dark:bg-white/[0.02]">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Rekonsiliasi CSV Bank — Algoritma 3-Pass</span>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+            {/* Mock UI Card Rekonsiliasi CSV dengan border tegas */}
+            <div className="order-2 lg:order-1 rounded-2xl border-2 border-emerald-500/40 dark:border-emerald-500/50 bg-white dark:bg-[#0d1a11] shadow-2xl shadow-emerald-950/15 dark:shadow-emerald-950/40 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/[0.04] dark:bg-white/[0.02]">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Rekonsiliasi CSV Bank — Algoritma 3-Pass</span>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                   3 Matched ✓
                 </span>
               </div>
@@ -769,16 +769,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                   { bank: 'Mandiri', nama: 'Bpk. Joko — Iuran Agustus', nominal: 'Rp 50.000', status: 'match', color: 'emerald' },
                   { bank: 'BRI', nama: 'Ibu Dewi — Iuran Sept', nominal: 'Rp 50.000', status: 'pending', color: 'amber' },
                 ].map((row) => (
-                  <div key={row.nama} className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                  <div key={row.nama} className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-emerald-500/25 dark:border-emerald-500/30">
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300">
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                         {row.bank}
                       </span>
-                      <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{row.nama}</span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{row.nama}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-slate-800 dark:text-white">{row.nominal}</span>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${row.status === 'match' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${row.status === 'match' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'}`}>
                         {row.status === 'match' ? '✓ Match' : '⏳ Pending'}
                       </span>
                     </div>
@@ -835,38 +835,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg leading-relaxed">
               {curr.mobileDesc}
             </p>
-            {/* Feature pill list */}
+            {/* Feature pill list dengan border tegas berwarna */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="p-5 rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02]">
+              <div className="p-5 rounded-2xl border-2 border-amber-500/35 dark:border-amber-500/40 bg-gradient-to-br from-amber-500/[0.05] to-white dark:to-transparent hover:border-amber-500/70 transition-all shadow-sm">
                 <Zap className="w-5 h-5 text-amber-500 mb-3" />
                 <div className="font-bold text-slate-900 dark:text-white text-sm mb-1">Quick Action Sheet</div>
-                <div className="text-xs text-slate-400 leading-relaxed">Aksi cepat setor kas & iuran dari tombol navigasi bawah.</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Aksi cepat setor kas & iuran dari tombol navigasi bawah.</div>
               </div>
-              <div className="p-5 rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02]">
+              <div className="p-5 rounded-2xl border-2 border-emerald-500/35 dark:border-emerald-500/40 bg-gradient-to-br from-emerald-500/[0.05] to-white dark:to-transparent hover:border-emerald-500/70 transition-all shadow-sm">
                 <ShieldCheck className="w-5 h-5 text-emerald-500 mb-3" />
                 <div className="font-bold text-slate-900 dark:text-white text-sm mb-1">Gated Community Access</div>
-                <div className="text-xs text-slate-400 leading-relaxed">Masuk komunitas cukup dengan 1 Kode Akses unik warga.</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Masuk komunitas cukup dengan 1 Kode Akses unik warga.</div>
               </div>
             </div>
           </div>
 
-          {/* Screenshot dua ponsel berdampingan — rotasi berlawanan */}
+          {/* Screenshot dua ponsel berdampingan — rotasi berlawanan dengan border berwarna */}
           <div className="flex justify-center items-end gap-4 sm:gap-8">
             {/* Ponsel kiri — sedikit miring kiri */}
             <div className="relative -rotate-3 hover:rotate-0 transition-transform duration-500">
-              <div className="w-[160px] sm:w-[196px] rounded-[2rem] overflow-hidden border-4 border-slate-200 dark:border-white/10 shadow-2xl shadow-emerald-950/10 dark:shadow-emerald-950/50 bg-white dark:bg-slate-950">
+              <div className="w-[160px] sm:w-[196px] rounded-[2rem] overflow-hidden border-4 border-emerald-500/50 dark:border-emerald-400/50 shadow-2xl shadow-emerald-950/20 dark:shadow-emerald-950/60 bg-white dark:bg-slate-950">
                 <img src={mobileDashImg} alt="Kasbareng Mobile Dashboard" className="w-full h-auto" />
               </div>
               {/* Glow di bawah ponsel kiri */}
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-emerald-500/15 blur-xl rounded-full" />
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-emerald-500/20 blur-xl rounded-full" />
             </div>
             {/* Ponsel kanan — sedikit miring kanan */}
             <div className="relative rotate-3 hover:rotate-0 transition-transform duration-500 translate-y-8">
-              <div className="w-[160px] sm:w-[196px] rounded-[2rem] overflow-hidden border-4 border-slate-200 dark:border-white/10 shadow-2xl shadow-emerald-950/10 dark:shadow-emerald-950/50 bg-white dark:bg-slate-950">
+              <div className="w-[160px] sm:w-[196px] rounded-[2rem] overflow-hidden border-4 border-teal-500/50 dark:border-teal-400/50 shadow-2xl shadow-teal-950/20 dark:shadow-teal-950/60 bg-white dark:bg-slate-950">
                 <img src={mobileQuickImg} alt="Kasbareng Quick Action Sheet" className="w-full h-auto" />
               </div>
               {/* Glow di bawah ponsel kanan */}
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-teal-500/15 blur-xl rounded-full" />
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-teal-500/20 blur-xl rounded-full" />
             </div>
           </div>
         </div>
@@ -890,7 +890,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </p>
           </div>
 
-          {/* Tab selector — pill style */}
+          {/* Tab selector — pill style dengan border tegas */}
           <div className="flex justify-center gap-2 sm:gap-3 mb-10 flex-wrap">
             {(['rt', 'komunitas', 'keluarga'] as const).map((tab) => (
               <button
@@ -898,8 +898,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                 onClick={() => setActiveTab(tab)}
                 className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   activeTab === tab
-                    ? 'bg-emerald-500 text-white dark:text-slate-950 shadow-lg shadow-emerald-500/25'
-                    : 'border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-emerald-500/30'
+                    ? 'bg-emerald-500 border-2 border-emerald-400 text-white dark:text-slate-950 shadow-lg shadow-emerald-500/30'
+                    : 'border-2 border-slate-200 dark:border-emerald-500/25 bg-white dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-emerald-500/50'
                 }`}
               >
                 {tab === 'rt' ? curr.tabRt : tab === 'komunitas' ? curr.tabKomunitas : curr.tabKeluarga}
@@ -907,17 +907,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             ))}
           </div>
 
-          {/* Konten tab — card grid 3 kolom */}
+          {/* Konten tab — card grid 3 kolom dengan border tegas berwarna */}
           <div className="max-w-4xl mx-auto">
             {/* Tab RT/RW */}
             {activeTab === 'rt' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {[
-                  { color: 'emerald', title: 'Iuran Keamanan & Sampah', desc: 'Papan kontrol warga lunas per bulan lengkap dengan pengingat WA santun.' },
-                  { color: 'cyan', title: 'Belanja Tenda & Alat Pos', desc: 'Pengadaan barang wajib di-acc minimal 2 pengurus (Ketua + Sekretaris).' },
-                  { color: 'teal', title: 'Laporan Rapat Warga', desc: 'Cetak rekap kas resmi seketika tanpa lembur hitung kuitansi di Excel.' },
+                  { border: 'border-emerald-500/40 dark:border-emerald-500/50 bg-gradient-to-br from-emerald-500/[0.06] via-white to-white dark:from-emerald-500/[0.08] dark:via-transparent dark:to-transparent hover:border-emerald-500/70', color: 'emerald', title: 'Iuran Keamanan & Sampah', desc: 'Papan kontrol warga lunas per bulan lengkap dengan pengingat WA santun.' },
+                  { border: 'border-cyan-500/40 dark:border-cyan-500/50 bg-gradient-to-br from-cyan-500/[0.06] via-white to-white dark:from-cyan-500/[0.08] dark:via-transparent dark:to-transparent hover:border-cyan-500/70', color: 'cyan', title: 'Belanja Tenda & Alat Pos', desc: 'Pengadaan barang wajib di-acc minimal 2 pengurus (Ketua + Sekretaris).' },
+                  { border: 'border-teal-500/40 dark:border-teal-500/50 bg-gradient-to-br from-teal-500/[0.06] via-white to-white dark:from-teal-500/[0.08] dark:via-transparent dark:to-transparent hover:border-teal-500/70', color: 'teal', title: 'Laporan Rapat Warga', desc: 'Cetak rekap kas resmi seketika tanpa lembur hitung kuitansi di Excel.' },
                 ].map((item) => (
-                  <div key={item.title} className="p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] space-y-3">
+                  <div key={item.title} className={`p-6 rounded-2xl border-2 ${item.border} space-y-3 transition-all shadow-sm`}>
                     <div className={`font-black text-base text-${item.color}-600 dark:text-${item.color}-400`}>{item.title}</div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</p>
                   </div>
@@ -929,11 +929,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             {activeTab === 'komunitas' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {[
-                  { color: 'emerald', title: 'Panitia Acara & Baksos', desc: 'Kas khusus per kegiatan dengan kuorum bendahara & koordinator acara.' },
-                  { color: 'cyan', title: 'Kas Klub Sepeda / Motor', desc: 'Iuran touring dan pembelian merchandise tercatat terbuka untuk semua anggota.' },
-                  { color: 'teal', title: 'Komunitas Alumni', desc: 'Transparansi dana donasi beasiswa dan sumbangan sosial alumni.' },
+                  { border: 'border-emerald-500/40 dark:border-emerald-500/50 bg-gradient-to-br from-emerald-500/[0.06] via-white to-white dark:from-emerald-500/[0.08] dark:via-transparent dark:to-transparent hover:border-emerald-500/70', color: 'emerald', title: 'Panitia Acara & Baksos', desc: 'Kas khusus per kegiatan dengan kuorum bendahara & koordinator acara.' },
+                  { border: 'border-cyan-500/40 dark:border-cyan-500/50 bg-gradient-to-br from-cyan-500/[0.06] via-white to-white dark:from-cyan-500/[0.08] dark:via-transparent dark:to-transparent hover:border-cyan-500/70', color: 'cyan', title: 'Kas Klub Sepeda / Motor', desc: 'Iuran touring dan pembelian merchandise tercatat terbuka untuk semua anggota.' },
+                  { border: 'border-teal-500/40 dark:border-teal-500/50 bg-gradient-to-br from-teal-500/[0.06] via-white to-white dark:from-teal-500/[0.08] dark:via-transparent dark:to-transparent hover:border-teal-500/70', color: 'teal', title: 'Komunitas Alumni', desc: 'Transparansi dana donasi beasiswa dan sumbangan sosial alumni.' },
                 ].map((item) => (
-                  <div key={item.title} className="p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] space-y-3">
+                  <div key={item.title} className={`p-6 rounded-2xl border-2 ${item.border} space-y-3 transition-all shadow-sm`}>
                     <div className={`font-black text-base text-${item.color}-600 dark:text-${item.color}-400`}>{item.title}</div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</p>
                   </div>
@@ -945,11 +945,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             {activeTab === 'keluarga' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {[
-                  { color: 'emerald', title: 'Kas Dana Darurat Keluarga', desc: 'Simpanan bersama untuk kebutuhan tak terduga tanpa rasa saling curiga.' },
-                  { color: 'cyan', title: 'Arisan Berkala', desc: 'Pencatatan setoran arisan transparan, siapa yang giliran dapat tercatat rapi.' },
-                  { color: 'teal', title: 'Dana Renovasi Rumah Waris', desc: 'Persetujuan belanja bahan material wajib disepakati seluruh saudara.' },
+                  { border: 'border-emerald-500/40 dark:border-emerald-500/50 bg-gradient-to-br from-emerald-500/[0.06] via-white to-white dark:from-emerald-500/[0.08] dark:via-transparent dark:to-transparent hover:border-emerald-500/70', color: 'emerald', title: 'Kas Dana Darurat Keluarga', desc: 'Simpanan bersama untuk kebutuhan tak terduga tanpa rasa saling curiga.' },
+                  { border: 'border-cyan-500/40 dark:border-cyan-500/50 bg-gradient-to-br from-cyan-500/[0.06] via-white to-white dark:from-cyan-500/[0.08] dark:via-transparent dark:to-transparent hover:border-cyan-500/70', color: 'cyan', title: 'Arisan Berkala', desc: 'Pencatatan setoran arisan transparan, siapa yang giliran dapat tercatat rapi.' },
+                  { border: 'border-teal-500/40 dark:border-teal-500/50 bg-gradient-to-br from-teal-500/[0.06] via-white to-white dark:from-teal-500/[0.08] dark:via-transparent dark:to-transparent hover:border-teal-500/70', color: 'teal', title: 'Dana Renovasi Rumah Waris', desc: 'Persetujuan belanja bahan material wajib disepakati seluruh saudara.' },
                 ].map((item) => (
-                  <div key={item.title} className="p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] space-y-3">
+                  <div key={item.title} className={`p-6 rounded-2xl border-2 ${item.border} space-y-3 transition-all shadow-sm`}>
                     <div className={`font-black text-base text-${item.color}-600 dark:text-${item.color}-400`}>{item.title}</div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</p>
                   </div>
@@ -965,8 +965,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       ════════════════════════════════════════════════════════════════ */}
       <section className="relative z-10 py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          {/* Card CTA dengan background gradien emerald bold */}
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 dark:from-emerald-700 dark:via-teal-700 dark:to-emerald-800 p-12 sm:p-20 text-center">
+          {/* Card CTA dengan background gradien emerald bold & border 2px */}
+          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 dark:from-emerald-700 dark:via-teal-700 dark:to-emerald-800 p-12 sm:p-20 text-center border-2 border-emerald-400/50 dark:border-emerald-400/60 shadow-2xl shadow-emerald-950/30">
             {/* Dekorasi lingkaran besar transparan di sudut */}
             <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full border border-white/15 pointer-events-none" />
             <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full border border-white/10 pointer-events-none" />
