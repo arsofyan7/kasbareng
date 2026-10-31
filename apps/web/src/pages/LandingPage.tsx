@@ -221,7 +221,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
   // RENDER UTAMA
   // ---------------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-white dark:bg-[#080f0b] text-slate-900 dark:text-slate-100 font-sans overflow-x-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-white dark:bg-[#080f0b] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
 
       {/* ── LATAR BELAKANG DEKORATIF GLOBAL ── */}
       {/* Elemen ambient glow dan dot-grid yang fixed di balik semua konten */}
@@ -243,9 +243,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════
-          NAVIGASI STICKY TOP
+          NAVIGASI FIXED TOP (TETAP MENEMPEL KETIKA DISCROLL)
       ════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/60 dark:border-white/5 backdrop-blur-2xl bg-white/75 dark:bg-[#080f0b]/80 transition-all">
+      <header className="fixed top-0 inset-x-0 z-50 border-b border-slate-200/60 dark:border-white/5 backdrop-blur-2xl bg-white/85 dark:bg-[#080f0b]/90 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[68px] flex items-center justify-between gap-4">
 
           {/* Logo brand — klik untuk scroll ke atas */}
@@ -259,7 +259,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
               <Wallet className="w-5 h-5 text-white" />
             </div>
             {/* Nama brand & sub-label */}
-            <div className="flex flex-col leading-none">
+            <div className="flex flex-col leading-none text-left">
               <span className="font-black text-xl tracking-tight text-slate-900 dark:text-white">
                 KASBARENG
               </span>
@@ -314,84 +314,173 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       </header>
 
       {/* ════════════════════════════════════════════════════════════════
-          HERO SECTION
+          SEGMEN PALING ATAS (HERO) — FIT 1 LAYAR PENUH (VIEWPORT)
       ════════════════════════════════════════════════════════════════ */}
-      <section className="relative z-10 pt-20 pb-10 sm:pt-28 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="relative z-10 min-h-screen lg:h-screen pt-[68px] flex items-center justify-center px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center py-8 lg:py-0">
 
-        {/* Teks hero — asimetris dengan accent bar di kiri */}
-        <div className="max-w-4xl">
-          {/* Badge solusi */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-semibold mb-10">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{curr.badge}</span>
-          </div>
+          {/* Kolom Kiri: Teks Hero, Headline, & CTA */}
+          <div className="lg:col-span-7 space-y-5 lg:space-y-6">
+            {/* Badge solusi */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-semibold">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>{curr.badge}</span>
+            </div>
 
-          {/* Headline utama — tiga baris, baris kedua & ketiga berwarna gradient */}
-          <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black tracking-tight leading-[1.05] text-slate-900 dark:text-white mb-7">
-            <span className="block">{curr.heroTitle1}</span>
-            <span className="block bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-300 bg-clip-text text-transparent">
-              {curr.heroTitle2}
-            </span>
-            <span className="block bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-300 bg-clip-text text-transparent">
-              {curr.heroTitle3}
-            </span>
-          </h1>
+            {/* Headline utama */}
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-[3.75rem] font-black tracking-tight leading-[1.08] text-slate-900 dark:text-white">
+              <span className="block">{curr.heroTitle1}</span>
+              <span className="block bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-300 bg-clip-text text-transparent">
+                {curr.heroTitle2} {curr.heroTitle3}
+              </span>
+            </h1>
 
-          {/* Deskripsi singkat */}
-          <p className="text-base sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed mb-10">
-            {curr.heroDesc}
-          </p>
+            {/* Deskripsi ringkas */}
+            <p className="text-sm sm:text-base lg:text-lg text-slate-500 dark:text-slate-400 max-w-xl leading-relaxed">
+              {curr.heroDesc}
+            </p>
 
-          {/* Tombol CTA primer dan sekunder */}
-          <div className="flex flex-col sm:flex-row items-start gap-4 mb-16">
-            <button
-              onClick={onGoToLogin}
-              className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 font-extrabold text-base sm:text-lg shadow-xl shadow-emerald-500/30 transition-all duration-300 hover:shadow-emerald-500/50 hover:-translate-y-0.5 cursor-pointer"
-            >
-              <span>{curr.ctaPrimary}</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <a
-              href="#features"
-              className="inline-flex items-center gap-2 px-7 py-4 rounded-xl border border-slate-200 dark:border-white/10 bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 font-semibold text-base transition-all"
-            >
-              <span>{curr.ctaSecondary}</span>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </a>
-          </div>
-        </div>
+            {/* Tombol CTA primer dan sekunder */}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-1">
+              <button
+                onClick={onGoToLogin}
+                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-500/30 transition-all duration-300 hover:shadow-emerald-500/50 hover:-translate-y-0.5 cursor-pointer"
+              >
+                <span>{curr.ctaPrimary}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <a
+                href="#why"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 font-semibold text-sm sm:text-base transition-all"
+              >
+                <span>{curr.ctaSecondary}</span>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </a>
+            </div>
 
-        {/* ── SHOWCASE GAMBAR HERO ── */}
-        {/* Frame aplikasi dengan dekorasi glow di bawahnya */}
-        <div className="relative">
-          {/* Glow di bawah gambar — efek depth */}
-          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-emerald-500/15 blur-3xl rounded-full pointer-events-none" />
-
-          {/* Frame border halus dengan gradient */}
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200/80 dark:border-white/8 shadow-[0_40px_120px_-20px_rgba(16,185,129,0.15)] dark:shadow-[0_40px_120px_-20px_rgba(16,185,129,0.2)]">
-            {/* Bar tipis di atas gambar — gaya browser chrome */}
-            <div className="flex items-center gap-2 px-4 py-3 bg-slate-100/90 dark:bg-[#111a14]/90 border-b border-slate-200/80 dark:border-white/5">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-rose-400/80" />
-                <div className="w-3 h-3 rounded-full bg-amber-400/80" />
-                <div className="w-3 h-3 rounded-full bg-emerald-400/80" />
+            {/* Poin jaminan kunci / micro highlights */}
+            <div className="pt-2 flex flex-wrap items-center gap-4 sm:gap-6 text-xs font-semibold text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-white/5">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>RFC 8785 SHA-256</span>
               </div>
-              <div className="flex-1 mx-4 h-6 rounded-md bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 flex items-center px-3">
-                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">kasbareng.app</span>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Kuorum Belanja M-of-N</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Progressive Web App</span>
               </div>
             </div>
-            {/* Gambar showcase aplikasi */}
-            <img
-              src={heroShowcaseImg}
-              alt="Kasbareng Responsive Desktop & Mobile Showcase"
-              className="w-full h-auto object-cover object-top"
-            />
           </div>
 
-          {/* Floating badge verifikasi di bawah gambar */}
-          <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-[#111a14] border border-slate-200 dark:border-white/10 shadow-xl text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>Tampilan Desktop Web & Mobile PWA Responsive</span>
+          {/* Kolom Kanan: Showcase Gambar Hero dengan Browser Frame */}
+          <div className="lg:col-span-5 relative">
+            {/* Ambient glow lembut di belakang gambar */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 rounded-3xl blur-2xl pointer-events-none" />
+
+            {/* Frame browser mockup responsif */}
+            <div className="relative rounded-2xl overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-[0_25px_60px_-15px_rgba(16,185,129,0.2)] dark:shadow-[0_25px_60px_-15px_rgba(16,185,129,0.3)] bg-slate-900">
+              {/* Browser chrome header bar */}
+              <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100/90 dark:bg-[#111a14]/90 border-b border-slate-200/80 dark:border-white/5">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-rose-400/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                </div>
+                <div className="flex-1 mx-3 h-5 rounded bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 flex items-center px-2.5">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">kasbareng.app</span>
+                </div>
+              </div>
+              {/* Gambar showcase responsif */}
+              <img
+                src={heroShowcaseImg}
+                alt="Kasbareng Responsive Desktop & Mobile Showcase"
+                className="w-full h-auto max-h-[42vh] sm:max-h-[48vh] object-contain object-top"
+              />
+            </div>
+
+            {/* Label caption kecil di bawah gambar */}
+            <div className="mt-3 flex items-center justify-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>Tampilan Desktop Web & Mobile PWA Responsive</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════
+          SEGMEN #WHY (PAIN POINTS) — FIT 1 LAYAR PENUH (VIEWPORT)
+      ════════════════════════════════════════════════════════════════ */}
+      <section id="why" className="relative z-10 min-h-screen lg:h-screen flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12 lg:py-0 max-w-7xl mx-auto scroll-mt-[68px]">
+        {/* Background band lembut */}
+        <div className="absolute inset-0 bg-slate-950/[0.02] dark:bg-white/[0.015] pointer-events-none rounded-3xl" />
+
+        <div className="relative w-full">
+          {/* Header section #why */}
+          <div className="max-w-3xl mb-6 lg:mb-8">
+            <span className="text-xs font-bold uppercase tracking-widest text-rose-500 dark:text-rose-400 block mb-2">
+              Tantangan Kas Komunitas
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white mb-2 leading-tight">
+              {curr.whyTitle}
+            </h2>
+            <p className="text-xs sm:text-sm lg:text-base text-slate-500 dark:text-slate-400">
+              {curr.whySubtitle}
+            </p>
+          </div>
+
+          {/* Grid 2x2 pain point cards — pas dalam viewport */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+            {/* Pain 1 */}
+            <div className="group relative p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-rose-400/40 dark:hover:border-rose-500/30 transition-all overflow-hidden shadow-sm">
+              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-rose-500/5 dark:text-rose-500/5 leading-none select-none pointer-events-none">01</div>
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-3">
+                  <Users2 className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">{curr.pain1Title}</h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{curr.pain1Desc}</p>
+              </div>
+            </div>
+
+            {/* Pain 2 */}
+            <div className="group relative p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-amber-400/40 dark:hover:border-amber-500/30 transition-all overflow-hidden shadow-sm">
+              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-amber-500/5 dark:text-amber-500/5 leading-none select-none pointer-events-none">02</div>
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-3">
+                  <BadgeAlert className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">{curr.pain2Title}</h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{curr.pain2Desc}</p>
+              </div>
+            </div>
+
+            {/* Pain 3 */}
+            <div className="group relative p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-cyan-400/40 dark:hover:border-cyan-500/30 transition-all overflow-hidden shadow-sm">
+              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-cyan-500/5 dark:text-cyan-500/5 leading-none select-none pointer-events-none">03</div>
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-3">
+                  <FileText className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">{curr.pain3Title}</h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{curr.pain3Desc}</p>
+              </div>
+            </div>
+
+            {/* Pain 4 */}
+            <div className="group relative p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-emerald-400/40 dark:hover:border-emerald-500/30 transition-all overflow-hidden shadow-sm">
+              <div className="absolute -right-2 -bottom-4 text-7xl lg:text-8xl font-black text-emerald-500/5 dark:text-emerald-500/5 leading-none select-none pointer-events-none">04</div>
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-3">
+                  <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">{curr.pain4Title}</h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{curr.pain4Desc}</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -399,7 +488,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       {/* ════════════════════════════════════════════════════════════════
           TRUST BAR — Badge teknologi & kepercayaan
       ════════════════════════════════════════════════════════════════ */}
-      <section className="relative z-10 pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+      <section className="relative z-10 pt-16 pb-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           {/* Garis pemisah tipis */}
           <div className="flex items-center gap-4 mb-8">
@@ -432,7 +521,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       {/* ════════════════════════════════════════════════════════════════
           STATISTIK / IMPACT — Angka-angka besar
       ════════════════════════════════════════════════════════════════ */}
-      <section id="impact" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8">
+      <section id="impact" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 scroll-mt-[72px]">
         <div className="max-w-7xl mx-auto">
           {/* Header section */}
           <div className="mb-16">
@@ -489,85 +578,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          PAIN POINTS — 4 Masalah Kas Komunitas
-      ════════════════════════════════════════════════════════════════ */}
-      <section id="why" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8">
-        {/* Background band gelap yang kontras */}
-        <div className="absolute inset-0 bg-slate-950/[0.03] dark:bg-white/[0.015] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto">
-          {/* Header section */}
-          <div className="max-w-3xl mb-16">
-            <span className="text-xs font-bold uppercase tracking-widest text-rose-500 dark:text-rose-400 block mb-3">
-              Tantangan Kas Komunitas
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white mb-5 leading-tight">
-              {curr.whyTitle}
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg">
-              {curr.whySubtitle}
-            </p>
-          </div>
-
-          {/* Grid 2x2 pain point cards — desain dengan nomor besar di background */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Pain 1 */}
-            <div className="group relative p-8 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-rose-400/40 dark:hover:border-rose-500/30 transition-all overflow-hidden">
-              {/* Nomor besar dekoratif di latar */}
-              <div className="absolute -right-4 -bottom-6 text-[120px] font-black text-rose-500/5 dark:text-rose-500/5 leading-none select-none pointer-events-none">01</div>
-              <div className="relative">
-                <div className="w-11 h-11 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-5">
-                  <Users2 className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-                </div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3">{curr.pain1Title}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{curr.pain1Desc}</p>
-              </div>
-            </div>
-
-            {/* Pain 2 */}
-            <div className="group relative p-8 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-amber-400/40 dark:hover:border-amber-500/30 transition-all overflow-hidden">
-              <div className="absolute -right-4 -bottom-6 text-[120px] font-black text-amber-500/5 dark:text-amber-500/5 leading-none select-none pointer-events-none">02</div>
-              <div className="relative">
-                <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-5">
-                  <BadgeAlert className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3">{curr.pain2Title}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{curr.pain2Desc}</p>
-              </div>
-            </div>
-
-            {/* Pain 3 */}
-            <div className="group relative p-8 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-cyan-400/40 dark:hover:border-cyan-500/30 transition-all overflow-hidden">
-              <div className="absolute -right-4 -bottom-6 text-[120px] font-black text-cyan-500/5 dark:text-cyan-500/5 leading-none select-none pointer-events-none">03</div>
-              <div className="relative">
-                <div className="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
-                  <FileText className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-                </div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3">{curr.pain3Title}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{curr.pain3Desc}</p>
-              </div>
-            </div>
-
-            {/* Pain 4 */}
-            <div className="group relative p-8 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.02] hover:border-emerald-400/40 dark:hover:border-emerald-500/30 transition-all overflow-hidden">
-              <div className="absolute -right-4 -bottom-6 text-[120px] font-black text-emerald-500/5 dark:text-emerald-500/5 leading-none select-none pointer-events-none">04</div>
-              <div className="relative">
-                <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-5">
-                  <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3">{curr.pain4Title}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{curr.pain4Desc}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ════════════════════════════════════════════════════════════════
           FITUR INTI — 4 Solusi Berstandar Finansial
       ════════════════════════════════════════════════════════════════ */}
-      <section id="features" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8">
+      <section id="features" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 scroll-mt-[72px]">
         <div className="max-w-7xl mx-auto">
           {/* Header section */}
           <div className="text-center max-w-3xl mx-auto mb-20">
@@ -859,7 +875,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       {/* ════════════════════════════════════════════════════════════════
           USE CASES — Tab interaktif komunitas
       ════════════════════════════════════════════════════════════════ */}
-      <section id="usecases" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8">
+      <section id="usecases" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 scroll-mt-[72px]">
         <div className="max-w-7xl mx-auto">
           {/* Header section */}
           <div className="text-center max-w-3xl mx-auto mb-14">
